@@ -210,7 +210,7 @@ const ALL_NULL = [null, null, null, null, null];
 export function buildScorecards(contestants: Contestant[]): Scorecard[] {
   const byId = new Map(contestants.map((c) => [c.id, c]));
   const cards: Scorecard[] = [];
-  const idx = (id: string) => byId.get(id)!.type;
+
 
   const submitted: Array<[string, JudgeId, (number | null)[]]> = [
     ["c01", "judge1", [17, 15, 18, 16, 12]],

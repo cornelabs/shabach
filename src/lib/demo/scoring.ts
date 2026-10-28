@@ -152,90 +152,71 @@ export function computeMasterRows(input: MasterInput): ResultRow[] {
 }
 
 /** Tie-break averaged criterion scores: mean of each valid submitted scorecard's value for an index. */
-function averagedCriterion(
-  cards: Scorecard[],
-  index: number,
-): number | null {
+function averagedCriterion(cards: Scorecard[], index: number): number | null {
   if (cards.length === 0) return null;
   const total = cards.reduce((sum, c) => sum + (c.scores[index] ?? 0), 0);
   return total / cards.length;
 }
 
-/** Rank with the tie-break ladder: spiritual, technical/performance, creativity, then "Judges' review required". */
-export function rankRows(rows: ResultRow[]): ResultRow[] {
-  const scored = rows.map((row) => {
-    const rubric = rubricFor(row.contestant.type);
-    const cards = [
-      "judge1",
-      "judge2",
-      "judge3",
-    ]
-      .map((j) => row.judgeSubtotals[j as JudgeId])
-      .filter((v): v is number => typeof v === "number").length;
-    return { row, cards };
-  });
-
-  const comparable = scored.filter((s) => s.row.finalScore !== null);
-  const others = scored.filter((s) => s.row.finalScore === null);
-
-  comparable.sort((a, b) => {
-    if (b.row.finalScore !== a.row.finalScore) return b.row.finalScore! - a.row.finalScore!;
-    // Tie-break ladder on the three judges' averaged relevant criterion scores.
-    const aType = a.row.contestant.type;
-    const bType = b.row.contestant.type;
-    for (const key of ["spiritual", "technical", "creativity"] as const) {
-      if (aType !== bType) break; // Cross-type ties are not criterion-comparable.
-      const idx = rubricFor(aType).tiebreak[key];
-      const aCards = scorecardsFor(a.row);
-      const bCards = scorecardsFor(b.row);
-      const av = averagedCriterion(aCards, idx);
-      const bv = averagedCriterion(bCards, idx);
-      if (av !== null && bv !== null && bv !== av) return bv - av;
-    }
-    if (!a.row.tieFlags.includes("Judges' review required")) {
-      a.row.tieFlags.push("Judges' review required");
-      b.row.tieFlags.push("Judges' review required");
-    }
-    return 0;
-  });
-
-  let rank = 0;
-  let prevScore: number | null = null;
-  comparable.forEach((s, i) => {
-    if (prevScore === null || s.row.finalScore !== prevScore) {
-      rank = i + 1;
-      prevScore = s.row.finalScore;
-    }
-    s.row.rank = rank;
-  });
-  others.forEach((s) => {
-    s.row.rank = null;
-  });
-  return rows;
-}
-
-// Reconstruct the submitted scorecards for a row is not possible from subtotals alone;
-// the comparator uses per-criterion averages computed by the caller via computeMasterRows.
-function scorecardsFor(_row: ResultRow): Scorecard[] {
-  return tiedCards.get(_row.contestant.id) ?? [];
-}
-
-const tiedCards = new Map<string, Scorecard[]>();
-
-/** Full collation that also registers scorecards for tie-break comparison. */
-export function computeResults(input: MasterInput): ResultRow[] {
-  tiedCards.clear();
+/**
+ * Rank and assign tie-break flags in place, then return the rows sorted.
+ * Ladder: spiritual, technical/performance, creativity, then "Judges' review required".
+ * Never resolves remaining ties randomly, alphabetically or by audience votes.
+ */
+export function rankAndAssign(
+  rows: ResultRow[],
+  scorecards: Scorecard[],
+): ResultRow[] {
   const byContestant = new Map<string, Scorecard[]>();
-  for (const card of input.scorecards) {
+  for (const card of scorecards) {
     if (!isValidSubmitted(card)) continue;
     const list = byContestant.get(card.contestantId) ?? [];
     list.push(card);
     byContestant.set(card.contestantId, list);
   }
-  for (const [id, cards] of byContestant) tiedCards.set(id, cards);
-  const rows = computeMasterRows(input);
-  tiedCards.clear();
-  return rows;
+
+  const comparable = rows.filter((r) => r.finalScore !== null);
+  const others = rows.filter((r) => r.finalScore === null);
+
+  comparable.sort((a, b) => {
+    if (b.finalScore !== a.finalScore) return b.finalScore! - a.finalScore!;
+    const aType = a.contestant.type;
+    const bType = b.contestant.type;
+    if (aType === bType) {
+      const cardsA = byContestant.get(a.contestant.id) ?? [];
+      const cardsB = byContestant.get(b.contestant.id) ?? [];
+      for (const key of ["spiritual", "technical", "creativity"] as const) {
+        const idx = rubricFor(aType).tiebreak[key];
+        const av = averagedCriterion(cardsA, idx);
+        const bv = averagedCriterion(cardsB, idx);
+        if (av !== null && bv !== null && bv !== av) return bv - av;
+      }
+    }
+    // Still tied after the ladder — flag for judges' review, keep original order.
+    const flag = "Judges' review required";
+    if (!a.tieFlags.includes(flag)) a.tieFlags.push(flag);
+    if (!b.tieFlags.includes(flag)) b.tieFlags.push(flag);
+    return 0;
+  });
+
+  let rank = 0;
+  let prevScore: number | null = null;
+  comparable.forEach((row, i) => {
+    if (prevScore === null || row.finalScore !== prevScore) {
+      rank = i + 1;
+      prevScore = row.finalScore;
+    }
+    row.rank = rank;
+  });
+  others.forEach((row) => {
+    row.rank = null;
+  });
+  return [...comparable, ...others];
+}
+
+/** Full collation: master rows ranked with the tie-break ladder applied. */
+export function computeResults(input: MasterInput): ResultRow[] {
+  return rankAndAssign(computeMasterRows(input), input.scorecards);
 }
 
 /** Format a score for display at two decimals. */
