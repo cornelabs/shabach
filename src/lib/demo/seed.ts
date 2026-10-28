@@ -208,8 +208,8 @@ const ALL_NULL = [null, null, null, null, null];
 
 /** A mixture of draft, submitted and incomplete scorecards across the three judges. */
 export function buildScorecards(contestants: Contestant[]): Scorecard[] {
-  const byId = new Map(contestants.map((c) => [c.id, c]));
   const cards: Scorecard[] = [];
+
 
 
   const submitted: Array<[string, JudgeId, (number | null)[]]> = [
