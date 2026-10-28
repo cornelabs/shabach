@@ -148,7 +148,7 @@ export function computeMasterRows(input: MasterInput): ResultRow[] {
       rank: null,
     };
   });
-  return rankRows(rows);
+  return rows;
 }
 
 /** Tie-break averaged criterion scores: mean of each valid submitted scorecard's value for an index. */
