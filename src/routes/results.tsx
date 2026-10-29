@@ -108,7 +108,7 @@ function TopThreeCard({ row, position }: { row: ResultRow; position: number }) {
   );
 }
 
-function PublicTopThree({ rows }: { rows: ResultRow[] }) {
+export function PublicTopThree({ rows }: { rows: ResultRow[] }) {
   // Filter only ranked contestants and take top 3
   const topThree = rows.filter((r) => r.rank !== null).slice(0, 3);
 
