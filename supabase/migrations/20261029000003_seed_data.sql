@@ -182,3 +182,4 @@ BEGIN
     ON CONFLICT (event_id, role_type) DO NOTHING;
 
 END $$;
+

@@ -208,3 +208,4 @@ CREATE POLICY "Organiser read audit log"
     ON audit_events FOR SELECT
     TO authenticated
     USING (auth_is_organiser(event_id));
+

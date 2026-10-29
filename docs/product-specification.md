@@ -374,3 +374,4 @@ Implement real demo interactions, including navigation, search, vote confirmatio
 Do not show success messages for actions that do nothing.
 
 Include clear invalid-code, empty-search, incomplete-score, closed-voting, and results-pending states.
+
