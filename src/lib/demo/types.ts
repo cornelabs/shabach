@@ -111,6 +111,13 @@ export interface ResultsSnapshot {
   rows: ResultRow[];
 }
 
+export interface TieResolution {
+  contestantIds: [string, string];
+  winnerId: string;
+  reason: string;
+  recordedAt: string;
+}
+
 export interface DemoState {
   version: 1;
   contestants: Contestant[];
@@ -127,6 +134,7 @@ export interface DemoState {
   results: ResultsSnapshot | null;
   /** Which sample judge the judge workspace is signed in as. */
   activeJudge: JudgeId | null;
+  tieResolutions: TieResolution[];
 }
 
 export const DISTRICTS = [
