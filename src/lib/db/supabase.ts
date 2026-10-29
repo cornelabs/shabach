@@ -16,17 +16,14 @@ function getEnvVar(key: string): string | undefined {
   return undefined;
 }
 
-export const SUPABASE_URL =
-  getEnvVar("VITE_SUPABASE_URL") || getEnvVar("SUPABASE_URL") || "";
+export const SUPABASE_URL = getEnvVar("VITE_SUPABASE_URL") || getEnvVar("SUPABASE_URL") || "";
 
 export const SUPABASE_ANON_KEY =
   getEnvVar("VITE_SUPABASE_ANON_KEY") || getEnvVar("SUPABASE_ANON_KEY") || "";
 
-export const SUPABASE_SERVICE_ROLE_KEY =
-  getEnvVar("SUPABASE_SERVICE_ROLE_KEY") || "";
+export const SUPABASE_SERVICE_ROLE_KEY = getEnvVar("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-export const APP_MODE =
-  getEnvVar("VITE_APP_MODE") || getEnvVar("APP_MODE") || "demo";
+export const APP_MODE = getEnvVar("VITE_APP_MODE") || getEnvVar("APP_MODE") || "demo";
 
 /**
  * Returns true if real Supabase environment variables are available.

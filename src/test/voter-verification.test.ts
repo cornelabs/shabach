@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  isValidEmail,
-  requestVoterOtp,
-  verifyVoterOtp,
-} from "@/lib/auth/voter-verification";
+import { isValidEmail, requestVoterOtp, verifyVoterOtp } from "@/lib/auth/voter-verification";
 
 describe("Voter Identity & OTP Verification Service", () => {
   it("validates proper email formats", () => {

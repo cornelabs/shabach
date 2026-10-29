@@ -113,9 +113,7 @@ describe("Organiser Workspace Operations & Collation Gates", () => {
     setVotingStatus("closed");
     const check2 = checkLockReadiness();
     expect(check2.ok).toBe(false);
-    expect(check2.problems).toContain(
-      "Every contestant needs three valid submitted scorecards.",
-    );
+    expect(check2.problems).toContain("Every contestant needs three valid submitted scorecards.");
     expect(check2.problems).toContain("The score desk must confirm the collation.");
   });
 

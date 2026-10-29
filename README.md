@@ -47,9 +47,10 @@ The platform connects three core user experiences built on a unified, type-safe 
 All 16 finalists compete in **one overall ranking** across all performance types.
 
 ### The Scoring Formula
+
 $$\text{Judge Average} = \frac{\text{Judge}_1 + \text{Judge}_2 + \text{Judge}_3}{3}$$
 
-$$\text{Audience Points} = \begin{cases} 
+$$ \text{Audience Points} = \begin{cases}
 5 \times \frac{\text{Contestant Valid Votes}}{\text{Highest Eligible Vote Count}}, & \text{if Highest Eligible Vote Count} > 0 \\
 0, & \text{otherwise}
 \end{cases}$$

@@ -191,8 +191,8 @@ function DemoLauncherPage() {
                   </div>
                   <h3 className="mt-4 font-display text-xl text-forest">{judge.name}</h3>
                   <p className="mt-2 text-xs leading-relaxed text-charcoal-muted">
-                    Tablet interface for scoring contestants on discipline-specific rubrics out of 95.
-                    Autosaves drafts, protects privacy, and requires explicit submission review.
+                    Tablet interface for scoring contestants on discipline-specific rubrics out of
+                    95. Autosaves drafts, protects privacy, and requires explicit submission review.
                   </p>
                 </div>
 

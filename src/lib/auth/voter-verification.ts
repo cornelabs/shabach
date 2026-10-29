@@ -212,9 +212,9 @@ export async function verifyVoterOtp(email: string, code: string): Promise<OtpVe
   record.verified = true;
   otpStore.delete(cleanEmail);
 
-  const voterToken = `voter_${Buffer?.from
-    ? Buffer.from(cleanEmail).toString("base64")
-    : btoa(cleanEmail)}_${Date.now()}`;
+  const voterToken = `voter_${
+    Buffer?.from ? Buffer.from(cleanEmail).toString("base64") : btoa(cleanEmail)
+  }_${Date.now()}`;
 
   return {
     success: true,
