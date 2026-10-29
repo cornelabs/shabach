@@ -1,443 +1,238 @@
-# SHABACH
-
-Build a polished, functional web application demo for **SHABACH 2026**, a church youth talent competition organised by Youth Alive Fellowship (YAF), Living Faith Church, Lagos State.
-
-Theme: **Talent for Christ**  
-Grand Finale: **Saturday, 14 November 2026**  
-Timezone: **Africa/Lagos**
-
-The platform serves only the **16 Grand Finale contestants**, who may be individuals or groups. It connects three experiences:
-
-1. Public audience voting.
-2. Independent scoring by three judges.
-3. An organiser’s dashboard for administration, score collation, and results.
-
-Create a working interactive application, not just a landing page.
-
-## 1. Scope and competition structure
-
-All 16 contestants compete in **one overall ranking**, with one set of first, second, and third places.
-
-Performance types determine the appropriate judging rubric and time limit. They must not create separate competitions, voting pools, leaderboards, or category winners.
-
-The five performance types are:
-
-- Music.
-- Dance.
-- Spoken Word/Poetry.
-- Mono-Drama.
-- Visual Arts.
-
-Use fictional, editable contestant names, group names, performance titles, biographies, and profile images or tasteful monogram placeholders. Clearly identify the data as demo content.
-
-Create two contestants from each district:
-
-- Epe District.
-- Ijede District.
-- Iranwo District.
-- Igbogbo District.
-- Badagry District.
-- Magbon District.
-- Morogbo District.
-- State Church.
-
-Do not build registration, auditions, district selection, contestant accounts, paid voting, payments, livestreaming, or social feeds.
-
-## 2. Design direction
-
-Create a clean, classy, contemporary event platform. It should feel premium, warm, and celebratory, while remaining easy to use during a live event.
-
-Use:
-
-- Warm ivory backgrounds: #F8F6F0.
-- Deep forest green: #123D35.
-- Charcoal text: #202A27.
-- Restrained champagne-gold accents: #C4A56A.
-- An elegant display serif such as DM Serif Display for major headings.
-- A readable modern sans serif such as Manrope for the interface.
-
-Use strong typography, balanced spacing, subtle shadows, thin borders, approximately 14px card corners, and restrained animation.
-
-Avoid oversized empty hero sections, excessive whitespace, neon effects, heavy gradients, glassmorphism, generic purple dashboard styling, and invented church logos.
-
-Use a tasteful SHABACH wordmark. Public pages should feel like a beautiful event experience. Staff pages should use the same design system with more compact, practical layouts.
-
-Design mobile-first. The voting page must work beautifully at 360px width. Use a two-column contestant grid where readable, with a single-column fallback when needed, and up to four columns on desktop.
-
-Provide accessible contrast, keyboard navigation, visible focus states, reduced-motion support, and touch targets of at least 44px.
-
-## 3. Routes and demo access
-
-Create these routes:
-
-- `/`: Public voting home.
-- `/contestant/:code`: Shareable contestant profile.
-- `/results`: Published winners or results-pending screen.
-- `/judge`: Judge workspace.
-- `/admin`: Organiser dashboard.
-- `/demo`: Demo launcher.
-
-The demo launcher should let reviewers enter the public view, Judge 1, Judge 2, Judge 3, or admin.
-
-Role switching is demo simulation, not real authentication or security. Show a discreet persistent “Demo preview” notice. Use fictional data only.
-
-Build frontend-first using React, TypeScript, Tailwind CSS, reusable components, and local persistence. Do not provision a backend, enable paid services, or implement real authentication in this first version.
-
-## 4. Public voting experience
-
-The public home page should contain:
-
-- Compact branded header.
-- “Talent for Christ” theme and finale date.
-- Clear voting-status indicator.
-- A short headline such as “16 finalists. One unforgettable finale.”
-- A prominent search box accepting a contestant name or code.
-- All 16 contestant cards in performance order.
-
-Each contestant card shows:
-
-- Photo or polished monogram placeholder.
-- Contestant or group name.
-- District.
-- A prominent unique six-character uppercase alphanumeric code.
-- Clear view/vote action.
-
-Performance type may appear as a small descriptive label, but do not create category tabs or separate leaderboards.
-
-Generate codes containing letters and numbers, such as **SB7K2M**. Avoid easily confused characters such as I, L, O, 0, and 1. Search should ignore case and surrounding spaces.
-
-A contestant code identifies the contestant. It does not identify or authenticate a voter.
-
-The contestant profile page should show the contestant’s identity, biography, district, performance title, code, and voting action. Include working copy-code and copy-link buttons, plus a working QR code linking to the actual profile URL.
-
-Opening a link or scanning a QR code must never automatically cast a vote.
-
-Voting flow:
-
-1. Select a contestant.
-2. Show a confirmation dialog containing their name, district, and code.
-3. Explain that each voter gets one final vote across the entire competition.
-4. Record the vote only after explicit confirmation.
-5. Show a success state identifying the selected contestant.
-6. Prevent another vote in this browser’s demo state, including after refresh or visiting another contestant.
-
-Support these states:
-
-- Voting not open yet.
-- Voting open.
-- Voting closed.
-- Already voted.
-
-Use one common voting window, intended to open after all 16 performances and close when the organiser decides.
-
-Do not show public vote counts, popularity ordering, provisional scores, or live rankings.
-
-State honestly that browser-based duplicate-vote prevention is only a demo simulation. Do not collect real phone numbers or pretend to perform real OTP verification.
-
-## 5. Scoring model
-
-Use this proposed revised scoring model for the demo:
-
-- Four main judging criteria worth 20 points each: 80 points.
-- Judge-assessed audience engagement/connection/impact: 15 points.
-- Public voting contribution: up to 5 points.
-- Overall maximum before time deductions: 100 points.
-
-Each judge therefore submits a raw subtotal **out of 95**.
-
-Important context: the original competition document gives all five criteria 20 points each and excludes public voting. This demo revises the audience-impact component to 15 judge-assessed points plus 5 public-voting points.
-
-Do not calculate this as 95% of the original judge score. Change the audience-impact criterion itself from 20 to 15.
-
-Use the following exact scorecard templates.
-
-### Music
-
-- Vocal Quality & Pitch Control: 20.
-- Creativity/Originality in Rendition: 20.
-- Stage Presence & Confidence: 20.
-- Spiritual Depth: 20.
-- Audience Engagement & Impact: 15.
-
-### Dance
-
-- Choreography & Creativity: 20.
-- Synchronization/Coordination: 20.
-- Stage Presence & Energy: 20.
-- Spiritual Alignment: 20.
-- Audience Engagement & Impact: 15.
-
-### Spoken Word/Poetry
-
-- Content Depth & Scriptural Relevance: 20.
-- Delivery: 20.
-- Creativity/Originality of Composition: 20.
-- Stage Presence & Confidence: 20.
-- Audience Connection & Impact: 15.
-
-### Mono-Drama
-
-- Storyline: 20.
-- Acting Skills: 20.
-- Spiritual Message & Alignment: 20.
-- Stage Use/Props/Costume: 20.
-- Audience Connection & Impact: 15.
-
-### Visual Arts
-
-- Creativity & Originality of Concept: 20.
-- Technical Skill & Execution: 20.
-- Message/Interpretation: 20.
-- Presentation: 20.
-- Audience Appeal/Impact: 15.
-
-Include brief, useful guidance beside each criterion, adapted to the discipline. Audience impact means meaningful communication and connection, rather than applause volume alone.
-
-Calculate the public-voting contribution as:
-
-`audiencePoints = 5 × contestantValidVotes / highestEligibleVoteCount`
-
-If no votes have been recorded, audiencePoints must be zero for everyone.
-
-Examples:
-
-- Highest contestant vote count of 400: that contestant receives 5 points.
-- A contestant with 200 votes receives 2.5 points.
-- A contestant with 100 votes receives 1.25 points.
-- Zero votes receives zero points.
-- Contestants tied for the highest vote count each receive 5 points.
-
-For contestants with three valid submitted scorecards:
-
-`judgeAverage = (judge1Subtotal + judge2Subtotal + judge3Subtotal) / 3`
-
-`finalScore = max(0, judgeAverage + audiencePoints - timePenalty)`
-
-Apply the time penalty exactly once.
-
-Keep full precision for calculations and ranking. Display totals to two decimal places.
-
-Missing scorecards must remain incomplete. Do not treat them as zero or silently average fewer than three judges.
-
-All results remain provisional until voting closes and the organiser verifies and locks the results.
-
-## 6. Judge workspace
-
-Create a calm interface suitable for a tablet during a live event.
-
-Show:
-
-- Selected demo judge.
-- Progress such as “5 of 16 submitted”.
-- Contestants in performance order.
-- Not started, Draft, and Submitted states.
-
-Selecting a contestant automatically loads their assigned scorecard.
-
-The scorecard should display:
-
-- Contestant identity and performance title.
-- Five rubric rows with maximum points.
-- Short judging guidance.
-- Numeric score inputs.
-- Optional notes.
-- Live subtotal out of 95.
-
-Accept whole numbers from zero to the maximum for each criterion. Leave unscored fields blank. Reject missing, fractional, negative, and excessive scores.
-
-Autosave drafts locally with an honest saved indicator. Require a review and confirmation step before final submission.
-
-Submitted scorecards become read-only. An organiser must explicitly reopen a scorecard and record a reason before it can be edited.
-
-Judges must see only their own scorecards. Their workspace must not expose audience counts, audience points, other judges’ scores, or rankings.
-
-Include a conflict-of-interest declaration. Declared conflicts require organiser resolution and must not silently count as valid submitted scorecards. Unresolved conflicts block finalisation.
-
-## 7. Organiser dashboard
-
-Create compact navigation for Overview, Contestants, Scoring, and Results.
-
-Useful summary cards include:
-
-- Demo votes received.
-- Submitted scorecards out of 48.
-- Voting status.
-- Verification progress.
-
-Provide working controls to:
-
-- Edit contestant names, profile details, district, performance title, performance order, and assigned rubric.
-- Copy contestant codes and share links.
-- Open and close voting.
-- Inspect vote totals and audience points.
-- Review judge submission progress.
-- Reopen submitted scorecards with a required reason.
-- Enter actual performance durations.
-- Verify time deductions.
-- Review the master results table.
-- Verify, lock, export, and publish results.
-
-Keep contestant codes stable. Prevent changing a contestant’s rubric after scores have been entered, rather than silently reinterpreting existing scores.
-
-The master results table should show:
-
-- Contestant and district.
-- Performance type.
-- Three individual judge subtotals out of 95.
-- Judge average.
-- Valid vote count.
-- Audience points out of 5.
-- Time deduction.
-- Combined score out of 100.
-- Completion and verification status.
-- Rank.
-
-Use readable cards on narrow screens.
-
-### Time limits and deductions
-
-Allowed durations:
-
-- Music: 240 seconds.
-- Dance: 240 seconds.
-- Spoken Word/Poetry: 240 seconds.
-- Mono-Drama: 300 seconds.
-- Visual Arts: 600 seconds.
-
-For Music, Dance, Spoken Word/Poetry, and Mono-Drama, deduct 2 points for each completed 15-second period beyond the limit.
-
-For Visual Arts, deduct 2 points for each completed 60-second period beyond the limit.
-
-Formula:
-
-`timePenalty = 2 × floor(max(0, actualSeconds - allowedSeconds) / penaltyIntervalSeconds)`
-
-Partial intervals do not attract another deduction.
-
-### Tie-break rules
-
-For equal final scores, compare the three judges’ averaged relevant criterion scores in this order:
-
-1. Spiritual criterion.
-2. Technical/performance criterion.
-3. Creativity/originality criterion.
-4. If still tied, flag “Judges’ review required”.
-
-Map those criteria as follows:
-
-- Music: Spiritual Depth; Vocal Quality & Pitch Control; Creativity/Originality in Rendition.
-- Dance: Spiritual Alignment; Synchronization/Coordination; Choreography & Creativity.
-- Spoken Word/Poetry: Content Depth & Scriptural Relevance; Delivery; Creativity/Originality of Composition.
-- Mono-Drama: Spiritual Message & Alignment; Acting Skills; Storyline.
-- Visual Arts: Message/Interpretation; Technical Skill & Execution; Creativity & Originality of Concept.
-
-Do not resolve remaining ties randomly, alphabetically, by district, or with extra audience-vote comparisons.
-
-### Verification and publication
-
-Before results can be locked, require:
-
-- Voting closed.
-- Three valid submitted scorecards per contestant.
-- All performance durations verified.
-- No unresolved conflicts or ties.
-- Explicit score-desk confirmation.
-
-Record a small demo activity history for voting-status changes, reopened scorecards, verification, locking, and publication.
-
-Locking creates a frozen results snapshot. Publication must be a separate deliberate action.
-
-The public results page should display only the top three contestants’ names, profile placeholders, districts, and placements.
-
-Keep judges’ scores, notes, vote totals, and numeric final scores internal.
-
-Before publication, show “Results are awaiting official announcement”.
-
-Provide a working CSV export of internal results and a print-friendly results view. Exporting must not publish results.
-
-## 8. Functional demo behaviour
-
-Seed all 16 fictional contestants, a mix of performance types, simulated vote counts, and a mixture of draft, submitted, and incomplete scorecards.
-
-Use Judge 1, Judge 2, and Judge 3 as sample labels. Do not imply real officials have submitted scores.
-
-Include an admin-only demo control to load complete sample scores so reviewers can demonstrate verification and publication without manually entering 48 scorecards.
-
-Clearly label generated votes and scores as simulated. Include a reset-demo action requiring confirmation.
-
-Use one shared local demo data store with a replaceable data-access layer. Keep the interface synchronised within a tab and between tabs using the same browser storage.
-
-Local browser storage is not a shared multi-user database.
-
-Implement real demo interactions, including navigation, search, vote confirmation, duplicate-vote state, score validation, draft persistence, submission, admin controls, calculations, CSV export, and results publication.
-
-Do not show success messages for actions that do nothing.
-
-Include clear invalid-code, empty-search, incomplete-score, closed-voting, and results-pending states.
-
-## 9. Implementation and handoff
-
-Build in connected stages:
-
-1. Design system and public voting experience.
-2. Reusable rubric templates and judge workspace.
-3. Organiser dashboard, calculations, and results.
-
-Deliver all three connected experiences.
-
-Keep rubric configuration, scoring calculations, demo data, data access, and UI components separate.
-
-Verify these behaviours:
-
-- Each performance type loads the correct rubric and time limit.
-- Maximum judge inputs total 95.
-- Maximum judge average plus maximum audience points totals 100.
-- Votes of 400, 200, and zero produce 5, 2.5, and zero points when 400 is the highest count.
-- Zero total votes does not cause division by zero.
-- A four-minute performance lasting 254 seconds incurs zero deduction; 255 seconds incurs 2 points; 270 seconds incurs 4 points.
-- Visual Arts lasting 659 seconds incurs zero deduction; 660 seconds incurs 2 points.
-- Missing scorecards do not become zeros or final rankings.
-- Judges cannot see other judges’ scores or audience totals in their workspace.
-- Voting is blocked before opening, after closure, and after this demo browser has voted.
-- Results cannot be published before verification and locking.
-- Later demo activity cannot mutate the locked results snapshot.
-- Layouts work on mobile, tablet, and desktop.
-
-Add a short README covering how to run the project, demo routes, scoring rules, and where calculations are implemented.
-
-Document the work required before live use:
-
-- Real staff authentication.
-- Server-enforced access permissions.
-- Shared database.
-- Verified-voter or single-use attendee-pass policy.
-- Atomic duplicate-vote protection.
-- Server-enforced voting windows.
-- Server-calculated results.
-- Protected audit history.
-- Backups and rehearsal under expected event traffic.
-
-The goal is a beautiful, understandable, functional demo whose complete voting and scoring journey can be reviewed before connecting a production backend.
-
-This project was built with [Lovable](https://lovable.dev).
-
-**Live app**: https://shabach.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/3a36e1e0-5b76-4188-8966-59d7b3d3e84e).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+# SHABACH 2026 — Competition & Collation Platform
+
+**SHABACH 2026** is the official competition and collation platform for the Grand Finale of the Youth Alive Fellowship (YAF) talent competition (Living Faith Church, Lagos State).
+
+- **Theme**: Talent for Christ
+- **Grand Finale**: Saturday, 14 November 2026
+- **Timezone**: `Africa/Lagos` (WAT / UTC+1)
+- **Scope**: 16 Grand Finale Finalists representing 8 ecclesiastical districts competing in **one overall ranking** across 5 disciplines (Music, Dance, Spoken Word/Poetry, Mono-Drama, and Visual Arts).
+
+---
+
+## 1. System Architecture
+
+The platform connects three core user experiences built on a unified, type-safe foundation:
+
+1. **Public Audience Experience (`/`, `/contestants/$code`, `/results`)**:
+   - Mobile-first, responsive showcase of all 16 finalists in performance order.
+   - Case-insensitive search across names, codes, districts, and performance titles.
+   - One-final-vote confirmation gate with debounce and replay protection.
+   - QR code generation and shareable profile links (`/contestants/$code`).
+   - Exclusive top-three winners showcase on public `/results` (protecting private scores, judge notes, and audience vote tallies from unreleased publication).
+
+2. **Judge Workspace (`/judges` & `/judge`)**:
+   - Role switcher for Judge 1, Judge 2, and Judge 3.
+   - Discipline-specific rubrics loaded dynamically per contestant.
+   - Numeric score validation (0 to criterion maximum, whole numbers only, raw subtotal out of 95).
+   - Draft autosave with visual indicators.
+   - Formal submission review modal with lock-after-submit semantics.
+   - Blind judging isolation (judges cannot view other judges' marks or audience vote tallies).
+   - Conflict-of-interest declarations with mandatory organiser determination.
+
+3. **Organiser & Score Desk Dashboard (`/organiser` & `/admin`)**:
+   - **Overview**: Real-time stats, voting window controls (`not_open`, `open`, `closed`), and audit activity log.
+   - **Contestants**: Profile editing, share code management, and guarded rubric category changes.
+   - **Scoring**: 48-scorecard progress matrix, scorecard reopening with mandatory recorded reason, conflict resolution, and stopwatch duration entry & verification.
+   - **Results & Collation**: Master collation table with 6 verification gates, collective judges' tie resolution desk, idempotent locking to frozen snapshots, idempotent publication, CSV export, and print view.
+
+4. **Interactive Demo Launcher (`/demo`)**:
+   - Role cards to evaluate the platform as Public, Judge 1, Judge 2, Judge 3, or Organiser.
+   - Fast-track sample score generation (48 unique submitted scorecards and verified durations).
+   - Sandboxed browser storage isolation with clean reset modal.
+
+---
+
+## 2. Competition Scoring Rules & Engine
+
+All 16 finalists compete in **one overall ranking** across all performance types.
+
+### The Scoring Formula
+$$\text{Judge Average} = \frac{\text{Judge}_1 + \text{Judge}_2 + \text{Judge}_3}{3}$$
+
+$$\text{Audience Points} = \begin{cases} 
+5 \times \frac{\text{Contestant Valid Votes}}{\text{Highest Eligible Vote Count}}, & \text{if Highest Eligible Vote Count} > 0 \\
+0, & \text{otherwise}
+\end{cases}$$
+
+$$\text{Final Score} = \max(0, \text{Judge Average} + \text{Audience Points} - \text{Time Penalty})$$
+
+- Maximum Judge Raw Subtotal: **95 points** (4 criteria @ 20 pts + 1 audience connection criterion @ 15 pts).
+- Maximum Combined Score: **100 points** (95 judge average + 5 audience points).
+- Maximum Precision: Floating-point precision preserved internally; formatted to 2 decimal places for display.
+
+### Performance Time Limits & Penalty Deductions
+- **Music, Dance, Spoken Word/Poetry**: 240 seconds (4 minutes). Deduct 2 points per completed 15-second overtime period.
+- **Mono-Drama**: 300 seconds (5 minutes). Deduct 2 points per completed 15-second overtime period.
+- **Visual Arts**: 600 seconds (10 minutes). Deduct 2 points per completed 60-second overtime period.
+- *Rule*: Partial overtime intervals do not incur additional penalties. The time penalty is deducted exactly once from the final score.
+
+### Deterministic Cross-Discipline Tie-Break Ladder
+When two contestants tie on `finalScore`, their average scores on core criteria are compared across disciplines:
+1. **Spiritual Criterion**:
+   - Music: *Spiritual Depth & Biblical Fidelity*
+   - Dance: *Thematic Clarity & Spiritual Message*
+   - Spoken Word: *Theological Substance & Scriptural Depth*
+   - Mono-Drama: *Biblical Truth & Narrative Substance*
+   - Visual Arts: *Sacred Symbolism & Divine Reflection*
+2. **Technical / Performance Criterion**:
+   - Music: *Vocal Technique & Pitch Accuracy*
+   - Dance: *Technical Execution & Sync*
+   - Spoken Word: *Enunciation, Voice & Pacing*
+   - Mono-Drama: *Characterization & Voice Acting*
+   - Visual Arts: *Medium Mastery & Composition*
+3. **Creativity / Originality Criterion**:
+   - Music: *Artistic Originality & Arrangement*
+   - Dance: *Choreographic Originality*
+   - Spoken Word: *Poetic Craft & Metaphorical Ingenuity*
+   - Mono-Drama: *Script Structure & Dramatic Pacing*
+   - Visual Arts: *Originality of Concept*
+4. **Collective Judges' Decision**:
+   - If still tied after the 3 criteria, the score desk records the collective judges' reviewed winner and rationale. Resolved ties are assigned distinct sequential ranks (e.g. 1st and 2nd).
+
+---
+
+## 3. Local Development & Testing
+
+The project uses [Bun](https://bun.sh) (or Node 20+) with Vite and TanStack Start.
+
+### Prerequisites
+- Node.js 20+ or Bun 1.2+
+- Git
+
+### Installation
+```bash
+# Clone the repository
+git clone https://github.com/cornelabs/shabach.git
+cd shabach
+
+# Install dependencies
+bun install
+# or: npm install
 ```
+
+### Development Server
+```bash
+bun dev
+# or: npm run dev
+```
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+### Running Test Suites
+```bash
+# Run all Vitest unit and regression tests
+bun test
+# or: npm test
+
+# Type checking
+bun x tsc --noEmit
+# or: npx tsc --noEmit
+
+# Linting & Formatting
+bun run lint
+bun run format
+```
+
+---
+
+## 4. Backend Setup (Supabase / PostgreSQL)
+
+The platform includes a typed data access layer (`src/lib/db/adapter.ts`) that operates seamlessly in both **Demo Mode** (in-browser sandbox) and **Live Mode** (Supabase Postgres with Row Level Security).
+
+### Database Migrations
+Migrations are located in `supabase/migrations/`:
+1. `20261029000001_shabach_schema.sql`: Core schema (events, event_settings, contestants, staff_roles, rubric_versions, scorecards, durations, verified_voters, votes, results_snapshots, audit_events) and atomic RPC functions.
+2. `20261029000002_rls_policies.sql`: Row Level Security policies enforcing blind judging, voter isolation, and organiser privileges.
+3. `20261029000003_seed_data.sql`: Canonical SHABACH 2026 event, 5 rubric definitions, 16 finalists across the 8 districts, and initial staff roles.
+
+### Applying Migrations Locally
+```bash
+# Start local Supabase container (optional)
+npx supabase start
+
+# Apply migrations
+npx supabase db reset
+```
+
+### Environment Variables
+Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+```
+Configure your credentials:
+```env
+# Set to 'live' to connect to Supabase; leave 'demo' for local sandbox
+VITE_APP_MODE=demo
+
+# Supabase Credentials (when VITE_APP_MODE=live)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-public-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Voter OTP Verification Dispatcher ('mock' in dev, or 'resend')
+VOTER_EMAIL_PROVIDER=mock
+RESEND_API_KEY=
+```
+
+---
+
+## 5. Staff Bootstrapping & Live Roles
+
+In live deployment, user accounts are authenticated via Supabase Auth:
+- **Organiser / Score Desk**: Staff members with `role_type IN ('organiser', 'score_desk')` in `staff_roles`. Organisers have full authority to open/close voting, resolve conflicts, reopen scorecards, verify durations, lock snapshots, and publish results.
+- **Judges 1, 2, 3**: Staff members with `role_type IN ('judge_1', 'judge_2', 'judge_3')`. Row Level Security ensures judges can only view and mutate their own assigned scorecard.
+
+*Security Notice*: Ordinary public sign-up is strictly forbidden from granting judge or organiser capabilities. Staff accounts must be provisioned by the Lead Organiser or via the service role migration.
+
+---
+
+## 6. Event Day Rehearsal & Contingency Runbook
+
+### Pre-Event Checklist (T-2 Hours)
+- [ ] Verify score desk connectivity and active staff accounts for Judge 1, Judge 2, and Judge 3.
+- [ ] Confirm all 16 contestant details, running order, and assigned performance rubrics.
+- [ ] Confirm the voting window status is set to `not_open`.
+- [ ] Verify stopwatch devices and assign the official timekeeper.
+
+### Live Event Execution Phase
+1. **Performances 1 through 16**:
+   - Judges score each presentation in real time.
+   - Timekeeper records the duration in seconds on the official sheet.
+   - Score desk enters durations in the `/organiser` Scoring tab and verifies them against the official timekeeper sheet.
+2. **Voting Window**:
+   - Once all 16 performances conclude, the Lead Organiser opens voting via the Overview tab.
+   - Audience scans contestant QR codes or navigates to `/` and casts their single verified vote.
+   - Once the voting window concludes, the Lead Organiser closes voting (`closed`).
+3. **Collation & Verification Gates**:
+   - Score desk inspects the 6 mandatory gates in `/organiser`:
+     1. Voting window is closed.
+     2. All 48 scorecards are submitted and valid (no open drafts or unresolved conflicts).
+     3. All 16 performance durations are verified.
+     4. No unresolved conflicts remain.
+     5. No unresolved ties remain (use the tie resolution desk if collective judges' determination is needed).
+     6. Score desk collation confirmation is checked.
+4. **Locking & Publication**:
+   - Click **Verify & Lock Results** to freeze the immutable snapshot.
+   - Export official CSV backup and generate the print collation sheet.
+   - Click **Publish Official Winners** to make the top-three showcase live at `/results`.
+
+### Contingency Procedures
+- **Score Reopening**: If a judge makes a clerical error, the organiser reopens the specific card with a mandatory recorded reason. The card returns to draft mode for the judge to amend and resubmit.
+- **Judge Conflict**: If a judge declares a conflict of interest, the organiser reviews the declaration and records an official determination note.
+- **Offline Fallback**: In the event of venue network disruption, the platform continues to run locally via in-browser storage (`DemoDataAdapter`). The score desk can collate and generate the official CSV and print summary directly from the local machine.
+
+---
+
+## 7. Project Specification Archive
+
+The original design and feature specification has been archived in [`docs/product-specification.md`](docs/product-specification.md).
+
+---
+
+## 8. Development & Contribution Policies
+
+<!-- LOVABLE:BEGIN -->
+> [!IMPORTANT]
+> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting published git history — force pushing, or rebasing/amending/squashing commits that are already pushed — as it rewrites history on Lovable's side and the user will likely lose their project history.
+>
+> Commits pushed to the connected branch sync back to Lovable and show up in the editor, so keep the branch in a working state.
+<!-- LOVABLE:END -->
