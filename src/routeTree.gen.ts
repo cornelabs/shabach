@@ -15,6 +15,9 @@ import { Route as DemoRouteImport } from './routes/demo'
 import { Route as JudgeRouteImport } from './routes/judge'
 import { Route as JudgesRouteImport } from './routes/judges'
 import { Route as OrganiserRouteImport } from './routes/organiser'
+import { Route as OrganisersRouteImport } from './routes/organisers'
+import { Route as OrganizerRouteImport } from './routes/organizer'
+import { Route as OrganizersRouteImport } from './routes/organizers'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as ContestantsCodeRouteImport } from './routes/contestants.$code'
 
@@ -48,6 +51,21 @@ const OrganiserRoute = OrganiserRouteImport.update({
   path: '/organiser',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrganisersRoute = OrganisersRouteImport.update({
+  id: '/organisers',
+  path: '/organisers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizerRoute = OrganizerRouteImport.update({
+  id: '/organizer',
+  path: '/organizer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizersRoute = OrganizersRouteImport.update({
+  id: '/organizers',
+  path: '/organizers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResultsRoute = ResultsRouteImport.update({
   id: '/results',
   path: '/results',
@@ -66,6 +84,9 @@ export interface FileRoutesByFullPath {
   '/judge': typeof JudgeRoute
   '/judges': typeof JudgesRoute
   '/organiser': typeof OrganiserRoute
+  '/organisers': typeof OrganisersRoute
+  '/organizer': typeof OrganizerRoute
+  '/organizers': typeof OrganizersRoute
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
 }
@@ -76,6 +97,9 @@ export interface FileRoutesByTo {
   '/judge': typeof JudgeRoute
   '/judges': typeof JudgesRoute
   '/organiser': typeof OrganiserRoute
+  '/organisers': typeof OrganisersRoute
+  '/organizer': typeof OrganizerRoute
+  '/organizers': typeof OrganizersRoute
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
 }
@@ -87,6 +111,9 @@ export interface FileRoutesById {
   '/judge': typeof JudgeRoute
   '/judges': typeof JudgesRoute
   '/organiser': typeof OrganiserRoute
+  '/organisers': typeof OrganisersRoute
+  '/organizer': typeof OrganizerRoute
+  '/organizers': typeof OrganizersRoute
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
 }
@@ -99,6 +126,9 @@ export interface FileRouteTypes {
     | '/judge'
     | '/judges'
     | '/organiser'
+    | '/organisers'
+    | '/organizer'
+    | '/organizers'
     | '/results'
     | '/contestants/$code'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +139,9 @@ export interface FileRouteTypes {
     | '/judge'
     | '/judges'
     | '/organiser'
+    | '/organisers'
+    | '/organizer'
+    | '/organizers'
     | '/results'
     | '/contestants/$code'
   id:
@@ -119,6 +152,9 @@ export interface FileRouteTypes {
     | '/judge'
     | '/judges'
     | '/organiser'
+    | '/organisers'
+    | '/organizer'
+    | '/organizers'
     | '/results'
     | '/contestants/$code'
   fileRoutesById: FileRoutesById
@@ -130,6 +166,9 @@ export interface RootRouteChildren {
   JudgeRoute: typeof JudgeRoute
   JudgesRoute: typeof JudgesRoute
   OrganiserRoute: typeof OrganiserRoute
+  OrganisersRoute: typeof OrganisersRoute
+  OrganizerRoute: typeof OrganizerRoute
+  OrganizersRoute: typeof OrganizersRoute
   ResultsRoute: typeof ResultsRoute
   ContestantsCodeRoute: typeof ContestantsCodeRoute
 }
@@ -178,6 +217,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganiserRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/organisers': {
+      id: '/organisers'
+      path: '/organisers'
+      fullPath: '/organisers'
+      preLoaderRoute: typeof OrganisersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organizer': {
+      id: '/organizer'
+      path: '/organizer'
+      fullPath: '/organizer'
+      preLoaderRoute: typeof OrganizerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organizers': {
+      id: '/organizers'
+      path: '/organizers'
+      fullPath: '/organizers'
+      preLoaderRoute: typeof OrganizersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/results': {
       id: '/results'
       path: '/results'
@@ -202,6 +262,9 @@ const rootRouteChildren: RootRouteChildren = {
   JudgeRoute: JudgeRoute,
   JudgesRoute: JudgesRoute,
   OrganiserRoute: OrganiserRoute,
+  OrganisersRoute: OrganisersRoute,
+  OrganizerRoute: OrganizerRoute,
+  OrganizersRoute: OrganizersRoute,
   ResultsRoute: ResultsRoute,
   ContestantsCodeRoute: ContestantsCodeRoute,
 }
