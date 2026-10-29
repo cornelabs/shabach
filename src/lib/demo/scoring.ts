@@ -94,7 +94,10 @@ export interface VotesLike {
 export function voteCounts(state: VotesLike, contestants: Contestant[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const c of contestants) counts[c.id] = state.demoVotes[c.id] ?? 0;
-  if (state.browserVote) counts[state.browserVote.contestantId] += 1;
+  if (state.browserVote) {
+    counts[state.browserVote.contestantId] =
+      (counts[state.browserVote.contestantId] ?? 0) + 1;
+  }
   return counts;
 }
 
