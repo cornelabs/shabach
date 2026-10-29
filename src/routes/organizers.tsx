@@ -5,3 +5,4 @@ export const Route = createFileRoute("/organizers")({
     throw redirect({ to: "/organiser" });
   },
 });
+
