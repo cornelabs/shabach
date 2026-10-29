@@ -31,4 +31,3 @@ function DemoPage() {
     </div>
   );
 }
-

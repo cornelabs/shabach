@@ -3,12 +3,7 @@
  * Everything here is plain data — no browser or server APIs.
  */
 
-export type PerformanceType =
-  | "music"
-  | "dance"
-  | "spoken_word"
-  | "mono_drama"
-  | "visual_arts";
+export type PerformanceType = "music" | "dance" | "spoken_word" | "mono_drama" | "visual_arts";
 
 export const PERFORMANCE_TYPES: PerformanceType[] = [
   "music",

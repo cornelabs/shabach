@@ -30,4 +30,3 @@ function JudgesPage() {
     </div>
   );
 }
-
