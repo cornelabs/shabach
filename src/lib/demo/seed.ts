@@ -249,7 +249,6 @@ export function buildScorecards(contestants: Contestant[]): Scorecard[] {
     }),
   );
 
-  void idx;
   return cards;
 }
 

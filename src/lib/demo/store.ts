@@ -13,6 +13,7 @@ import type {
   DemoState,
   DurationEntry,
   JudgeId,
+  PerformanceType,
   Scorecard,
   VotingStatus,
 } from "./types";
@@ -310,7 +311,7 @@ export interface ContestantEdit {
   title?: string;
   bio?: string;
   order?: number;
-  type?: string;
+  type?: PerformanceType;
 }
 
 export function updateContestant(id: string, edit: ContestantEdit) {
@@ -530,7 +531,10 @@ export function checkLockReadiness(): LockCheck {
 export function voteCountsOf(s: DemoState): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const c of s.contestants) counts[c.id] = s.demoVotes[c.id] ?? 0;
-  if (s.browserVote) counts[s.browserVote.contestantId] += 1;
+  if (s.browserVote) {
+    counts[s.browserVote.contestantId] =
+      (counts[s.browserVote.contestantId] ?? 0) + 1;
+  }
   return counts;
 }
 

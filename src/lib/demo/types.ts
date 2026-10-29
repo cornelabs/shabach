@@ -55,8 +55,8 @@ export interface Scorecard {
   /** Set by the organiser after reviewing a declared conflict. */
   conflictResolved: boolean;
   reopened: boolean;
-  reopenReason?: string;
-  updatedAt?: string;
+  reopenReason?: string | undefined;
+  updatedAt?: string | undefined;
 }
 
 export type VotingStatus = "not_open" | "open" | "closed";
