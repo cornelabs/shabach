@@ -3,12 +3,7 @@
  * Everything here is plain data — no browser or server APIs.
  */
 
-export type PerformanceType =
-  | "music"
-  | "dance"
-  | "spoken_word"
-  | "mono_drama"
-  | "visual_arts";
+export type PerformanceType = "music" | "dance" | "spoken_word" | "mono_drama" | "visual_arts";
 
 export const PERFORMANCE_TYPES: PerformanceType[] = [
   "music",
@@ -111,6 +106,13 @@ export interface ResultsSnapshot {
   rows: ResultRow[];
 }
 
+export interface TieResolution {
+  contestantIds: [string, string];
+  winnerId: string;
+  reason: string;
+  recordedAt: string;
+}
+
 export interface DemoState {
   version: 1;
   contestants: Contestant[];
@@ -127,6 +129,7 @@ export interface DemoState {
   results: ResultsSnapshot | null;
   /** Which sample judge the judge workspace is signed in as. */
   activeJudge: JudgeId | null;
+  tieResolutions: TieResolution[];
 }
 
 export const DISTRICTS = [
