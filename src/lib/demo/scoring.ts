@@ -109,13 +109,10 @@ export interface VotesLike {
   browserVote: { contestantId: string } | null;
 }
 
-/** Valid vote count per contestant: simulated votes plus this browser's single vote. */
+/** Valid vote count per contestant from the authoritative ledger / demo votes map. */
 export function voteCounts(state: VotesLike, contestants: Contestant[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const c of contestants) counts[c.id] = state.demoVotes[c.id] ?? 0;
-  if (state.browserVote) {
-    counts[state.browserVote.contestantId] = (counts[state.browserVote.contestantId] ?? 0) + 1;
-  }
   return counts;
 }
 

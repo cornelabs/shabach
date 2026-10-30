@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS verified_voters (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     voter_token_hash TEXT NOT NULL,
-    verification_method TEXT NOT NULL CHECK (verification_method IN ('otp_phone', 'otp_email', 'device_fingerprint', 'demo_client')),
+    verification_method TEXT NOT NULL CHECK (verification_method IN ('otp_phone', 'otp_email', 'device_fingerprint', 'demo_client', 'audience_web')),
     verified_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     ip_hash TEXT,
     CONSTRAINT uq_voter_token UNIQUE (event_id, voter_token_hash)
@@ -371,8 +371,8 @@ BEGIN
     WHERE event_id = p_event_id AND voter_token_hash = p_voter_hash;
 
     IF v_voter_id IS NULL THEN
-        -- Allow web audience, demo client or verified token fallback
-        IF p_method IN ('demo_client', 'audience_web', 'otp_phone', 'otp_email') THEN
+        -- Allow web audience, device fingerprint, demo client or verified token fallback
+        IF p_method IN ('demo_client', 'device_fingerprint', 'audience_web', 'otp_phone', 'otp_email') THEN
             INSERT INTO verified_voters (event_id, voter_token_hash, verification_method)
             VALUES (p_event_id, p_voter_hash, p_method)
             ON CONFLICT (event_id, voter_token_hash) DO NOTHING;
