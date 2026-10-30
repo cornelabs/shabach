@@ -113,21 +113,14 @@ export function hydrateDemoStore() {
         const client = getSupabaseClient();
         if (!client) return;
 
-        // 1. Hydrate event status & voting status
+        // 1. Fetch event status & voting status
         const { data: eventData } = await client
           .from("events")
           .select("voting_status, lifecycle_status")
           .eq("id", DEFAULT_EVENT_ID)
           .maybeSingle();
 
-        if (eventData && eventData.voting_status) {
-          update((cur) => ({
-            ...cur,
-            votingStatus: eventData.voting_status as VotingStatus,
-          }));
-        }
-
-        // 2. Hydrate contestants
+        // 2. Fetch contestants
         const { data: contestantsData } = await client
           .from("contestants")
           .select("*")
@@ -201,16 +194,10 @@ export function hydrateDemoStore() {
           }
         }
 
-        update((cur) => ({
-          ...cur,
-          contestants: activeContestants,
-          scorecards: Array.from(liveCardsMap.values()),
-        }));
-
         // 4. Hydrate performance durations
         const { data: durationsData } = await client.from("durations").select("*");
+        const loadedDurations: Record<string, DurationEntry> = {};
         if (durationsData && durationsData.length > 0) {
-          const loadedDurations: Record<string, DurationEntry> = {};
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           for (const row of durationsData as any[]) {
             if (activeIds.has(row.contestant_id)) {
@@ -221,13 +208,32 @@ export function hydrateDemoStore() {
               };
             }
           }
-          update((cur) => ({
-            ...cur,
-            durations: { ...cur.durations, ...loadedDurations },
-          }));
         }
 
-        // 5. Hydrate official results snapshot if present
+        // 5. Hydrate live vote counts from database ledger
+        const { data: votesData } = await client.from("votes").select("contestant_id");
+
+        const liveVoteCounts: Record<string, number> = {};
+        for (const c of activeContestants) {
+          liveVoteCounts[c.id] = 0;
+        }
+        if (votesData && votesData.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          for (const v of votesData as any[]) {
+            if (activeIds.has(v.contestant_id)) {
+              liveVoteCounts[v.contestant_id] = (liveVoteCounts[v.contestant_id] ?? 0) + 1;
+            }
+          }
+        } else {
+          // Preserve local demo votes if they match active IDs
+          for (const c of activeContestants) {
+            if (state.demoVotes[c.id] !== undefined) {
+              liveVoteCounts[c.id] = state.demoVotes[c.id]!;
+            }
+          }
+        }
+
+        // 6. Hydrate official results snapshot if present
         const { data: snapshotData } = await client
           .from("results_snapshots")
           .select("*")
@@ -236,21 +242,41 @@ export function hydrateDemoStore() {
           .limit(1)
           .maybeSingle();
 
-        if (snapshotData) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const snapPayload: any = snapshotData.rows_data;
-          const rows = snapPayload?.rows ?? (Array.isArray(snapPayload) ? snapPayload : []);
-          update((cur) => ({
-            ...cur,
-            locked: true,
-            results: {
+        // 7. Atomic state update: completely replaces orphaned demo artifacts
+        update((cur) => {
+          // Prune durations to only active contestants
+          const prunedDurations: Record<string, DurationEntry> = {};
+          for (const [k, v] of Object.entries(cur.durations)) {
+            if (activeIds.has(k)) prunedDurations[k] = v;
+          }
+          for (const [k, v] of Object.entries(loadedDurations)) {
+            prunedDurations[k] = v;
+          }
+
+          let newResults = cur.results;
+
+          if (snapshotData) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const snapPayload: any = snapshotData.rows_data;
+            const rows = snapPayload?.rows ?? (Array.isArray(snapPayload) ? snapPayload : []);
+            newResults = {
               lockedAt: snapshotData.locked_at,
               published: Boolean(snapshotData.published),
               ...(snapshotData.published_at ? { publishedAt: snapshotData.published_at } : {}),
               rows,
-            },
-          }));
-        }
+            };
+          }
+
+          return {
+            ...cur,
+            votingStatus: (eventData?.voting_status as VotingStatus) ?? cur.votingStatus,
+            contestants: activeContestants,
+            scorecards: Array.from(liveCardsMap.values()),
+            durations: prunedDurations,
+            demoVotes: liveVoteCounts,
+            results: newResults,
+          };
+        });
       } catch (err) {
         console.warn("Supabase hydration background warning:", err);
       }

@@ -123,6 +123,12 @@ CREATE POLICY "Judge read own scorecards"
     TO authenticated
     USING (auth_is_assigned_judge(event_id, judge_id));
 
+-- Judges can insert their own assigned scorecards
+CREATE POLICY "Judge insert own scorecards"
+    ON scorecards FOR INSERT
+    TO authenticated
+    WITH CHECK (auth_is_assigned_judge(event_id, judge_id));
+
 -- Judges can update their own scorecard draft/submission
 CREATE POLICY "Judge update own scorecards"
     ON scorecards FOR UPDATE
@@ -130,12 +136,65 @@ CREATE POLICY "Judge update own scorecards"
     USING (auth_is_assigned_judge(event_id, judge_id))
     WITH CHECK (auth_is_assigned_judge(event_id, judge_id));
 
--- Organisers have full access to view and reopen/resolve all scorecards
+-- Organisers have full access to view, provision, reopen, and resolve all scorecards
 CREATE POLICY "Organiser manage all scorecards"
     ON scorecards FOR ALL
     TO authenticated
     USING (auth_is_organiser(event_id))
     WITH CHECK (auth_is_organiser(event_id));
+
+-- Server-side Trigger: Enforce Submission Locks & Organiser-Only Workflow
+CREATE OR REPLACE FUNCTION check_judge_scorecard_update()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_lifecycle TEXT;
+BEGIN
+    -- Organisers and score desk officers have full management rights
+    IF auth_is_organiser(NEW.event_id) THEN
+        RETURN NEW;
+    END IF;
+
+    -- Results cannot be modified once locked
+    SELECT lifecycle_status INTO v_lifecycle FROM events WHERE id = NEW.event_id;
+    IF v_lifecycle IN ('locked', 'published', 'archived') THEN
+        RAISE EXCEPTION 'Cannot modify scorecards: competition results are locked.';
+    END IF;
+
+    -- If scorecard was previously submitted, judge cannot edit unless reopened by organiser
+    IF OLD.status = 'submitted' AND NEW.status != 'submitted' THEN
+        RAISE EXCEPTION 'Cannot un-submit scorecard directly. An organiser must reopen it.';
+    END IF;
+
+    IF OLD.status = 'submitted' AND NOT OLD.reopened THEN
+        RAISE EXCEPTION 'Scorecard has been submitted and is locked for judging. Contact organiser to reopen.';
+    END IF;
+
+    -- Judges cannot resolve their own conflicts or unilaterally toggle reopen flags
+    IF NEW.conflict_resolved != OLD.conflict_resolved THEN
+        RAISE EXCEPTION 'Only organisers can resolve declared conflicts of interest.';
+    END IF;
+
+    IF NEW.reopened != OLD.reopened THEN
+        RAISE EXCEPTION 'Only organisers can reopen submitted scorecards.';
+    END IF;
+
+    -- Reset reopened flag when reopened card is resubmitted by judge
+    IF OLD.reopened AND NEW.status = 'submitted' THEN
+        NEW.reopened := false;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_scorecard_judge_lock ON scorecards;
+CREATE TRIGGER trg_scorecard_judge_lock
+    BEFORE UPDATE ON scorecards
+    FOR EACH ROW
+    EXECUTE FUNCTION check_judge_scorecard_update();
 
 -- -----------------------------------------------------------------------------
 -- 7. Durations Policies

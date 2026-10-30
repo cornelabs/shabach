@@ -175,5 +175,30 @@ BEGIN
     (v_event_id, 'score_desk', 'Collation Officer', 'desk@shabach.org', true)
     ON CONFLICT (event_id, role_type, email) DO NOTHING;
 
+    -- 6. Provision 64 Blank Scorecards (16 Finalists x 4 Judges)
+    INSERT INTO scorecards (
+        event_id,
+        contestant_id,
+        judge_id,
+        status,
+        criteria_scores,
+        subtotal,
+        notes
+    )
+    SELECT
+        c.event_id,
+        c.id,
+        j.judge_id,
+        'draft',
+        '[]'::jsonb,
+        0.00,
+        ''
+    FROM contestants c
+    CROSS JOIN (
+        VALUES ('judge1'), ('judge2'), ('judge3'), ('judge4')
+    ) AS j(judge_id)
+    WHERE c.event_id = v_event_id
+    ON CONFLICT (event_id, contestant_id, judge_id) DO NOTHING;
+
 END $$;
 
