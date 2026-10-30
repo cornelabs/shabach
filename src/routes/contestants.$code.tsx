@@ -1,29 +1,38 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, BadgeCheck, QrCode, Vote } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Check, Copy, QrCode, Share2, Vote } from "lucide-react";
 
 import { Monogram } from "@/components/monogram";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { VoteConfirmationDialog } from "@/components/vote-confirmation-dialog";
 import { useDemoState } from "@/hooks/use-demo";
-import { castVote } from "@/lib/demo/store";
+import { getState } from "@/lib/demo/store";
 import { typeLabel } from "@/lib/demo/labels";
 import { buildContestants } from "@/lib/demo/seed";
 import { rubricFor } from "@/lib/demo/rubrics";
 import { formatSeconds } from "@/lib/demo/labels";
+import type { Contestant } from "@/lib/demo/types";
+
+function getLiveContestantByCode(code: string): Contestant | undefined {
+  const current = getState().contestants;
+  return (current && current.length > 0 ? current : buildContestants()).find(
+    (c) => c.code.toUpperCase() === code.toUpperCase(),
+  );
+}
 
 export const Route = createFileRoute("/contestants/$code")({
   loader: ({ params }) => {
     const code = params.code.toUpperCase();
-    const contestant = buildContestants().find((c) => c.code === code);
+    const contestant = getLiveContestantByCode(code);
     if (!contestant) throw notFound();
     return { code };
   },
   head: ({ params }) => {
-    const contestant = buildContestants().find((c) => c.code === params.code.toUpperCase());
+    const contestant = getLiveContestantByCode(params.code.toUpperCase());
     return {
       meta: [
         {
@@ -68,69 +77,87 @@ function useQrDataUrl(url: string | null) {
   return dataUrl;
 }
 
-function VotePanel({ contestantId, name }: { contestantId: string; name: string }) {
+function VotePanel({ contestant }: { contestant: Contestant }) {
+  const [voteDialogOpen, setVoteDialogOpen] = useState(false);
   const state = useDemoState();
   const myVote = state.browserVote?.contestantId ?? null;
-  const votedForThis = myVote === contestantId;
-
-  function handleVote() {
-    const result = castVote(contestantId);
-    if (result.ok) {
-      toast.success(`Vote recorded for ${name} (demo)`, {
-        description: "One vote per person — thank you for voting.",
-      });
-    } else if (result.reason === "already_voted") {
-      toast.error("You've already voted in this browser", {
-        description: "One vote per person across the whole competition.",
-      });
-    } else if (result.reason === "not_open") {
-      toast.info("Voting hasn't opened yet.");
-    } else {
-      toast.info("Voting is closed.");
-    }
-  }
+  const votedForThis = myVote === contestant.id || myVote === contestant.code;
 
   return (
-    <div className="rounded-2xl border border-cream-line bg-card p-6 shadow-card">
-      <h2 className="font-display text-xl text-forest">Public vote</h2>
-      {state.votingStatus === "open" ? (
-        votedForThis ? (
-          <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-forest-soft">
-            <BadgeCheck className="h-5 w-5" />
-            Your vote for {name} is recorded (demo).
-          </p>
-        ) : myVote ? (
-          <p className="mt-3 text-sm text-charcoal-muted">
-            You've already voted for another contestant in this browser — one vote per person, and
-            it can't be changed.
-          </p>
-        ) : (
-          <>
-            <p className="mt-3 text-sm text-charcoal-muted">
-              One vote per person. Your vote is stored only in this demo browser.
+    <>
+      <div className="rounded-2xl border border-cream-line bg-card p-6 shadow-card">
+        <h2 className="font-display text-xl text-forest">Public vote</h2>
+        {state.votingStatus === "open" ? (
+          votedForThis ? (
+            <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-forest-soft">
+              <BadgeCheck className="h-5 w-5" />
+              Your vote for {contestant.name} is recorded.
             </p>
-            <Button className="mt-4 w-full" onClick={handleVote}>
-              <Vote className="h-4 w-4" /> Vote for {name}
-            </Button>
-          </>
-        )
-      ) : (
-        <p className="mt-3 text-sm text-charcoal-muted">
-          {state.votingStatus === "closed"
-            ? "Voting is closed. Follow the verified results on the results page."
-            : "Voting opens at the Grand Finale."}
-        </p>
-      )}
-    </div>
+          ) : myVote ? (
+            <p className="mt-3 text-sm text-charcoal-muted">
+              You've already voted for another contestant in this browser — one vote per person, and
+              it can't be changed.
+            </p>
+          ) : (
+            <>
+              <p className="mt-3 text-sm text-charcoal-muted">
+                One vote per person. Your vote contributes to the official audience score.
+              </p>
+              <Button
+                className="mt-4 w-full bg-forest text-ivory hover:bg-forest-deep"
+                onClick={() => setVoteDialogOpen(true)}
+              >
+                <Vote className="h-4 w-4 mr-2" /> Vote for {contestant.name}
+              </Button>
+            </>
+          )
+        ) : (
+          <p className="mt-3 text-sm text-charcoal-muted">
+            {state.votingStatus === "closed"
+              ? "Voting is closed. Follow the verified results on the results page."
+              : "Voting opens at the Grand Finale."}
+          </p>
+        )}
+      </div>
+
+      <VoteConfirmationDialog
+        contestant={contestant}
+        open={voteDialogOpen}
+        onOpenChange={setVoteDialogOpen}
+      />
+    </>
   );
 }
 
 function SharePanel({ code }: { code: string }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
   useEffect(() => {
     setUrl(window.location.href);
   }, []);
+
   const qr = useQrDataUrl(url);
+
+  function copyCode() {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      void navigator.clipboard.writeText(code);
+      setCopiedCode(true);
+      toast.success(`Copied code ${code} to clipboard`);
+      setTimeout(() => setCopiedCode(false), 2000);
+    }
+  }
+
+  function copyLink() {
+    if (typeof navigator !== "undefined" && navigator.clipboard && url) {
+      void navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      toast.success("Profile link copied to clipboard");
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  }
+
   return (
     <div className="rounded-2xl border border-cream-line bg-card p-6 shadow-card">
       <h2 className="flex items-center gap-2 font-display text-xl text-forest">
@@ -140,6 +167,26 @@ function SharePanel({ code }: { code: string }) {
         Share code <span className="font-mono font-semibold text-charcoal">{code}</span> — scan or
         send the link so others can read the profile and vote.
       </p>
+
+      <div className="mt-4 flex gap-2">
+        <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={copyCode}>
+          {copiedCode ? (
+            <Check className="mr-1 h-3.5 w-3.5 text-forest" />
+          ) : (
+            <Copy className="mr-1 h-3.5 w-3.5" />
+          )}
+          {copiedCode ? "Code Copied" : "Copy Code"}
+        </Button>
+        <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={copyLink}>
+          {copiedLink ? (
+            <Check className="mr-1 h-3.5 w-3.5 text-forest" />
+          ) : (
+            <Share2 className="mr-1 h-3.5 w-3.5" />
+          )}
+          {copiedLink ? "Link Copied" : "Copy Link"}
+        </Button>
+      </div>
+
       <div className="mt-4 flex items-center justify-center rounded-xl border border-cream-line bg-ivory p-3">
         {qr ? (
           <img
@@ -158,7 +205,7 @@ function SharePanel({ code }: { code: string }) {
 function ContestantProfile() {
   const { code } = Route.useParams();
   const state = useDemoState();
-  const contestant = state.contestants.find((c) => c.code === code.toUpperCase());
+  const contestant = state.contestants.find((c) => c.code.toUpperCase() === code.toUpperCase());
   if (!contestant) return null;
   const rubric = rubricFor(contestant.type);
 
@@ -221,7 +268,7 @@ function ContestantProfile() {
           </div>
 
           <div className="space-y-4">
-            <VotePanel contestantId={contestant.id} name={contestant.name} />
+            <VotePanel contestant={contestant} />
             <SharePanel code={contestant.code} />
           </div>
         </div>

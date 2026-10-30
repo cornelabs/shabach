@@ -1,10 +1,10 @@
+import * as React from "react";
 import { Link } from "@tanstack/react-router";
-import { toast } from "sonner";
 
 import { Monogram } from "@/components/monogram";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { castVote } from "@/lib/demo/store";
+import { VoteConfirmationDialog } from "@/components/vote-confirmation-dialog";
 import { typeLabel } from "@/lib/demo/labels";
 import type { Contestant, VotingStatus } from "@/lib/demo/types";
 
@@ -16,70 +16,60 @@ interface Props {
 }
 
 export function ContestantCard({ contestant, votingStatus, myVote }: Props) {
-  const votedForThis = myVote === contestant.id;
+  const [voteDialogOpen, setVoteDialogOpen] = React.useState(false);
+  const votedForThis = myVote === contestant.id || myVote === contestant.code;
   const votingDisabled = votingStatus !== "open" || myVote !== null;
 
-  function handleVote() {
-    const result = castVote(contestant.id);
-    if (result.ok) {
-      toast.success(`Vote recorded for ${contestant.name} (demo)`, {
-        description: "One vote per person — thank you for voting.",
-      });
-      return;
-    }
-    if (result.reason === "already_voted") {
-      toast.error("You've already voted in this browser", {
-        description: "One vote per person across the whole competition.",
-      });
-    } else if (result.reason === "not_open") {
-      toast.info("Voting hasn't opened yet.");
-    } else {
-      toast.info("Voting is closed.");
-    }
-  }
-
   return (
-    <div className="group flex flex-col rounded-2xl border border-cream-line bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
-      <Link
-        to="/contestants/$code"
-        params={{ code: contestant.code }}
-        className="flex items-start gap-3"
-      >
-        <Monogram name={contestant.name} hue={contestant.hue} size="md" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="truncate font-display text-lg text-forest">{contestant.name}</h3>
-            <span className="shrink-0 text-xs font-semibold text-charcoal-muted">
-              № {contestant.order}
-            </span>
-          </div>
-          <p className="truncate text-sm text-charcoal-muted">{contestant.title}</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <Badge variant="secondary" className="font-medium">
-              {typeLabel(contestant.type)}
-            </Badge>
-            <Badge variant="outline" className="font-medium">
-              {contestant.district}
-            </Badge>
-          </div>
-        </div>
-      </Link>
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-cream-line pt-3">
-        {votedForThis ? (
-          <span className="text-sm font-semibold text-forest-soft">✓ Your vote is here</span>
-        ) : (
-          <Button size="sm" disabled={votingDisabled} onClick={handleVote}>
-            Vote
-          </Button>
-        )}
+    <>
+      <div className="group flex flex-col rounded-2xl border border-cream-line bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
         <Link
           to="/contestants/$code"
           params={{ code: contestant.code }}
-          className="text-xs font-semibold text-charcoal-muted hover:text-forest"
+          className="flex items-start gap-3"
         >
-          Profile · {contestant.code}
+          <Monogram name={contestant.name} hue={contestant.hue} size="md" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="truncate font-display text-lg text-forest">{contestant.name}</h3>
+              <span className="shrink-0 text-xs font-semibold text-charcoal-muted">
+                № {contestant.order}
+              </span>
+            </div>
+            <p className="truncate text-sm text-charcoal-muted">{contestant.title}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Badge variant="secondary" className="font-medium">
+                {typeLabel(contestant.type)}
+              </Badge>
+              <Badge variant="outline" className="font-medium">
+                {contestant.district}
+              </Badge>
+            </div>
+          </div>
         </Link>
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-cream-line pt-3">
+          {votedForThis ? (
+            <span className="text-sm font-semibold text-forest-soft">✓ Your vote is here</span>
+          ) : (
+            <Button size="sm" disabled={votingDisabled} onClick={() => setVoteDialogOpen(true)}>
+              Vote
+            </Button>
+          )}
+          <Link
+            to="/contestants/$code"
+            params={{ code: contestant.code }}
+            className="text-xs font-semibold text-charcoal-muted hover:text-forest"
+          >
+            Profile · {contestant.code}
+          </Link>
+        </div>
       </div>
-    </div>
+
+      <VoteConfirmationDialog
+        contestant={contestant}
+        open={voteDialogOpen}
+        onOpenChange={setVoteDialogOpen}
+      />
+    </>
   );
 }

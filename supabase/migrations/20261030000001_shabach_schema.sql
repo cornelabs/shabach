@@ -343,7 +343,7 @@ CREATE OR REPLACE FUNCTION cast_audience_vote(
     p_event_id UUID,
     p_contestant_id UUID,
     p_voter_hash TEXT,
-    p_method TEXT DEFAULT 'otp_phone'
+    p_method TEXT DEFAULT 'audience_web'
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -371,8 +371,8 @@ BEGIN
     WHERE event_id = p_event_id AND voter_token_hash = p_voter_hash;
 
     IF v_voter_id IS NULL THEN
-        -- Allow demo client or verified token fallback
-        IF p_method = 'demo_client' THEN
+        -- Allow web audience, demo client or verified token fallback
+        IF p_method IN ('demo_client', 'audience_web', 'otp_phone', 'otp_email') THEN
             INSERT INTO verified_voters (event_id, voter_token_hash, verification_method)
             VALUES (p_event_id, p_voter_hash, p_method)
             ON CONFLICT (event_id, voter_token_hash) DO NOTHING;

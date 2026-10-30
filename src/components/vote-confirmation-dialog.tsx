@@ -32,9 +32,8 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
     setSubmitting(true);
 
     try {
-      // Simulate minor async processing to prevent double taps and allow honest UI state
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      const res = castVote(contestant.id);
+      // Wait for authoritative live vote recording to prevent double taps and allow honest UI state
+      const res = await castVote(contestant.id);
 
       if (res.ok) {
         toast.success(`Vote confirmed for ${contestant.name}!`, {

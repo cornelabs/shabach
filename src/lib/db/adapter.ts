@@ -333,12 +333,13 @@ export class LiveSupabaseAdapter implements IDataAdapter {
         p_event_id: DEFAULT_EVENT_ID,
         p_contestant_id: contestantId,
         p_voter_hash: voterId,
-        p_method: "demo_client",
+        p_method: "audience_web",
       });
 
       if (!error && data && typeof data === "object" && (data as { ok?: boolean }).ok) {
         // Also reflect locally
         new DemoDataAdapter().castVote(voterId, contestantId);
+        void refreshFromSupabase();
         const resVoteId = (data as { vote_id?: string }).vote_id;
         return {
           success: true,
