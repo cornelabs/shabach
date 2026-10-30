@@ -1,14 +1,9 @@
 /**
- * Shared domain types for the SHABACH 2026 demo.
+ * Shared domain types for the SHABACH 2026 platform.
  * Everything here is plain data — no browser or server APIs.
  */
 
-export type PerformanceType =
-  | "music"
-  | "dance"
-  | "spoken_word"
-  | "mono_drama"
-  | "visual_arts";
+export type PerformanceType = "music" | "dance" | "spoken_word" | "mono_drama" | "visual_arts";
 
 export const PERFORMANCE_TYPES: PerformanceType[] = [
   "music",
@@ -18,12 +13,13 @@ export const PERFORMANCE_TYPES: PerformanceType[] = [
   "visual_arts",
 ];
 
-export type JudgeId = "judge1" | "judge2" | "judge3";
+export type JudgeId = "judge1" | "judge2" | "judge3" | "judge4";
 
 export const JUDGES: { id: JudgeId; name: string; label: string }[] = [
   { id: "judge1", name: "Judge 1", label: "Sample judge (demo)" },
   { id: "judge2", name: "Judge 2", label: "Sample judge (demo)" },
   { id: "judge3", name: "Judge 3", label: "Sample judge (demo)" },
+  { id: "judge4", name: "Judge 4", label: "Sample judge (demo)" },
 ];
 
 export interface Contestant {
@@ -98,7 +94,7 @@ export interface ResultRow {
   audiencePoints: number;
   timePenalty: number;
   finalScore: number | null;
-  /** True when all three judges submitted valid (unconflicted) scorecards. */
+  /** True when all required judges (4) submitted valid (unconflicted) scorecards. */
   complete: boolean;
   tieFlags: string[];
   rank: number | null;
@@ -109,6 +105,13 @@ export interface ResultsSnapshot {
   published: boolean;
   publishedAt?: string;
   rows: ResultRow[];
+}
+
+export interface TieResolution {
+  contestantIds: [string, string];
+  winnerId: string;
+  reason: string;
+  recordedAt: string;
 }
 
 export interface DemoState {
@@ -127,6 +130,7 @@ export interface DemoState {
   results: ResultsSnapshot | null;
   /** Which sample judge the judge workspace is signed in as. */
   activeJudge: JudgeId | null;
+  tieResolutions: TieResolution[];
 }
 
 export const DISTRICTS = [

@@ -7,16 +7,20 @@ import {
   verificationGates,
 } from "./scoring";
 import { rubricFor } from "./rubrics";
+import { getSupabaseClient, isSupabaseConfigured } from "@/lib/db/supabase";
 import type {
   ActivityEvent,
   ActivityKind,
+  Contestant,
   DemoState,
   DurationEntry,
   JudgeId,
   PerformanceType,
   Scorecard,
+  TieResolution,
   VotingStatus,
 } from "./types";
+import { JUDGES } from "./types";
 
 /**
  * Single shared demo data store with a replaceable data-access layer.
@@ -70,7 +74,10 @@ export function hydrateDemoStore() {
     if (raw) {
       const parsed = JSON.parse(raw) as DemoState;
       if (parsed && parsed.version === 1 && Array.isArray(parsed.contestants)) {
-        state = parsed;
+        state = {
+          ...parsed,
+          tieResolutions: parsed.tieResolutions ?? [],
+        };
       } else {
         persist();
       }
@@ -87,7 +94,10 @@ export function hydrateDemoStore() {
       try {
         const parsed = e.newValue ? (JSON.parse(e.newValue) as DemoState) : null;
         if (parsed && parsed.version === 1) {
-          state = parsed;
+          state = {
+            ...parsed,
+            tieResolutions: parsed.tieResolutions ?? [],
+          };
           emit();
         }
       } catch {
@@ -95,7 +105,143 @@ export function hydrateDemoStore() {
       }
     });
   }
+
+  // Live database persistence sync: hydrate from Supabase when available
+  if (isSupabaseConfigured()) {
+    void (async () => {
+      try {
+        const client = getSupabaseClient();
+        if (!client) return;
+        const { data: contestantsData } = await client
+          .from("contestants")
+          .select("*")
+          .order("performance_order", { ascending: true });
+
+        if (contestantsData && contestantsData.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const loadedContestants: Contestant[] = contestantsData.map((row: any) => ({
+            id: row.id,
+            code: row.code,
+            name: row.name ?? row.full_name,
+            district: row.district,
+            type: (row.performance_type ?? "music") as PerformanceType,
+            title: row.title ?? row.performance_title ?? "",
+            bio: row.bio ?? row.biography ?? "",
+            order: row.performance_order,
+            hue: row.hue ?? (row.performance_order * 23) % 360,
+          }));
+          update((cur) => ({
+            ...cur,
+            contestants: loadedContestants,
+          }));
+        }
+
+        const { data: scorecardsData } = await client.from("scorecards").select("*");
+        if (scorecardsData && scorecardsData.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const loadedScorecards: Scorecard[] = scorecardsData.map((row: any) => ({
+            contestantId: row.contestant_id,
+            judgeId: row.judge_id as JudgeId,
+            scores: row.scores ?? row.criteria_scores ?? [],
+            notes: row.notes ?? "",
+            status: row.status ?? "draft",
+            conflictDeclared: Boolean(row.conflict_declared),
+            conflictResolved: Boolean(row.conflict_resolved),
+            reopened: Boolean(row.reopened),
+            reopenReason: row.reopen_reason ?? undefined,
+            updatedAt: row.updated_at,
+          }));
+          update((cur) => {
+            const merged = [...cur.scorecards];
+            for (const card of loadedScorecards) {
+              const idx = merged.findIndex(
+                (c) => c.contestantId === card.contestantId && c.judgeId === card.judgeId,
+              );
+              if (idx >= 0) merged[idx] = card;
+              else merged.push(card);
+            }
+            return { ...cur, scorecards: merged };
+          });
+        }
+      } catch {
+        /* fallback to local store */
+      }
+    })();
+  }
+
   emit();
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function syncMutationToSupabase(action: string, payload: any) {
+  if (typeof window === "undefined" || !isSupabaseConfigured()) return;
+  const client = getSupabaseClient();
+  if (!client) return;
+
+  try {
+    if (action === "scorecard") {
+      void client
+        .from("scorecards")
+        .upsert({
+          contestant_id: payload.contestantId,
+          judge_id: payload.judgeId,
+          scores: payload.scores,
+          notes: payload.notes,
+          status: payload.status,
+          conflict_declared: payload.conflictDeclared,
+          conflict_resolved: payload.conflictResolved,
+          reopened: payload.reopened,
+          reopen_reason: payload.reopenReason ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .then(() => {});
+    } else if (action === "duration") {
+      void client
+        .from("durations")
+        .upsert({
+          contestant_id: payload.contestantId,
+          duration_seconds: payload.seconds,
+          verified: payload.verified,
+          updated_at: new Date().toISOString(),
+        })
+        .then(() => {});
+    } else if (action === "contestant") {
+      void client
+        .from("contestants")
+        .update({
+          name: payload.name,
+          district: payload.district,
+          performance_type: payload.type,
+          title: payload.title,
+          bio: payload.bio,
+          performance_order: payload.order,
+        })
+        .eq("id", payload.id)
+        .then(() => {});
+    } else if (action === "voting_status") {
+      void client
+        .from("events")
+        .update({
+          voting_status: payload.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("code", "shabach-2026")
+        .then(() => {});
+    } else if (action === "results_snapshot") {
+      void client
+        .from("results_snapshots")
+        .upsert({
+          snapshot_data: payload.results,
+          locked_at: payload.results.lockedAt,
+          locked_by: "score_desk",
+          published_at: payload.results.publishedAt ?? null,
+          is_official: true,
+        })
+        .then(() => {});
+    }
+  } catch {
+    /* ignore background errors */
+  }
 }
 
 function update(mutate: (s: DemoState) => DemoState) {
@@ -124,17 +270,29 @@ function resultsLocked(s: DemoState): boolean {
 
 export type CastVoteResult =
   | { ok: true }
-  | { ok: false; reason: "not_open" | "closed" | "already_voted" };
+  | {
+      ok: false;
+      reason: "not_open" | "closed" | "already_voted" | "unknown_contestant";
+    };
 
 export function castVote(contestantId: string): CastVoteResult {
   const s = state;
+  if (resultsLocked(s)) return { ok: false, reason: "closed" };
   if (s.votingStatus === "not_open") return { ok: false, reason: "not_open" };
   if (s.votingStatus === "closed") return { ok: false, reason: "closed" };
   if (s.browserVote) return { ok: false, reason: "already_voted" };
-  update((cur) => ({
-    ...cur,
-    browserVote: { contestantId, at: new Date().toISOString() },
-  }));
+  const exists = s.contestants.some((c) => c.id === contestantId);
+  if (!exists) return { ok: false, reason: "unknown_contestant" };
+
+  update((cur) => {
+    if (resultsLocked(cur) || cur.votingStatus !== "open" || cur.browserVote) {
+      return cur;
+    }
+    return {
+      ...cur,
+      browserVote: { contestantId, at: new Date().toISOString() },
+    };
+  });
   return { ok: true };
 }
 
@@ -159,6 +317,7 @@ export function setVotingStatus(status: VotingStatus) {
       activity: log(s, kind, detail),
     };
   });
+  syncMutationToSupabase("voting_status", { status });
 }
 
 // ---------------------------------------------------------------------------
@@ -170,6 +329,7 @@ export function setActiveJudge(judgeId: JudgeId | null) {
 }
 
 export function upsertCard(s: DemoState, next: Scorecard): Scorecard[] {
+  syncMutationToSupabase("scorecard", next);
   const i = s.scorecards.findIndex(
     (c) => c.judgeId === next.judgeId && c.contestantId === next.contestantId,
   );
@@ -179,20 +339,14 @@ export function upsertCard(s: DemoState, next: Scorecard): Scorecard[] {
   return copy;
 }
 
-export function getCard(
-  s: DemoState,
-  judgeId: JudgeId,
-  contestantId: string,
-): Scorecard {
+export function getCard(s: DemoState, judgeId: JudgeId, contestantId: string): Scorecard {
   return (
-    s.scorecards.find(
-      (c) => c.judgeId === judgeId && c.contestantId === contestantId,
-    ) ?? {
+    s.scorecards.find((c) => c.judgeId === judgeId && c.contestantId === contestantId) ?? {
       contestantId,
       judgeId,
-      scores: rubricFor(
-        s.contestants.find((c) => c.id === contestantId)!.type,
-      ).criteria.map(() => null),
+      scores: rubricFor(s.contestants.find((c) => c.id === contestantId)!.type).criteria.map(
+        () => null,
+      ),
       notes: "",
       status: "not_started",
       conflictDeclared: false,
@@ -233,22 +387,24 @@ export function saveDraft(
 
 export interface SubmitResult {
   ok: boolean;
-  reason?: "incomplete" | "invalid" | "results_locked" | "already_submitted";
+  reason?:
+    "incomplete" | "invalid" | "results_locked" | "already_submitted" | "unresolved_conflict";
   errors?: string[];
 }
 
 /** Final submission requires a fully valid scorecard; runs after an explicit review step. */
-export function submitScorecard(
-  judgeId: JudgeId,
-  contestantId: string,
-): SubmitResult {
+export function submitScorecard(judgeId: JudgeId, contestantId: string): SubmitResult {
   const s = state;
   if (resultsLocked(s)) return { ok: false, reason: "results_locked" };
   const card = getCard(s, judgeId, contestantId);
   if (card.status === "submitted" && !card.reopened) {
     return { ok: false, reason: "already_submitted" };
   }
-  const contestant = s.contestants.find((c) => c.id === contestantId)!;
+  if (card.conflictDeclared && !card.conflictResolved) {
+    return { ok: false, reason: "unresolved_conflict" };
+  }
+  const contestant = s.contestants.find((c) => c.id === contestantId);
+  if (!contestant) return { ok: false, reason: "invalid" };
   const rubric = rubricFor(contestant.type);
   const validation = validateScores(card.scores, rubric);
   if (!validation.ok) {
@@ -259,6 +415,7 @@ export function submitScorecard(
     scorecards: upsertCard(cur, {
       ...card,
       status: "submitted",
+      conflictDeclared: false,
       reopened: false,
       reopenReason: undefined,
       updatedAt: new Date().toISOString(),
@@ -314,13 +471,35 @@ export interface ContestantEdit {
   type?: PerformanceType;
 }
 
-export function updateContestant(id: string, edit: ContestantEdit) {
-  update((s) => ({
-    ...s,
-    contestants: s.contestants.map((c) =>
-      c.id === id ? { ...c, ...edit } : c,
-    ),
+export interface UpdateContestantResult {
+  ok: boolean;
+  reason?: "results_locked" | "rubric_locked_by_scores";
+}
+
+export function updateContestant(id: string, edit: ContestantEdit): UpdateContestantResult {
+  const s = state;
+  if (resultsLocked(s)) return { ok: false, reason: "results_locked" };
+  const target = s.contestants.find((c) => c.id === id);
+  if (!target) return { ok: false };
+
+  // Guard: Changing rubric is prohibited once scores exist for this contestant
+  if (edit.type && edit.type !== target.type) {
+    const hasScores = s.scorecards.some(
+      (card) =>
+        card.contestantId === id &&
+        (card.status === "submitted" || card.scores.some((sc) => sc !== null)),
+    );
+    if (hasScores) {
+      return { ok: false, reason: "rubric_locked_by_scores" };
+    }
+  }
+
+  update((cur) => ({
+    ...cur,
+    contestants: cur.contestants.map((c) => (c.id === id ? { ...c, ...edit } : c)),
   }));
+  syncMutationToSupabase("contestant", { id, ...edit });
+  return { ok: true };
 }
 
 export function reopenScorecard(judgeId: JudgeId, contestantId: string, reason: string) {
@@ -337,21 +516,31 @@ export function reopenScorecard(judgeId: JudgeId, contestantId: string, reason: 
         status: "draft",
         updatedAt: new Date().toISOString(),
       }),
-      activity: log(s, "scorecard_reopened", `Reopened ${judgeId}'s scorecard for ${s.contestants.find((c) => c.id === contestantId)?.name}. Reason: ${reason.trim()}`),
+      activity: log(
+        s,
+        "scorecard_reopened",
+        `Reopened ${judgeId}'s scorecard for ${s.contestants.find((c) => c.id === contestantId)?.name}. Reason: ${reason.trim()}`,
+      ),
     };
   });
   return { ok: true };
 }
 
+/**
+ * Resolves a conflict declaration by resetting the card to draft and requiring
+ * explicit resubmission by an authorised judge.
+ */
 export function resolveConflict(judgeId: JudgeId, contestantId: string) {
   update((s) => {
     const card = getCard(s, judgeId, contestantId);
-    if (!card.conflictDeclared || card.conflictResolved) return s;
+    if (!card.conflictDeclared && !card.conflictResolved) return s;
     return {
       ...s,
       scorecards: upsertCard(s, {
         ...card,
+        conflictDeclared: false,
         conflictResolved: true,
+        status: "draft",
         updatedAt: new Date().toISOString(),
       }),
       activity: log(
@@ -363,23 +552,45 @@ export function resolveConflict(judgeId: JudgeId, contestantId: string) {
   });
 }
 
-export function setDuration(contestantId: string, seconds: number | null) {
-  update((s) => {
-    if (resultsLocked(s)) return s;
-    const prev = s.durations[contestantId];
+export function setDuration(
+  contestantId: string,
+  seconds: number | null,
+): { ok: boolean; reason?: "invalid_duration" | "results_locked" } {
+  if (
+    seconds !== null &&
+    (!Number.isFinite(seconds) || seconds < 0 || !Number.isInteger(seconds))
+  ) {
+    return { ok: false, reason: "invalid_duration" };
+  }
+  const s = state;
+  if (resultsLocked(s)) return { ok: false, reason: "results_locked" };
+
+  update((cur) => {
+    if (resultsLocked(cur)) return cur;
+    const prev = cur.durations[contestantId];
     const entry: DurationEntry = {
       contestantId,
       seconds,
       verified: seconds !== null ? false : (prev?.verified ?? false),
     };
     return {
-      ...s,
-      durations: { ...s.durations, [contestantId]: entry },
+      ...cur,
+      durations: { ...cur.durations, [contestantId]: entry },
     };
   });
+  syncMutationToSupabase("duration", { contestantId, seconds, verified: false });
+  return { ok: true };
 }
 
 export function setDurationVerified(contestantId: string, verified: boolean) {
+  const currentEntry = state.durations[contestantId];
+  if (currentEntry) {
+    syncMutationToSupabase("duration", {
+      contestantId,
+      seconds: currentEntry.seconds,
+      verified,
+    });
+  }
   update((s) => {
     if (resultsLocked(s)) return s;
     const prev = s.durations[contestantId];
@@ -396,6 +607,48 @@ export function setDurationVerified(contestantId: string, verified: boolean) {
 
 export function setScoreDeskConfirmed(confirmed: boolean) {
   update((s) => ({ ...s, scoreDeskConfirmed: confirmed }));
+}
+
+export function recordTieResolution(
+  contestantAId: string,
+  contestantBId: string,
+  winnerId: string,
+  reason: string,
+): { ok: boolean; reason?: "reason_required" | "results_locked" } {
+  if (!reason.trim()) return { ok: false, reason: "reason_required" };
+  const s = state;
+  if (resultsLocked(s)) return { ok: false, reason: "results_locked" };
+
+  update((cur) => {
+    if (resultsLocked(cur)) return cur;
+    const filtered = (cur.tieResolutions ?? []).filter(
+      (tr) =>
+        !(
+          (tr.contestantIds[0] === contestantAId && tr.contestantIds[1] === contestantBId) ||
+          (tr.contestantIds[0] === contestantBId && tr.contestantIds[1] === contestantAId)
+        ),
+    );
+    const newResolution: TieResolution = {
+      contestantIds: [contestantAId, contestantBId],
+      winnerId,
+      reason: reason.trim(),
+      recordedAt: new Date().toISOString(),
+    };
+    const nameA = cur.contestants.find((c) => c.id === contestantAId)?.name ?? contestantAId;
+    const nameB = cur.contestants.find((c) => c.id === contestantBId)?.name ?? contestantBId;
+    const winnerName = cur.contestants.find((c) => c.id === winnerId)?.name ?? winnerId;
+
+    return {
+      ...cur,
+      tieResolutions: [...filtered, newResolution],
+      activity: log(
+        cur,
+        "results_verified",
+        `Judges' review tie decision recorded between ${nameA} and ${nameB}: winner is ${winnerName}. Reason: ${reason.trim()}`,
+      ),
+    };
+  });
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -418,26 +671,52 @@ function seededInt(seed: string, min: number, max: number): number {
  * complete sample submissions (labelled simulated), enter and verify
  * durations, and clear conflicts so verification and publication can be
  * demonstrated without typing 48 scorecards.
+ *
+ * Idempotent: produces exactly 48 unique cards and 16 complete contestants.
  */
 export function loadSampleScores() {
   update((s) => {
     if (resultsLocked(s)) return s;
-    let cards = [...s.scorecards];
-    const newCards: Scorecard[] = [];
+
+    // Use a map keyed by contestantId:judgeId to guarantee unique cards
+    const cardMap = new Map<string, Scorecard>();
+
+    // Seed existing cards into the map
+    for (const card of s.scorecards) {
+      cardMap.set(`${card.contestantId}:${card.judgeId}`, card);
+    }
+
+    const assignedJudges: JudgeId[] = JUDGES.map((j) => j.id);
+    const durations = { ...s.durations };
+
     for (const contestant of s.contestants) {
       const rubric = rubricFor(contestant.type);
-      for (const judgeId of ["judge1", "judge2", "judge3"] as JudgeId[]) {
-        const card = getCard(s, judgeId, contestant.id);
-        if (card.status === "submitted" && !card.reopened && !(card.conflictDeclared && !card.conflictResolved)) {
+
+      for (const judgeId of assignedJudges) {
+        const key = `${contestant.id}:${judgeId}`;
+        const existing = cardMap.get(key);
+
+        const alreadyValid =
+          existing &&
+          existing.status === "submitted" &&
+          !existing.reopened &&
+          !existing.conflictDeclared &&
+          validateScores(existing.scores, rubric).ok;
+
+        if (alreadyValid) {
+          cardMap.set(key, existing);
           continue;
         }
+
         const scores = rubric.criteria.map((c, i) => {
-          const base = c.max === 15 ? 8 : 12;
-          const span = c.max === 15 ? 5 : 7;
+          const base = c.max === 15 ? 9 : 13;
+          const span = c.max === 15 ? 4 : 6;
           return seededInt(`${contestant.id}:${judgeId}:${i}`, base, base + span);
         });
-        newCards.push({
-          ...card,
+
+        cardMap.set(key, {
+          contestantId: contestant.id,
+          judgeId,
           scores,
           notes: "",
           status: "submitted",
@@ -448,27 +727,34 @@ export function loadSampleScores() {
           updatedAt: new Date().toISOString(),
         });
       }
+
       // Sample durations: mostly within time, a few over so deductions show.
       const overBy = seededInt(`${contestant.id}:dur`, 0, 100);
       const seconds =
         overBy > 82
           ? rubric.timeLimitSec + overBy - 60
           : Math.max(60, rubric.timeLimitSec - overBy - 10);
-      const durations = { ...s.durations };
+
       durations[contestant.id] = {
         contestantId: contestant.id,
         seconds,
         verified: true,
       };
-      s = { ...s, durations };
     }
-    cards = [...cards, ...newCards];
-    const resolved = cards.map((c) =>
-      c.conflictDeclared ? { ...c, conflictResolved: true } : c,
-    );
+
+    // Keep only the 64 assigned contestant x judge cards
+    const finalCards: Scorecard[] = [];
+    for (const contestant of s.contestants) {
+      for (const judgeId of assignedJudges) {
+        const c = cardMap.get(`${contestant.id}:${judgeId}`);
+        if (c) finalCards.push(c);
+      }
+    }
+
     return {
       ...s,
-      scorecards: resolved,
+      scorecards: finalCards,
+      durations,
       activity: log(
         s,
         "sample_scores_loaded",
@@ -504,14 +790,14 @@ export interface LockCheck {
 
 export function checkLockReadiness(): LockCheck {
   const s = state;
-  const votes = { demoVotes: s.demoVotes, browserVote: s.browserVote };
   const rows = computeResults({
     contestants: s.contestants,
     scorecards: s.scorecards,
     voteCounts: voteCountsOf(s),
     durations: s.durations,
+    tieResolutions: s.tieResolutions,
   });
-  void votes;
+
   const gates = verificationGates(
     rows,
     s.scorecards,
@@ -519,12 +805,19 @@ export function checkLockReadiness(): LockCheck {
     s.votingStatus,
     s.scoreDeskConfirmed,
   );
+
   const problems: string[] = [];
   if (!gates.votingClosed) problems.push("Voting must be closed.");
-  if (!gates.allComplete) problems.push("Every contestant needs three valid submitted scorecards.");
-  if (!gates.allDurationsVerified) problems.push("Every performance duration must be entered and verified.");
+  if (!gates.allComplete) problems.push("Every contestant needs four valid submitted scorecards.");
+  if (!gates.allDurationsVerified)
+    problems.push("Every performance duration must be entered and verified.");
   if (!gates.noUnresolvedConflicts) problems.push("Resolve all declared conflicts of interest.");
+  if (!gates.noUnresolvedTies)
+    problems.push(
+      "All ties must be resolved by the criterion ladder or the collective judges' decision.",
+    );
   if (!gates.scoreDeskConfirmed) problems.push("The score desk must confirm the collation.");
+
   return { ok: problems.length === 0, problems };
 }
 
@@ -532,39 +825,56 @@ export function voteCountsOf(s: DemoState): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const c of s.contestants) counts[c.id] = s.demoVotes[c.id] ?? 0;
   if (s.browserVote) {
-    counts[s.browserVote.contestantId] =
-      (counts[s.browserVote.contestantId] ?? 0) + 1;
+    counts[s.browserVote.contestantId] = (counts[s.browserVote.contestantId] ?? 0) + 1;
   }
   return counts;
 }
 
 export function lockResults(): LockCheck {
+  const s = state;
+  // Idempotent: if results are already locked, preserve the existing snapshot
+  if (resultsLocked(s)) {
+    return { ok: true, problems: [] };
+  }
+
   const check = checkLockReadiness();
   if (!check.ok) return check;
-  update((s) => {
+
+  update((cur) => {
+    if (resultsLocked(cur)) return cur;
     const rows = computeResults({
-      contestants: s.contestants,
-      scorecards: s.scorecards,
-      voteCounts: voteCountsOf(s),
-      durations: s.durations,
+      contestants: cur.contestants,
+      scorecards: cur.scorecards,
+      voteCounts: voteCountsOf(cur),
+      durations: cur.durations,
+      tieResolutions: cur.tieResolutions,
     });
     return {
-      ...s,
+      ...cur,
       results: {
         lockedAt: new Date().toISOString(),
         published: false,
         rows,
       },
-      activity: log(s, "results_locked", "Results collated and locked. A frozen snapshot was created."),
+      activity: log(
+        cur,
+        "results_locked",
+        "Results collated and locked. A frozen snapshot was created.",
+      ),
     };
   });
+  if (state.results) {
+    syncMutationToSupabase("results_snapshot", { results: state.results });
+  }
   return { ok: true, problems: [] };
 }
 
 export function publishResults(): { ok: boolean; reason?: "not_locked" | "already_published" } {
   const s = state;
   if (!s.results) return { ok: false, reason: "not_locked" };
-  if (s.results.published) return { ok: false, reason: "already_published" };
+  // Idempotent: already published preserves publishedAt and returns ok
+  if (s.results.published) return { ok: true };
+
   update((cur) => ({
     ...cur,
     results: cur.results
@@ -572,6 +882,9 @@ export function publishResults(): { ok: boolean; reason?: "not_locked" | "alread
       : cur.results,
     activity: log(cur, "results_published", "Results published to the public results page."),
   }));
+  if (state.results) {
+    syncMutationToSupabase("results_snapshot", { results: state.results });
+  }
   return { ok: true };
 }
 

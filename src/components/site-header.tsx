@@ -20,7 +20,9 @@ function StatusDot() {
         : "bg-gold";
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-cream-line bg-card px-3 py-1 text-xs font-semibold text-charcoal">
-      <span className={cn("h-2 w-2 rounded-full", tone, state.votingStatus === "open" && "live-dot")} />
+      <span
+        className={cn("h-2 w-2 rounded-full", tone, state.votingStatus === "open" && "live-dot")}
+      />
       {VOTING_STATUS_LABEL[state.votingStatus]}
     </span>
   );

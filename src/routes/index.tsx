@@ -80,8 +80,8 @@ function Hero() {
         <p className="mt-2 font-display text-2xl text-gold-soft sm:text-3xl">Talent for Christ</p>
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-ivory/85 sm:text-lg">
           Sixteen contestants — individuals and groups from eight districts — bring music, dance,
-          spoken word, mono-drama and visual arts to the Grand Finale stage. The audience votes, three
-          independent judges score, and every result is verified before it is published.
+          spoken word, mono-drama and visual arts to the Grand Finale stage. The audience votes,
+          three independent judges score, and every result is verified before it is published.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <a
@@ -178,7 +178,10 @@ function HowScoringWorks() {
         </p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {SCORING_CARDS.map((card) => (
-            <div key={card.title} className="rounded-2xl border border-cream-line bg-card p-6 shadow-card">
+            <div
+              key={card.title}
+              className="rounded-2xl border border-cream-line bg-card p-6 shadow-card"
+            >
               <card.icon className="h-6 w-6 text-gold" />
               <h3 className="mt-3 font-display text-xl text-forest">{card.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-charcoal-muted">{card.body}</p>

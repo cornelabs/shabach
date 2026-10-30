@@ -23,15 +23,11 @@ export const Route = createFileRoute("/contestants/$code")({
     return { code };
   },
   head: ({ params }) => {
-    const contestant = buildContestants().find(
-      (c) => c.code === params.code.toUpperCase(),
-    );
+    const contestant = buildContestants().find((c) => c.code === params.code.toUpperCase());
     return {
       meta: [
         {
-          title: contestant
-            ? `${contestant.name} — SHABACH 2026`
-            : "Contestant — SHABACH 2026",
+          title: contestant ? `${contestant.name} — SHABACH 2026` : "Contestant — SHABACH 2026",
         },
         {
           name: "description",
@@ -105,8 +101,8 @@ function VotePanel({ contestantId, name }: { contestantId: string; name: string 
           </p>
         ) : myVote ? (
           <p className="mt-3 text-sm text-charcoal-muted">
-            You've already voted for another contestant in this browser — one vote per person, and it
-            can't be changed.
+            You've already voted for another contestant in this browser — one vote per person, and
+            it can't be changed.
           </p>
         ) : (
           <>
@@ -146,7 +142,11 @@ function SharePanel({ code }: { code: string }) {
       </p>
       <div className="mt-4 flex items-center justify-center rounded-xl border border-cream-line bg-ivory p-3">
         {qr ? (
-          <img src={qr} alt={`QR code linking to contestant profile ${code}`} className="h-[220px] w-[220px]" />
+          <img
+            src={qr}
+            alt={`QR code linking to contestant profile ${code}`}
+            className="h-[220px] w-[220px]"
+          />
         ) : (
           <div className="h-[220px] w-[220px] animate-pulse rounded bg-parchment" aria-hidden />
         )}
@@ -185,9 +185,7 @@ function ContestantProfile() {
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <Badge variant="secondary">{typeLabel(contestant.type)}</Badge>
                   <Badge variant="outline">{contestant.district}</Badge>
-                  <Badge variant="outline">
-                    Time limit {formatSeconds(rubric.timeLimitSec)}
-                  </Badge>
+                  <Badge variant="outline">Time limit {formatSeconds(rubric.timeLimitSec)}</Badge>
                 </div>
               </div>
             </div>
@@ -199,7 +197,9 @@ function ContestantProfile() {
             </div>
 
             <div className="mt-4 rounded-2xl border border-cream-line bg-card p-6 shadow-card">
-              <h2 className="font-display text-xl text-forest">How {contestant.name} will be scored</h2>
+              <h2 className="font-display text-xl text-forest">
+                How {contestant.name} will be scored
+              </h2>
               <p className="mt-2 text-sm text-charcoal-muted">
                 {typeLabel(contestant.type)} rubric — five criteria, 95 raw points, plus up to 5
                 points from the public vote.

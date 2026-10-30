@@ -8,21 +8,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useDemoState } from "@/hooks/use-demo";
-import {
-  SCORECARD_STATUS_LABEL,
-  typeLabel,
-  formatSeconds,
-  formatLagos,
-} from "@/lib/demo/labels";
+import { SCORECARD_STATUS_LABEL, typeLabel, formatSeconds, formatLagos } from "@/lib/demo/labels";
 import {
   declareConflict,
   getCard,
-  judgeSubtotal,
   resetJudgeScorecard,
   saveDraft,
   submitScorecard,
 } from "@/lib/demo/store";
-import { fmt2, validateScores } from "@/lib/demo/scoring";
+import { fmt2, judgeSubtotal, validateScores } from "@/lib/demo/scoring";
 import { rubricFor } from "@/lib/demo/rubrics";
 import type { JudgeId } from "@/lib/demo/types";
 import { MAX_JUDGE_SUBTOTAL } from "@/lib/demo/rubrics";
@@ -43,10 +37,7 @@ export function ScorecardEditor({
   const state = useDemoState();
   const card = getCard(state, judgeId, contestantId);
   const contestant = state.contestants.find((c) => c.id === contestantId);
-  const rubric = useMemo(
-    () => rubricFor(contestant?.type ?? "music"),
-    [contestant?.type],
-  );
+  const rubric = useMemo(() => rubricFor(contestant?.type ?? "music"), [contestant?.type]);
 
   const [scores, setScores] = useState<(number | null)[]>(card.scores);
   const [notes, setNotes] = useState(card.notes);
@@ -72,6 +63,8 @@ export function ScorecardEditor({
   }
 
   function clampScore(index: number, raw: string) {
+    const criterion = rubric.criteria[index];
+    if (!criterion) return;
     if (raw.trim() === "") {
       setScore(index, null);
       return;
@@ -81,13 +74,16 @@ export function ScorecardEditor({
       setScore(index, null);
       return;
     }
-    setScore(index, Math.min(rubric.criteria[index].max, Math.max(0, parsed)));
+    setScore(index, Math.min(criterion.max, Math.max(0, parsed)));
   }
 
   function step(index: number, delta: number) {
+    const criterion = rubric.criteria[index];
+    if (!criterion) return;
     const current = scores[index];
-    const base = current === null ? (delta > 0 ? 0 : rubric.criteria[index].max) : current;
-    setScore(index, Math.min(rubric.criteria[index].max, Math.max(0, base + delta)));
+    const base =
+      current === null || current === undefined ? (delta > 0 ? 0 : criterion.max) : current;
+    setScore(index, Math.min(criterion.max, Math.max(0, base + delta)));
   }
 
   function handleSave() {
@@ -171,7 +167,9 @@ export function ScorecardEditor({
               {card.reopened ? "Reopened by organiser" : SCORECARD_STATUS_LABEL[card.status]}
             </Badge>
             {card.updatedAt && (
-              <p className="mt-1 text-xs text-charcoal-muted">Saved {formatLagos(card.updatedAt)}</p>
+              <p className="mt-1 text-xs text-charcoal-muted">
+                Saved {formatLagos(card.updatedAt)}
+              </p>
             )}
           </div>
         </div>
@@ -301,9 +299,9 @@ export function ScorecardEditor({
               <CheckCircle2 className="h-4 w-4" /> Review before submitting
             </p>
             <p className="mt-1 text-xs text-charcoal-muted">
-              Subtotal {subtotal} / {MAX_JUDGE_SUBTOTAL} ({fmt2((subtotal / MAX_JUDGE_SUBTOTAL) * 100)}%
-              of raw points). Submission is final — only the organiser can reopen it, with a recorded
-              reason.
+              Subtotal {subtotal} / {MAX_JUDGE_SUBTOTAL} (
+              {fmt2((subtotal / MAX_JUDGE_SUBTOTAL) * 100)}% of raw points). Submission is final —
+              only the organiser can reopen it, with a recorded reason.
             </p>
             <div className="mt-3 flex gap-2">
               <Button size="sm" onClick={confirmSubmit}>
