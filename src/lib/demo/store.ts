@@ -134,6 +134,7 @@ let queuedRefresh = false;
  * real audience vote totals, and frozen official results.
  */
 export async function refreshFromSupabase(): Promise<void> {
+  if (state.isSimulatedDemo) return;
   if (typeof window === "undefined" || !isSupabaseConfigured()) return;
   const client = getSupabaseClient();
   if (!client) return;
@@ -214,6 +215,7 @@ export async function refreshFromSupabase(): Promise<void> {
             contestantId: row.contestant_id,
             seconds: row.actual_seconds ?? row.duration_seconds ?? null,
             verified: Boolean(row.verified),
+            updatedAt: row.updated_at,
           };
         }
       }
@@ -350,13 +352,25 @@ export async function refreshFromSupabase(): Promise<void> {
         }
       }
 
-      // Prune durations to only active contestants
+      // Reconcile durations across active contestants
       const prunedDurations: Record<string, DurationEntry> = {};
-      for (const [k, v] of Object.entries(cur.durations)) {
-        if (activeIds.has(k)) prunedDurations[k] = v;
-      }
-      for (const [k, v] of Object.entries(loadedDurations)) {
-        prunedDurations[k] = v;
+      for (const c of activeContestants) {
+        const curDur = cur.durations[c.id];
+        const dbDur = loadedDurations[c.id];
+        if (!curDur && !dbDur) continue;
+        if (!curDur) {
+          prunedDurations[c.id] = dbDur!;
+        } else if (!dbDur) {
+          prunedDurations[c.id] = curDur;
+        } else {
+          const curTime = curDur.updatedAt ? new Date(curDur.updatedAt).getTime() : 0;
+          const dbTime = dbDur.updatedAt ? new Date(dbDur.updatedAt).getTime() : 0;
+          if (curTime >= refreshStartedAt || curTime > dbTime) {
+            prunedDurations[c.id] = curDur;
+          } else {
+            prunedDurations[c.id] = dbDur;
+          }
+        }
       }
 
       let newResults = cur.results;
@@ -396,6 +410,7 @@ export async function refreshFromSupabase(): Promise<void> {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function syncMutationToSupabase(action: string, payload: any) {
+  if (state.isSimulatedDemo) return;
   if (typeof window === "undefined" || !isSupabaseConfigured()) return;
   const client = getSupabaseClient();
   if (!client) return;
@@ -949,6 +964,7 @@ export function setDuration(
       contestantId,
       seconds,
       verified: seconds !== null ? false : (prev?.verified ?? false),
+      updatedAt: new Date().toISOString(),
     };
     return {
       ...cur,
@@ -976,7 +992,7 @@ export function setDurationVerified(contestantId: string, verified: boolean) {
       ...s,
       durations: {
         ...s.durations,
-        [contestantId]: { ...prev, verified },
+        [contestantId]: { ...prev, verified, updatedAt: new Date().toISOString() },
       },
     };
   });
@@ -1130,12 +1146,13 @@ export function loadSampleScores() {
 
     return {
       ...s,
+      isSimulatedDemo: true,
       scorecards: finalCards,
       durations,
       activity: log(
         s,
         "sample_scores_loaded",
-        "Simulated sample scores loaded: all 48 scorecards submitted, durations entered and verified. Demo data only.",
+        "Simulated sample scores loaded: all 64 scorecards submitted, durations entered and verified. Demo data only.",
       ),
     };
   });
@@ -1144,6 +1161,7 @@ export function loadSampleScores() {
 export function resetDemo() {
   update(() => {
     const fresh = createSeedState();
+    fresh.isSimulatedDemo = true;
     fresh.activity = [
       {
         id: `reset-${Date.now()}`,
@@ -1154,6 +1172,16 @@ export function resetDemo() {
     ];
     return fresh;
   });
+}
+
+export function returnToLiveState() {
+  update((s) => ({
+    ...s,
+    isSimulatedDemo: false,
+  }));
+  if (isSupabaseConfigured()) {
+    void refreshFromSupabase();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1237,7 +1265,7 @@ export function lockResults(): LockCheck {
       ),
     };
   });
-  if (state.results) {
+  if (state.results && !state.isSimulatedDemo) {
     syncMutationToSupabase("results_snapshot", { results: state.results });
   }
   return { ok: true, problems: [] };
@@ -1256,7 +1284,7 @@ export function publishResults(): { ok: boolean; reason?: "not_locked" | "alread
       : cur.results,
     activity: log(cur, "results_published", "Results published to the public results page."),
   }));
-  if (state.results) {
+  if (state.results && !state.isSimulatedDemo) {
     syncMutationToSupabase("results_snapshot", { results: state.results });
   }
   return { ok: true };

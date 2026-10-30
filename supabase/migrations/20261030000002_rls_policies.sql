@@ -139,7 +139,7 @@ CREATE POLICY "Judge insert own scorecards"
     );
 
 -- Judges can update their own scorecard draft/submission
--- Only permits updating if currently a draft or explicitly reopened by an organiser,
+-- Permits updating if draft, not_started (e.g. after clearing card), or explicitly reopened by an organiser,
 -- and competition results are not locked. Organiser-set flags (conflict_resolved, reopened)
 -- remain valid during edits and are protected from unauthorised changes by the trigger below.
 CREATE POLICY "Judge update own scorecards"
@@ -147,7 +147,7 @@ CREATE POLICY "Judge update own scorecards"
     TO authenticated
     USING (
         auth_is_assigned_judge(event_id, judge_id)
-        AND (status = 'draft' OR reopened = true)
+        AND (status IN ('draft', 'not_started') OR reopened = true)
         AND NOT EXISTS (
             SELECT 1 FROM events e
             WHERE e.id = scorecards.event_id

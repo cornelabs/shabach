@@ -62,6 +62,7 @@ export interface DurationEntry {
   /** Actual performance duration in seconds; null until entered. */
   seconds: number | null;
   verified: boolean;
+  updatedAt?: string | undefined;
 }
 
 export type ActivityKind =
@@ -131,6 +132,8 @@ export interface DemoState {
   /** Which sample judge the judge workspace is signed in as. */
   activeJudge: JudgeId | null;
   tieResolutions: TieResolution[];
+  /** Flag indicating that this state contains local simulated demo data and must not overwrite production. */
+  isSimulatedDemo?: boolean | undefined;
 }
 
 export const DISTRICTS = [

@@ -32,7 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDemoState } from "@/hooks/use-demo";
 import { FINALE_DATE_LABEL, VOTING_STATUS_LABEL } from "@/lib/demo/labels";
-import { loadSampleScores, resetDemo, setActiveJudge } from "@/lib/demo/store";
+import { loadSampleScores, resetDemo, returnToLiveState, setActiveJudge } from "@/lib/demo/store";
 import type { JudgeId } from "@/lib/demo/types";
 import { JUDGES } from "@/lib/demo/types";
 
@@ -97,6 +97,30 @@ function DemoLauncherPage() {
             votes, scores, and collation gates are simulated in your browser's local sandbox.
           </p>
         </div>
+
+        {/* Banner if Simulated Demo is active in live mode */}
+        {state.isSimulatedDemo && (
+          <div className="mt-6 flex flex-col items-start justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-900 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>Simulated Demo Sandbox Active:</strong> Scores, durations, and votes are
+                isolated locally and will not alter live database records.
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                returnToLiveState();
+                toast.success("Reconnected to live event state");
+              }}
+              className="border-amber-600/40 bg-card text-xs text-amber-900 hover:bg-amber-100"
+            >
+              Exit Demo & Return to Live State
+            </Button>
+          </div>
+        )}
 
         {/* Current State Status Bar */}
         <div className="mt-8 grid gap-3 rounded-2xl border border-cream-line bg-card p-5 shadow-card sm:grid-cols-3">
