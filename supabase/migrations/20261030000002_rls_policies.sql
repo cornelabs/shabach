@@ -123,18 +123,46 @@ CREATE POLICY "Judge read own scorecards"
     TO authenticated
     USING (auth_is_assigned_judge(event_id, judge_id));
 
--- Judges can insert their own assigned scorecards
+-- Judges can insert their own assigned scorecards (draft cards only, cannot self-resolve conflicts or self-reopen)
 CREATE POLICY "Judge insert own scorecards"
     ON scorecards FOR INSERT
     TO authenticated
-    WITH CHECK (auth_is_assigned_judge(event_id, judge_id));
+    WITH CHECK (
+        auth_is_assigned_judge(event_id, judge_id)
+        AND NOT conflict_resolved
+        AND NOT reopened
+        AND NOT EXISTS (
+            SELECT 1 FROM events e
+            WHERE e.id = scorecards.event_id
+              AND e.lifecycle_status IN ('locked', 'published', 'archived')
+        )
+    );
 
 -- Judges can update their own scorecard draft/submission
+-- Only permits updating if currently a draft or explicitly reopened by an organiser,
+-- and competition results are not locked.
 CREATE POLICY "Judge update own scorecards"
     ON scorecards FOR UPDATE
     TO authenticated
-    USING (auth_is_assigned_judge(event_id, judge_id))
-    WITH CHECK (auth_is_assigned_judge(event_id, judge_id));
+    USING (
+        auth_is_assigned_judge(event_id, judge_id)
+        AND (status = 'draft' OR reopened = true)
+        AND NOT EXISTS (
+            SELECT 1 FROM events e
+            WHERE e.id = scorecards.event_id
+              AND e.lifecycle_status IN ('locked', 'published', 'archived')
+        )
+    )
+    WITH CHECK (
+        auth_is_assigned_judge(event_id, judge_id)
+        AND NOT conflict_resolved
+        AND NOT (reopened AND status != 'submitted')
+        AND NOT EXISTS (
+            SELECT 1 FROM events e
+            WHERE e.id = scorecards.event_id
+              AND e.lifecycle_status IN ('locked', 'published', 'archived')
+        )
+    );
 
 -- Organisers have full access to view, provision, reopen, and resolve all scorecards
 CREATE POLICY "Organiser manage all scorecards"
@@ -225,6 +253,35 @@ CREATE POLICY "Organiser read verification requests"
     ON voter_verification_requests FOR SELECT
     TO authenticated
     USING (auth_is_organiser(event_id));
+
+-- -----------------------------------------------------------------------------
+-- 8b. Authoritative Aggregated Vote Counts (Restricted to Organisers)
+-- -----------------------------------------------------------------------------
+-- Provides aggregated contestant vote tallies in a single query, bypassing client
+-- row-limit caps (e.g. 1000 rows) and preventing unannounced counts from leaking to anon/judges.
+CREATE OR REPLACE FUNCTION get_event_vote_counts(p_event_id UUID)
+RETURNS TABLE (
+    contestant_id UUID,
+    vote_count BIGINT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+STABLE
+AS $$
+BEGIN
+    IF NOT auth_is_organiser(p_event_id) THEN
+        RAISE EXCEPTION 'Access denied: Vote counts are restricted to organisers.';
+    END IF;
+
+    RETURN QUERY
+    SELECT v.contestant_id, COUNT(*)::BIGINT AS vote_count
+    FROM votes v
+    WHERE v.event_id = p_event_id
+    GROUP BY v.contestant_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_event_vote_counts(UUID) TO authenticated;
 
 -- -----------------------------------------------------------------------------
 -- 9. Results Snapshots Policies (Internal Staff Only - Strict Privacy Protection)

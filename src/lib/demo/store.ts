@@ -125,6 +125,9 @@ export function hydrateDemoStore() {
   emit();
 }
 
+let isRefreshing = false;
+let queuedRefresh = false;
+
 /**
  * Authoritative Database Synchronization
  * Re-queries live event lifecycle, contestants, 64-scorecard matrix, stopwatch durations,
@@ -134,6 +137,13 @@ export async function refreshFromSupabase(): Promise<void> {
   if (typeof window === "undefined" || !isSupabaseConfigured()) return;
   const client = getSupabaseClient();
   if (!client) return;
+
+  if (isRefreshing) {
+    queuedRefresh = true;
+    return;
+  }
+  isRefreshing = true;
+  const refreshStartedAt = Date.now();
 
   try {
     // 1. Fetch event status & voting status
@@ -168,34 +178,10 @@ export async function refreshFromSupabase(): Promise<void> {
     const activeIds = new Set(activeContestants.map((c) => c.id));
     const JUDGE_IDS: JudgeId[] = ["judge1", "judge2", "judge3", "judge4"];
 
-    // 3. Hydrate scorecards: purge orphaned demo cards and build 64-card matrix
+    // 3. Hydrate scorecards: query authoritative rows from database
     const { data: scorecardsData } = await client.from("scorecards").select("*");
-    const liveCardsMap = new Map<string, Scorecard>();
+    const dbCardsMap = new Map<string, Scorecard>();
 
-    // Seed base clean draft cards for all active contestants across 4 judges
-    for (const c of activeContestants) {
-      for (const j of JUDGE_IDS) {
-        liveCardsMap.set(`${c.id}:${j}`, {
-          contestantId: c.id,
-          judgeId: j,
-          scores: [],
-          notes: "",
-          status: "draft",
-          conflictDeclared: false,
-          conflictResolved: false,
-          reopened: false,
-        });
-      }
-    }
-
-    // Overlay existing cards in state if they belong to active contestants
-    for (const c of state.scorecards) {
-      if (activeIds.has(c.contestantId)) {
-        liveCardsMap.set(`${c.contestantId}:${c.judgeId}`, c);
-      }
-    }
-
-    // Overlay database scorecards
     if (scorecardsData && scorecardsData.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       for (const row of scorecardsData as any[]) {
@@ -212,7 +198,7 @@ export async function refreshFromSupabase(): Promise<void> {
             reopenReason: row.reopened_reason ?? row.reopen_reason ?? undefined,
             updatedAt: row.updated_at,
           };
-          liveCardsMap.set(`${card.contestantId}:${card.judgeId}`, card);
+          dbCardsMap.set(`${card.contestantId}:${card.judgeId}`, card);
         }
       }
     }
@@ -234,24 +220,73 @@ export async function refreshFromSupabase(): Promise<void> {
     }
 
     // 5. Hydrate live vote counts from database ledger
-    const { data: votesData } = await client.from("votes").select("contestant_id");
-
+    // Uses RPC aggregation with paginated SELECT fallback to guarantee complete count even past 1000 rows
     const liveVoteCounts: Record<string, number> = {};
     for (const c of activeContestants) {
       liveVoteCounts[c.id] = 0;
     }
-    if (votesData && votesData.length > 0) {
+
+    let loadedVotesViaRpc = false;
+    try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const v of votesData as any[]) {
-        if (activeIds.has(v.contestant_id)) {
-          liveVoteCounts[v.contestant_id] = (liveVoteCounts[v.contestant_id] ?? 0) + 1;
+      const { data: rpcCounts, error: rpcErr } = await (client.rpc as any)(
+        "get_event_vote_counts",
+        {
+          p_event_id: DEFAULT_EVENT_ID,
+        },
+      );
+
+      if (!rpcErr && Array.isArray(rpcCounts)) {
+        for (const row of rpcCounts as { contestant_id: string; vote_count: number | string }[]) {
+          if (activeIds.has(row.contestant_id)) {
+            liveVoteCounts[row.contestant_id] = Number(row.vote_count) || 0;
+          }
+        }
+        loadedVotesViaRpc = true;
+      }
+    } catch {
+      /* fallback to paginated select below */
+    }
+
+    if (!loadedVotesViaRpc) {
+      const PAGE_SIZE = 1000;
+      let page = 0;
+      let hasMore = true;
+      let totalFetched = 0;
+
+      while (hasMore) {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        const { data: pageVotes, error: pageErr } = await client
+          .from("votes")
+          .select("contestant_id")
+          .range(from, to);
+
+        if (pageErr || !pageVotes || pageVotes.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        totalFetched += pageVotes.length;
+        for (const v of pageVotes as { contestant_id: string }[]) {
+          if (activeIds.has(v.contestant_id)) {
+            liveVoteCounts[v.contestant_id] = (liveVoteCounts[v.contestant_id] ?? 0) + 1;
+          }
+        }
+
+        if (pageVotes.length < PAGE_SIZE) {
+          hasMore = false;
+        } else {
+          page++;
         }
       }
-    } else {
-      // Preserve local demo votes if they match active IDs
-      for (const c of activeContestants) {
-        if (state.demoVotes[c.id] !== undefined) {
-          liveVoteCounts[c.id] = state.demoVotes[c.id]!;
+
+      // If no votes were retrieved from DB at all and local demo votes exist, preserve them
+      if (totalFetched === 0) {
+        for (const c of activeContestants) {
+          if (state.demoVotes[c.id] !== undefined) {
+            liveVoteCounts[c.id] = state.demoVotes[c.id]!;
+          }
         }
       }
     }
@@ -265,8 +300,56 @@ export async function refreshFromSupabase(): Promise<void> {
       .limit(1)
       .maybeSingle();
 
-    // 7. Atomic state update: completely replaces orphaned demo artifacts
+    // 7. Atomic state update: reconcile scorecards to preserve concurrent local mutations
     update((cur) => {
+      // Reconcile 64-card matrix across active contestants and 4 judges
+      const curCardsMap = new Map<string, Scorecard>();
+      for (const card of cur.scorecards) {
+        if (activeIds.has(card.contestantId)) {
+          curCardsMap.set(`${card.contestantId}:${card.judgeId}`, card);
+        }
+      }
+
+      const reconciledScorecards: Scorecard[] = [];
+      for (const c of activeContestants) {
+        for (const j of JUDGE_IDS) {
+          const key = `${c.id}:${j}`;
+          const curCard = curCardsMap.get(key);
+          const dbCard = dbCardsMap.get(key);
+
+          const defaultCard: Scorecard = {
+            contestantId: c.id,
+            judgeId: j,
+            scores: [],
+            notes: "",
+            status: "draft",
+            conflictDeclared: false,
+            conflictResolved: false,
+            reopened: false,
+          };
+
+          if (!curCard && !dbCard) {
+            reconciledScorecards.push(defaultCard);
+          } else if (!curCard) {
+            reconciledScorecards.push(dbCard!);
+          } else if (!dbCard) {
+            reconciledScorecards.push(curCard);
+          } else {
+            // Both exist: check which one is newer or modified during this refresh
+            const curTime = curCard.updatedAt ? new Date(curCard.updatedAt).getTime() : 0;
+            const dbTime = dbCard.updatedAt ? new Date(dbCard.updatedAt).getTime() : 0;
+
+            // If the local card was modified at/after the refresh started,
+            // or has a newer timestamp than the database row, preserve the local card!
+            if (curTime >= refreshStartedAt || curTime > dbTime) {
+              reconciledScorecards.push(curCard);
+            } else {
+              reconciledScorecards.push(dbCard);
+            }
+          }
+        }
+      }
+
       // Prune durations to only active contestants
       const prunedDurations: Record<string, DurationEntry> = {};
       for (const [k, v] of Object.entries(cur.durations)) {
@@ -294,7 +377,7 @@ export async function refreshFromSupabase(): Promise<void> {
         ...cur,
         votingStatus: (eventData?.voting_status as VotingStatus) ?? cur.votingStatus,
         contestants: activeContestants,
-        scorecards: Array.from(liveCardsMap.values()),
+        scorecards: reconciledScorecards,
         durations: prunedDurations,
         demoVotes: liveVoteCounts,
         results: newResults,
@@ -302,6 +385,12 @@ export async function refreshFromSupabase(): Promise<void> {
     });
   } catch (err) {
     console.warn("Supabase hydration background warning:", err);
+  } finally {
+    isRefreshing = false;
+    if (queuedRefresh) {
+      queuedRefresh = false;
+      void refreshFromSupabase();
+    }
   }
 }
 

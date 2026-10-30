@@ -611,6 +611,15 @@ export type Database = {
           avatar_url: string | null;
         }[];
       };
+      get_event_vote_counts: {
+        Args: {
+          p_event_id: string;
+        };
+        Returns: {
+          contestant_id: string;
+          vote_count: number;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
