@@ -172,12 +172,13 @@ BEGIN
         RAISE EXCEPTION 'Scorecard has been submitted and is locked for judging. Contact organiser to reopen.';
     END IF;
 
-    -- Judges cannot resolve their own conflicts or unilaterally toggle reopen flags
-    IF NEW.conflict_resolved != OLD.conflict_resolved THEN
+    -- Judges cannot resolve their own conflicts
+    IF NEW.conflict_resolved AND NOT OLD.conflict_resolved THEN
         RAISE EXCEPTION 'Only organisers can resolve declared conflicts of interest.';
     END IF;
 
-    IF NEW.reopened != OLD.reopened THEN
+    -- Judges cannot reopen a card (only organisers can transition reopened from false to true)
+    IF NEW.reopened AND NOT OLD.reopened THEN
         RAISE EXCEPTION 'Only organisers can reopen submitted scorecards.';
     END IF;
 

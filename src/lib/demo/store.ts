@@ -33,6 +33,7 @@ const STORAGE_KEY = "shabach2026.demo.v1";
 let state: DemoState = createSeedState();
 let hydrated = false;
 let storageWired = false;
+let liveSyncWired = false;
 const listeners = new Set<() => void>();
 
 function persist() {
@@ -108,182 +109,200 @@ export function hydrateDemoStore() {
 
   // Live database persistence sync: hydrate from Supabase when available
   if (isSupabaseConfigured()) {
-    void (async () => {
-      try {
-        const client = getSupabaseClient();
-        if (!client) return;
+    void refreshFromSupabase();
 
-        // 1. Fetch event status & voting status
-        const { data: eventData } = await client
-          .from("events")
-          .select("voting_status, lifecycle_status")
-          .eq("id", DEFAULT_EVENT_ID)
-          .maybeSingle();
-
-        // 2. Fetch contestants
-        const { data: contestantsData } = await client
-          .from("contestants")
-          .select("*")
-          .order("performance_order", { ascending: true });
-
-        let activeContestants = state.contestants;
-        if (contestantsData && contestantsData.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          activeContestants = contestantsData.map((row: any) => ({
-            id: row.id,
-            code: row.code,
-            name: row.full_name ?? row.name,
-            district: row.district,
-            type: (row.performance_type ?? "music") as PerformanceType,
-            title: row.performance_title ?? row.title ?? "",
-            bio: row.biography ?? row.bio ?? "",
-            order: row.performance_order,
-            hue: row.hue ?? (row.performance_order * 23) % 360,
-          }));
-        }
-
-        const activeIds = new Set(activeContestants.map((c) => c.id));
-        const JUDGE_IDS: JudgeId[] = ["judge1", "judge2", "judge3", "judge4"];
-
-        // 3. Hydrate scorecards: purge orphaned demo cards and build 64-card matrix
-        const { data: scorecardsData } = await client.from("scorecards").select("*");
-        const liveCardsMap = new Map<string, Scorecard>();
-
-        // Seed base clean draft cards for all active contestants across 4 judges
-        for (const c of activeContestants) {
-          for (const j of JUDGE_IDS) {
-            liveCardsMap.set(`${c.id}:${j}`, {
-              contestantId: c.id,
-              judgeId: j,
-              scores: [],
-              notes: "",
-              status: "draft",
-              conflictDeclared: false,
-              conflictResolved: false,
-              reopened: false,
-            });
-          }
-        }
-
-        // Overlay existing cards in state if they belong to active contestants
-        for (const c of state.scorecards) {
-          if (activeIds.has(c.contestantId)) {
-            liveCardsMap.set(`${c.contestantId}:${c.judgeId}`, c);
-          }
-        }
-
-        // Overlay database scorecards
-        if (scorecardsData && scorecardsData.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          for (const row of scorecardsData as any[]) {
-            if (activeIds.has(row.contestant_id)) {
-              const card: Scorecard = {
-                contestantId: row.contestant_id,
-                judgeId: row.judge_id as JudgeId,
-                scores: row.criteria_scores ?? row.scores ?? [],
-                notes: row.notes ?? "",
-                status: row.status ?? "draft",
-                conflictDeclared: Boolean(row.conflict_declared),
-                conflictResolved: Boolean(row.conflict_resolved),
-                reopened: Boolean(row.reopened),
-                reopenReason: row.reopened_reason ?? row.reopen_reason ?? undefined,
-                updatedAt: row.updated_at,
-              };
-              liveCardsMap.set(`${card.contestantId}:${card.judgeId}`, card);
-            }
-          }
-        }
-
-        // 4. Hydrate performance durations
-        const { data: durationsData } = await client.from("durations").select("*");
-        const loadedDurations: Record<string, DurationEntry> = {};
-        if (durationsData && durationsData.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          for (const row of durationsData as any[]) {
-            if (activeIds.has(row.contestant_id)) {
-              loadedDurations[row.contestant_id] = {
-                contestantId: row.contestant_id,
-                seconds: row.actual_seconds ?? row.duration_seconds ?? null,
-                verified: Boolean(row.verified),
-              };
-            }
-          }
-        }
-
-        // 5. Hydrate live vote counts from database ledger
-        const { data: votesData } = await client.from("votes").select("contestant_id");
-
-        const liveVoteCounts: Record<string, number> = {};
-        for (const c of activeContestants) {
-          liveVoteCounts[c.id] = 0;
-        }
-        if (votesData && votesData.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          for (const v of votesData as any[]) {
-            if (activeIds.has(v.contestant_id)) {
-              liveVoteCounts[v.contestant_id] = (liveVoteCounts[v.contestant_id] ?? 0) + 1;
-            }
-          }
-        } else {
-          // Preserve local demo votes if they match active IDs
-          for (const c of activeContestants) {
-            if (state.demoVotes[c.id] !== undefined) {
-              liveVoteCounts[c.id] = state.demoVotes[c.id]!;
-            }
-          }
-        }
-
-        // 6. Hydrate official results snapshot if present
-        const { data: snapshotData } = await client
-          .from("results_snapshots")
-          .select("*")
-          .eq("is_official", true)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        // 7. Atomic state update: completely replaces orphaned demo artifacts
-        update((cur) => {
-          // Prune durations to only active contestants
-          const prunedDurations: Record<string, DurationEntry> = {};
-          for (const [k, v] of Object.entries(cur.durations)) {
-            if (activeIds.has(k)) prunedDurations[k] = v;
-          }
-          for (const [k, v] of Object.entries(loadedDurations)) {
-            prunedDurations[k] = v;
-          }
-
-          let newResults = cur.results;
-
-          if (snapshotData) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const snapPayload: any = snapshotData.rows_data;
-            const rows = snapPayload?.rows ?? (Array.isArray(snapPayload) ? snapPayload : []);
-            newResults = {
-              lockedAt: snapshotData.locked_at,
-              published: Boolean(snapshotData.published),
-              ...(snapshotData.published_at ? { publishedAt: snapshotData.published_at } : {}),
-              rows,
-            };
-          }
-
-          return {
-            ...cur,
-            votingStatus: (eventData?.voting_status as VotingStatus) ?? cur.votingStatus,
-            contestants: activeContestants,
-            scorecards: Array.from(liveCardsMap.values()),
-            durations: prunedDurations,
-            demoVotes: liveVoteCounts,
-            results: newResults,
-          };
-        });
-      } catch (err) {
-        console.warn("Supabase hydration background warning:", err);
-      }
-    })();
+    if (!liveSyncWired && typeof window !== "undefined") {
+      liveSyncWired = true;
+      window.addEventListener("focus", () => {
+        void refreshFromSupabase();
+      });
+      window.setInterval(() => {
+        void refreshFromSupabase();
+      }, 5000);
+    }
   }
 
   emit();
+}
+
+/**
+ * Authoritative Database Synchronization
+ * Re-queries live event lifecycle, contestants, 64-scorecard matrix, stopwatch durations,
+ * real audience vote totals, and frozen official results.
+ */
+export async function refreshFromSupabase(): Promise<void> {
+  if (typeof window === "undefined" || !isSupabaseConfigured()) return;
+  const client = getSupabaseClient();
+  if (!client) return;
+
+  try {
+    // 1. Fetch event status & voting status
+    const { data: eventData } = await client
+      .from("events")
+      .select("voting_status, lifecycle_status")
+      .eq("id", DEFAULT_EVENT_ID)
+      .maybeSingle();
+
+    // 2. Fetch contestants
+    const { data: contestantsData } = await client
+      .from("contestants")
+      .select("*")
+      .order("performance_order", { ascending: true });
+
+    let activeContestants = state.contestants;
+    if (contestantsData && contestantsData.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      activeContestants = contestantsData.map((row: any) => ({
+        id: row.id,
+        code: row.code,
+        name: row.full_name ?? row.name,
+        district: row.district,
+        type: (row.performance_type ?? "music") as PerformanceType,
+        title: row.performance_title ?? row.title ?? "",
+        bio: row.biography ?? row.bio ?? "",
+        order: row.performance_order,
+        hue: row.hue ?? (row.performance_order * 23) % 360,
+      }));
+    }
+
+    const activeIds = new Set(activeContestants.map((c) => c.id));
+    const JUDGE_IDS: JudgeId[] = ["judge1", "judge2", "judge3", "judge4"];
+
+    // 3. Hydrate scorecards: purge orphaned demo cards and build 64-card matrix
+    const { data: scorecardsData } = await client.from("scorecards").select("*");
+    const liveCardsMap = new Map<string, Scorecard>();
+
+    // Seed base clean draft cards for all active contestants across 4 judges
+    for (const c of activeContestants) {
+      for (const j of JUDGE_IDS) {
+        liveCardsMap.set(`${c.id}:${j}`, {
+          contestantId: c.id,
+          judgeId: j,
+          scores: [],
+          notes: "",
+          status: "draft",
+          conflictDeclared: false,
+          conflictResolved: false,
+          reopened: false,
+        });
+      }
+    }
+
+    // Overlay existing cards in state if they belong to active contestants
+    for (const c of state.scorecards) {
+      if (activeIds.has(c.contestantId)) {
+        liveCardsMap.set(`${c.contestantId}:${c.judgeId}`, c);
+      }
+    }
+
+    // Overlay database scorecards
+    if (scorecardsData && scorecardsData.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const row of scorecardsData as any[]) {
+        if (activeIds.has(row.contestant_id)) {
+          const card: Scorecard = {
+            contestantId: row.contestant_id,
+            judgeId: row.judge_id as JudgeId,
+            scores: row.criteria_scores ?? row.scores ?? [],
+            notes: row.notes ?? "",
+            status: row.status ?? "draft",
+            conflictDeclared: Boolean(row.conflict_declared),
+            conflictResolved: Boolean(row.conflict_resolved),
+            reopened: Boolean(row.reopened),
+            reopenReason: row.reopened_reason ?? row.reopen_reason ?? undefined,
+            updatedAt: row.updated_at,
+          };
+          liveCardsMap.set(`${card.contestantId}:${card.judgeId}`, card);
+        }
+      }
+    }
+
+    // 4. Hydrate performance durations
+    const { data: durationsData } = await client.from("durations").select("*");
+    const loadedDurations: Record<string, DurationEntry> = {};
+    if (durationsData && durationsData.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const row of durationsData as any[]) {
+        if (activeIds.has(row.contestant_id)) {
+          loadedDurations[row.contestant_id] = {
+            contestantId: row.contestant_id,
+            seconds: row.actual_seconds ?? row.duration_seconds ?? null,
+            verified: Boolean(row.verified),
+          };
+        }
+      }
+    }
+
+    // 5. Hydrate live vote counts from database ledger
+    const { data: votesData } = await client.from("votes").select("contestant_id");
+
+    const liveVoteCounts: Record<string, number> = {};
+    for (const c of activeContestants) {
+      liveVoteCounts[c.id] = 0;
+    }
+    if (votesData && votesData.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const v of votesData as any[]) {
+        if (activeIds.has(v.contestant_id)) {
+          liveVoteCounts[v.contestant_id] = (liveVoteCounts[v.contestant_id] ?? 0) + 1;
+        }
+      }
+    } else {
+      // Preserve local demo votes if they match active IDs
+      for (const c of activeContestants) {
+        if (state.demoVotes[c.id] !== undefined) {
+          liveVoteCounts[c.id] = state.demoVotes[c.id]!;
+        }
+      }
+    }
+
+    // 6. Hydrate official results snapshot if present
+    const { data: snapshotData } = await client
+      .from("results_snapshots")
+      .select("*")
+      .eq("is_official", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // 7. Atomic state update: completely replaces orphaned demo artifacts
+    update((cur) => {
+      // Prune durations to only active contestants
+      const prunedDurations: Record<string, DurationEntry> = {};
+      for (const [k, v] of Object.entries(cur.durations)) {
+        if (activeIds.has(k)) prunedDurations[k] = v;
+      }
+      for (const [k, v] of Object.entries(loadedDurations)) {
+        prunedDurations[k] = v;
+      }
+
+      let newResults = cur.results;
+
+      if (snapshotData) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const snapPayload: any = snapshotData.rows_data;
+        const rows = snapPayload?.rows ?? (Array.isArray(snapPayload) ? snapPayload : []);
+        newResults = {
+          lockedAt: snapshotData.locked_at,
+          published: Boolean(snapshotData.published),
+          ...(snapshotData.published_at ? { publishedAt: snapshotData.published_at } : {}),
+          rows,
+        };
+      }
+
+      return {
+        ...cur,
+        votingStatus: (eventData?.voting_status as VotingStatus) ?? cur.votingStatus,
+        contestants: activeContestants,
+        scorecards: Array.from(liveCardsMap.values()),
+        durations: prunedDurations,
+        demoVotes: liveVoteCounts,
+        results: newResults,
+      };
+    });
+  } catch (err) {
+    console.warn("Supabase hydration background warning:", err);
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

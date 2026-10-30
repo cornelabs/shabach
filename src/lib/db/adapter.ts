@@ -18,6 +18,7 @@ import {
   submitScorecard as demoSubmitScorecard,
   updateContestant as demoUpdateContestant,
   voteCountsOf as demoVoteCountsOf,
+  refreshFromSupabase,
 } from "@/lib/demo/store";
 import type {
   Contestant,
@@ -517,6 +518,8 @@ export class LiveSupabaseAdapter implements IDataAdapter {
   }
 
   async lockResults(tieResolutions: TieResolution[]): Promise<ResultsSnapshot> {
+    // Refresh authoritative scorecards and vote totals from database before collation
+    await refreshFromSupabase();
     const snapshot = await new DemoDataAdapter().lockResults(tieResolutions);
 
     try {
