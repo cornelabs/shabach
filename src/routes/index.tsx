@@ -1,12 +1,9 @@
-import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Gavel, ScrollText, Search, Timer, Trophy, Users, Vote, X } from "lucide-react";
+import { ArrowRight, Gavel, ScrollText, Timer, Trophy, Users, Vote } from "lucide-react";
 
 import { ContestantCard } from "@/components/contestant-card";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useDemoState } from "@/hooks/use-demo";
 import { FINALE_DATE_LABEL, VOTING_STATUS_LABEL } from "@/lib/demo/labels";
 
@@ -83,8 +80,8 @@ function Hero() {
         <p className="mt-2 font-display text-2xl text-gold-soft sm:text-3xl">Talent for Christ</p>
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-ivory/85 sm:text-lg">
           Sixteen contestants — individuals and groups from eight districts — bring music, dance,
-          spoken word, mono-drama and visual arts to the Grand Finale stage. The audience votes,
-          three independent judges score, and every result is verified before it is published.
+          spoken word, mono-drama and visual arts to the Grand Finale stage. The audience votes, three
+          independent judges score, and every result is verified before it is published.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <a
@@ -120,28 +117,11 @@ function Hero() {
 
 function ContestantGrid() {
   const state = useDemoState();
-  const [searchQuery, setSearchQuery] = React.useState("");
-
-  const sorted = React.useMemo(() => {
-    return [...state.contestants].sort((a, b) => a.order - b.order);
-  }, [state.contestants]);
-
-  const filtered = React.useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return sorted;
-    return sorted.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.code.toLowerCase().includes(q) ||
-        c.district.toLowerCase().includes(q) ||
-        c.title.toLowerCase().includes(q),
-    );
-  }, [sorted, searchQuery]);
-
+  const sorted = [...state.contestants].sort((a, b) => a.order - b.order);
   return (
     <section id="contestants" className="scroll-mt-20 bg-ivory py-16">
       <div className="mx-auto max-w-6xl px-4">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-3xl text-forest">Meet the contestants</h2>
             <p className="mt-1 text-sm text-charcoal-muted">
@@ -154,73 +134,16 @@ function ContestantGrid() {
             </p>
           )}
         </div>
-
-        {/* Search bar */}
-        <div className="mt-6 flex max-w-md items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-charcoal-muted" />
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by contestant name or code (e.g. Grace or SB7K2M)..."
-              className="border-cream-line bg-card pl-9 pr-9 text-sm text-charcoal placeholder:text-charcoal-muted/70 focus-visible:ring-forest"
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {sorted.map((contestant) => (
+            <ContestantCard
+              key={contestant.id}
+              contestant={contestant}
+              votingStatus={state.votingStatus}
+              myVote={state.browserVote?.contestantId ?? null}
             />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                aria-label="Clear search"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-charcoal-muted hover:text-forest"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          {searchQuery && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSearchQuery("")}
-              className="border-cream-line text-xs"
-            >
-              Reset
-            </Button>
-          )}
+          ))}
         </div>
-
-        {filtered.length > 0 ? (
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((contestant) => (
-              <ContestantCard
-                key={contestant.id}
-                contestant={contestant}
-                votingStatus={state.votingStatus}
-                myVote={state.browserVote?.contestantId ?? null}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="mt-8 rounded-2xl border border-cream-line bg-card p-10 text-center shadow-card">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-parchment text-charcoal-muted">
-              <Search className="h-6 w-6" />
-            </div>
-            <h3 className="mt-4 font-display text-xl text-forest">
-              No contestants match “{searchQuery}”
-            </h3>
-            <p className="mt-2 text-sm text-charcoal-muted">
-              Check the spelling, or try searching by six-character share code (e.g. SB7K2M) or
-              district name.
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => setSearchQuery("")}
-              className="mt-5 border-cream-line"
-            >
-              Show all 16 contestants
-            </Button>
-          </div>
-        )}
       </div>
     </section>
   );
@@ -255,10 +178,7 @@ function HowScoringWorks() {
         </p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {SCORING_CARDS.map((card) => (
-            <div
-              key={card.title}
-              className="rounded-2xl border border-cream-line bg-card p-6 shadow-card"
-            >
+            <div key={card.title} className="rounded-2xl border border-cream-line bg-card p-6 shadow-card">
               <card.icon className="h-6 w-6 text-gold" />
               <h3 className="mt-3 font-display text-xl text-forest">{card.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-charcoal-muted">{card.body}</p>

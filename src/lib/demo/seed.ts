@@ -1,4 +1,10 @@
-import type { Contestant, DemoState, DurationEntry, JudgeId, Scorecard } from "./types";
+import type {
+  Contestant,
+  DemoState,
+  DurationEntry,
+  JudgeId,
+  Scorecard,
+} from "./types";
 
 /**
  * Demo seed data — 16 fictional contestants, two per district, mixed
@@ -154,42 +160,12 @@ export const CONTESTANT_SEED: Omit<Contestant, "order" | "hue">[] = [
 ];
 
 // Interleave performance types across a 1..16 running order.
-const ORDER_SEED = [
-  "c01",
-  "c07",
-  "c13",
-  "c03",
-  "c09",
-  "c11",
-  "c15",
-  "c05",
-  "c02",
-  "c14",
-  "c10",
-  "c08",
-  "c12",
-  "c06",
-  "c16",
-  "c04",
-];
+const ORDER_SEED = ["c01", "c07", "c13", "c03", "c09", "c11", "c15", "c05", "c02", "c14", "c10", "c08", "c12", "c06", "c16", "c04"];
 
 const HUES: Record<string, number> = {
-  c01: 168,
-  c02: 150,
-  c03: 202,
-  c04: 20,
-  c05: 130,
-  c06: 88,
-  c07: 320,
-  c08: 246,
-  c09: 190,
-  c10: 40,
-  c11: 300,
-  c12: 70,
-  c13: 210,
-  c14: 175,
-  c15: 95,
-  c16: 15,
+  c01: 168, c02: 150, c03: 202, c04: 20, c05: 130, c06: 88, c07: 320,
+  c08: 246, c09: 190, c10: 40, c11: 300, c12: 70, c13: 210, c14: 175,
+  c15: 95, c16: 15,
 };
 
 export function buildContestants(): Contestant[] {
@@ -202,22 +178,9 @@ export function buildContestants(): Contestant[] {
 
 /** Simulated audience vote counts (demo data, labelled as such everywhere they appear). */
 export const DEMO_VOTES_SEED: Record<string, number> = {
-  c01: 412,
-  c02: 338,
-  c03: 287,
-  c04: 121,
-  c05: 356,
-  c06: 88,
-  c07: 301,
-  c08: 245,
-  c09: 198,
-  c10: 154,
-  c11: 266,
-  c12: 73,
-  c13: 349,
-  c14: 132,
-  c15: 224,
-  c16: 96,
+  c01: 412, c02: 338, c03: 287, c04: 121, c05: 356, c06: 88, c07: 301,
+  c08: 245, c09: 198, c10: 154, c11: 266, c12: 73, c13: 349, c14: 132,
+  c15: 224, c16: 96,
 };
 
 function card(
@@ -247,6 +210,8 @@ const ALL_NULL = [null, null, null, null, null];
 export function buildScorecards(contestants: Contestant[]): Scorecard[] {
   const cards: Scorecard[] = [];
 
+
+
   const submitted: Array<[string, JudgeId, (number | null)[]]> = [
     ["c01", "judge1", [17, 15, 18, 16, 12]],
     ["c01", "judge2", [16, 14, 17, 17, 11]],
@@ -270,18 +235,12 @@ export function buildScorecards(contestants: Contestant[]): Scorecard[] {
   for (const [id, judge, scores] of submitted) cards.push(card(id, judge, scores, "submitted"));
 
   const drafts: Array<[string, JudgeId, (number | null)[], string]> = [
-    [
-      "c01",
-      "judge3",
-      [17, null, 16, 15, 11],
-      "Come back to creativity after the finale run-through.",
-    ],
+    ["c01", "judge3", [17, null, 16, 15, 11], "Come back to creativity after the finale run-through."],
     ["c03", "judge3", [null, 15, null, 14, null], ""],
     ["c10", "judge1", [16, 15, 17, 14, null], "Strong acting; props use still developing."],
     ["c08", "judge2", [17, null, 16, null, 12], ""],
   ];
-  for (const [id, judge, scores, notes] of drafts)
-    cards.push(card(id, judge, scores, "draft", notes));
+  for (const [id, judge, scores, notes] of drafts) cards.push(card(id, judge, scores, "draft", notes));
 
   // One declared, unresolved conflict of interest — blocks finalisation until resolved.
   cards.push(
@@ -297,13 +256,7 @@ export function buildDurations(contestants: Contestant[]): Record<string, Durati
   const durations: Record<string, DurationEntry> = {};
   // A few demo durations already entered (some over time), most unverified.
   const entered: Record<string, number> = {
-    c01: 238,
-    c02: 252,
-    c03: 226,
-    c05: 244,
-    c13: 239,
-    c12: 571,
-    c16: 605,
+    c01: 238, c02: 252, c03: 226, c05: 244, c13: 239, c12: 571, c16: 605,
   };
   for (const c of contestants) {
     const seconds = entered[c.id] ?? null;
@@ -333,6 +286,5 @@ export function createSeedState(): DemoState {
     scoreDeskConfirmed: false,
     results: null,
     activeJudge: null,
-    tieResolutions: [],
   };
 }

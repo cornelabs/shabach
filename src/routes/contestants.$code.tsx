@@ -1,33 +1,37 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import * as React from "react";
-import { ArrowLeft, BadgeCheck, Copy, QrCode, Share2, Vote } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ArrowLeft, BadgeCheck, QrCode, Vote } from "lucide-react";
 
 import { Monogram } from "@/components/monogram";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { VoteConfirmationDialog } from "@/components/vote-confirmation-dialog";
 import { useDemoState } from "@/hooks/use-demo";
-import { formatSeconds, typeLabel } from "@/lib/demo/labels";
+import { castVote } from "@/lib/demo/store";
+import { typeLabel } from "@/lib/demo/labels";
+import { buildContestants } from "@/lib/demo/seed";
 import { rubricFor } from "@/lib/demo/rubrics";
-import { getState } from "@/lib/demo/store";
-import type { Contestant } from "@/lib/demo/types";
+import { formatSeconds } from "@/lib/demo/labels";
 
 export const Route = createFileRoute("/contestants/$code")({
   loader: ({ params }) => {
     const code = params.code.toUpperCase();
-    const contestant = getState().contestants.find((c) => c.code === code);
+    const contestant = buildContestants().find((c) => c.code === code);
     if (!contestant) throw notFound();
     return { code };
   },
   head: ({ params }) => {
-    const contestant = getState().contestants.find((c) => c.code === params.code.toUpperCase());
+    const contestant = buildContestants().find(
+      (c) => c.code === params.code.toUpperCase(),
+    );
     return {
       meta: [
         {
-          title: contestant ? `${contestant.name} — SHABACH 2026` : "Contestant — SHABACH 2026",
+          title: contestant
+            ? `${contestant.name} — SHABACH 2026`
+            : "Contestant — SHABACH 2026",
         },
         {
           name: "description",
@@ -52,8 +56,8 @@ export const Route = createFileRoute("/contestants/$code")({
 });
 
 function useQrDataUrl(url: string | null) {
-  const [dataUrl, setDataUrl] = React.useState<string | null>(null);
-  React.useEffect(() => {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  useEffect(() => {
     if (!url) return;
     let cancelled = false;
     void import("qrcode").then((qrcode) =>
@@ -68,133 +72,85 @@ function useQrDataUrl(url: string | null) {
   return dataUrl;
 }
 
-function VotePanel({ contestant }: { contestant: Contestant }) {
+function VotePanel({ contestantId, name }: { contestantId: string; name: string }) {
   const state = useDemoState();
-  const [confirmOpen, setConfirmOpen] = React.useState(false);
   const myVote = state.browserVote?.contestantId ?? null;
-  const votedForThis = myVote === contestant.id;
+  const votedForThis = myVote === contestantId;
+
+  function handleVote() {
+    const result = castVote(contestantId);
+    if (result.ok) {
+      toast.success(`Vote recorded for ${name} (demo)`, {
+        description: "One vote per person — thank you for voting.",
+      });
+    } else if (result.reason === "already_voted") {
+      toast.error("You've already voted in this browser", {
+        description: "One vote per person across the whole competition.",
+      });
+    } else if (result.reason === "not_open") {
+      toast.info("Voting hasn't opened yet.");
+    } else {
+      toast.info("Voting is closed.");
+    }
+  }
 
   return (
-    <>
-      <div className="rounded-2xl border border-cream-line bg-card p-6 shadow-card">
-        <h2 className="font-display text-xl text-forest">Public vote</h2>
-        {state.votingStatus === "open" ? (
-          votedForThis ? (
-            <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-forest-soft">
-              <BadgeCheck className="h-5 w-5" />
-              Your vote for {contestant.name} is recorded (demo).
-            </p>
-          ) : myVote ? (
-            <p className="mt-3 text-sm text-charcoal-muted">
-              You've already voted for another contestant in this browser — one vote per person, and
-              it cannot be changed.
-            </p>
-          ) : (
-            <>
-              <p className="mt-3 text-sm text-charcoal-muted">
-                Each voter gets one final vote across the entire Grand Finale. Record your vote
-                below.
-              </p>
-              <Button
-                className="mt-4 w-full bg-forest text-ivory hover:bg-forest-deep"
-                onClick={() => setConfirmOpen(true)}
-              >
-                <Vote className="h-4 w-4 mr-2" /> Vote for {contestant.name}
-              </Button>
-            </>
-          )
-        ) : (
-          <p className="mt-3 text-sm text-charcoal-muted">
-            {state.votingStatus === "closed"
-              ? "Voting is closed. Follow the verified results on the results page."
-              : "Voting opens at the Grand Finale."}
+    <div className="rounded-2xl border border-cream-line bg-card p-6 shadow-card">
+      <h2 className="font-display text-xl text-forest">Public vote</h2>
+      {state.votingStatus === "open" ? (
+        votedForThis ? (
+          <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-forest-soft">
+            <BadgeCheck className="h-5 w-5" />
+            Your vote for {name} is recorded (demo).
           </p>
-        )}
-      </div>
-
-      <VoteConfirmationDialog
-        contestant={contestant}
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-      />
-    </>
+        ) : myVote ? (
+          <p className="mt-3 text-sm text-charcoal-muted">
+            You've already voted for another contestant in this browser — one vote per person, and it
+            can't be changed.
+          </p>
+        ) : (
+          <>
+            <p className="mt-3 text-sm text-charcoal-muted">
+              One vote per person. Your vote is stored only in this demo browser.
+            </p>
+            <Button className="mt-4 w-full" onClick={handleVote}>
+              <Vote className="h-4 w-4" /> Vote for {name}
+            </Button>
+          </>
+        )
+      ) : (
+        <p className="mt-3 text-sm text-charcoal-muted">
+          {state.votingStatus === "closed"
+            ? "Voting is closed. Follow the verified results on the results page."
+            : "Voting opens at the Grand Finale."}
+        </p>
+      )}
+    </div>
   );
 }
 
 function SharePanel({ code }: { code: string }) {
-  const [url, setUrl] = React.useState<string | null>(null);
-  React.useEffect(() => {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
     setUrl(window.location.href);
   }, []);
   const qr = useQrDataUrl(url);
-
-  const handleCopyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
-      toast.success("Contestant code copied!", {
-        description: `Code ${code} copied to clipboard.`,
-      });
-    } catch {
-      toast.error("Failed to copy code to clipboard.");
-    }
-  };
-
-  const handleCopyLink = async () => {
-    try {
-      const shareUrl = url || window.location.href;
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success("Profile link copied!", {
-        description: "Direct link copied to clipboard.",
-      });
-    } catch {
-      toast.error("Failed to copy link to clipboard.");
-    }
-  };
-
   return (
     <div className="rounded-2xl border border-cream-line bg-card p-6 shadow-card">
       <h2 className="flex items-center gap-2 font-display text-xl text-forest">
         <QrCode className="h-5 w-5 text-gold" /> Share this profile
       </h2>
       <p className="mt-2 text-sm text-charcoal-muted">
-        Share code <span className="font-mono font-semibold text-charcoal">{code}</span> — copy the
-        code, send the profile link, or have others scan the QR code to view and vote.
+        Share code <span className="font-mono font-semibold text-charcoal">{code}</span> — scan or
+        send the link so others can read the profile and vote.
       </p>
-
-      {/* Copy Code & Copy Link Buttons */}
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCopyCode}
-          className="border-cream-line text-xs font-medium"
-        >
-          <Copy className="mr-1.5 h-3.5 w-3.5 text-forest" /> Copy Code
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCopyLink}
-          className="border-cream-line text-xs font-medium"
-        >
-          <Share2 className="mr-1.5 h-3.5 w-3.5 text-forest" /> Copy Link
-        </Button>
-      </div>
-
       <div className="mt-4 flex items-center justify-center rounded-xl border border-cream-line bg-ivory p-3">
         {qr ? (
-          <img
-            src={qr}
-            alt={`QR code linking to contestant profile ${code}`}
-            className="h-[220px] w-[220px]"
-          />
+          <img src={qr} alt={`QR code linking to contestant profile ${code}`} className="h-[220px] w-[220px]" />
         ) : (
           <div className="h-[220px] w-[220px] animate-pulse rounded bg-parchment" aria-hidden />
         )}
       </div>
-      <p className="mt-2 text-center text-xs text-charcoal-muted">
-        Scanning never casts a vote automatically.
-      </p>
     </div>
   );
 }
@@ -229,7 +185,9 @@ function ContestantProfile() {
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <Badge variant="secondary">{typeLabel(contestant.type)}</Badge>
                   <Badge variant="outline">{contestant.district}</Badge>
-                  <Badge variant="outline">Time limit {formatSeconds(rubric.timeLimitSec)}</Badge>
+                  <Badge variant="outline">
+                    Time limit {formatSeconds(rubric.timeLimitSec)}
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -241,9 +199,7 @@ function ContestantProfile() {
             </div>
 
             <div className="mt-4 rounded-2xl border border-cream-line bg-card p-6 shadow-card">
-              <h2 className="font-display text-xl text-forest">
-                How {contestant.name} will be scored
-              </h2>
+              <h2 className="font-display text-xl text-forest">How {contestant.name} will be scored</h2>
               <p className="mt-2 text-sm text-charcoal-muted">
                 {typeLabel(contestant.type)} rubric — five criteria, 95 raw points, plus up to 5
                 points from the public vote.
@@ -265,7 +221,7 @@ function ContestantProfile() {
           </div>
 
           <div className="space-y-4">
-            <VotePanel contestant={contestant} />
+            <VotePanel contestantId={contestant.id} name={contestant.name} />
             <SharePanel code={contestant.code} />
           </div>
         </div>

@@ -1,5 +1,17 @@
 import type { ResultRow } from "./types";
 
+/** Trigger a browser download of a CSV file. Call from event handlers only. */
+export function downloadCsvFile(csv: string, filename: string) {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+
 function csvCell(value: string | number | null): string {
   const text = value === null ? "" : String(value);
   if (/[",\n]/.test(text)) return `"${text.replaceAll('"', '""')}"`;

@@ -1,5 +1,10 @@
 import { rubricFor } from "./rubrics";
-import type { ActivityKind, PerformanceType, ScorecardStatus, VotingStatus } from "./types";
+import type {
+  ActivityKind,
+  PerformanceType,
+  ScorecardStatus,
+  VotingStatus,
+} from "./types";
 
 export function typeLabel(type: PerformanceType): string {
   return rubricFor(type).label;

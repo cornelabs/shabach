@@ -10,35 +10,15 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as DemoRouteImport } from './routes/demo'
-import { Route as JudgeRouteImport } from './routes/judge'
 import { Route as JudgesRouteImport } from './routes/judges'
 import { Route as OrganiserRouteImport } from './routes/organiser'
-import { Route as OrganisersRouteImport } from './routes/organisers'
-import { Route as OrganizerRouteImport } from './routes/organizer'
-import { Route as OrganizersRouteImport } from './routes/organizers'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as ContestantsCodeRouteImport } from './routes/contestants.$code'
+import { Route as JudgesJudgeIdRouteImport } from './routes/judges.$judgeId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoRoute = DemoRouteImport.update({
-  id: '/demo',
-  path: '/demo',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JudgeRoute = JudgeRouteImport.update({
-  id: '/judge',
-  path: '/judge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JudgesRoute = JudgesRouteImport.update({
@@ -51,21 +31,6 @@ const OrganiserRoute = OrganiserRouteImport.update({
   path: '/organiser',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OrganisersRoute = OrganisersRouteImport.update({
-  id: '/organisers',
-  path: '/organisers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrganizerRoute = OrganizerRouteImport.update({
-  id: '/organizer',
-  path: '/organizer',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrganizersRoute = OrganizersRouteImport.update({
-  id: '/organizers',
-  path: '/organizers',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ResultsRoute = ResultsRouteImport.update({
   id: '/results',
   path: '/results',
@@ -76,99 +41,68 @@ const ContestantsCodeRoute = ContestantsCodeRouteImport.update({
   path: '/contestants/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JudgesJudgeIdRoute = JudgesJudgeIdRouteImport.update({
+  id: '/$judgeId',
+  path: '/$judgeId',
+  getParentRoute: () => JudgesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/demo': typeof DemoRoute
-  '/judge': typeof JudgeRoute
-  '/judges': typeof JudgesRoute
+  '/judges': typeof JudgesRouteWithChildren
   '/organiser': typeof OrganiserRoute
-  '/organisers': typeof OrganisersRoute
-  '/organizer': typeof OrganizerRoute
-  '/organizers': typeof OrganizersRoute
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
+  '/judges/$judgeId': typeof JudgesJudgeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/demo': typeof DemoRoute
-  '/judge': typeof JudgeRoute
-  '/judges': typeof JudgesRoute
+  '/judges': typeof JudgesRouteWithChildren
   '/organiser': typeof OrganiserRoute
-  '/organisers': typeof OrganisersRoute
-  '/organizer': typeof OrganizerRoute
-  '/organizers': typeof OrganizersRoute
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
+  '/judges/$judgeId': typeof JudgesJudgeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/demo': typeof DemoRoute
-  '/judge': typeof JudgeRoute
-  '/judges': typeof JudgesRoute
+  '/judges': typeof JudgesRouteWithChildren
   '/organiser': typeof OrganiserRoute
-  '/organisers': typeof OrganisersRoute
-  '/organizer': typeof OrganizerRoute
-  '/organizers': typeof OrganizersRoute
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
+  '/judges/$judgeId': typeof JudgesJudgeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
-    | '/demo'
-    | '/judge'
     | '/judges'
     | '/organiser'
-    | '/organisers'
-    | '/organizer'
-    | '/organizers'
     | '/results'
     | '/contestants/$code'
+    | '/judges/$judgeId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
-    | '/demo'
-    | '/judge'
     | '/judges'
     | '/organiser'
-    | '/organisers'
-    | '/organizer'
-    | '/organizers'
     | '/results'
     | '/contestants/$code'
+    | '/judges/$judgeId'
   id:
     | '__root__'
     | '/'
-    | '/admin'
-    | '/demo'
-    | '/judge'
     | '/judges'
     | '/organiser'
-    | '/organisers'
-    | '/organizer'
-    | '/organizers'
     | '/results'
     | '/contestants/$code'
+    | '/judges/$judgeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
-  DemoRoute: typeof DemoRoute
-  JudgeRoute: typeof JudgeRoute
-  JudgesRoute: typeof JudgesRoute
+  JudgesRoute: typeof JudgesRouteWithChildren
   OrganiserRoute: typeof OrganiserRoute
-  OrganisersRoute: typeof OrganisersRoute
-  OrganizerRoute: typeof OrganizerRoute
-  OrganizersRoute: typeof OrganizersRoute
   ResultsRoute: typeof ResultsRoute
   ContestantsCodeRoute: typeof ContestantsCodeRoute
 }
@@ -180,27 +114,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo': {
-      id: '/demo'
-      path: '/demo'
-      fullPath: '/demo'
-      preLoaderRoute: typeof DemoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/judge': {
-      id: '/judge'
-      path: '/judge'
-      fullPath: '/judge'
-      preLoaderRoute: typeof JudgeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/judges': {
@@ -217,27 +130,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganiserRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/organisers': {
-      id: '/organisers'
-      path: '/organisers'
-      fullPath: '/organisers'
-      preLoaderRoute: typeof OrganisersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/organizer': {
-      id: '/organizer'
-      path: '/organizer'
-      fullPath: '/organizer'
-      preLoaderRoute: typeof OrganizerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/organizers': {
-      id: '/organizers'
-      path: '/organizers'
-      fullPath: '/organizers'
-      preLoaderRoute: typeof OrganizersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/results': {
       id: '/results'
       path: '/results'
@@ -252,19 +144,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContestantsCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/judges/$judgeId': {
+      id: '/judges/$judgeId'
+      path: '/$judgeId'
+      fullPath: '/judges/$judgeId'
+      preLoaderRoute: typeof JudgesJudgeIdRouteImport
+      parentRoute: typeof JudgesRoute
+    }
   }
 }
 
+interface JudgesRouteChildren {
+  JudgesJudgeIdRoute: typeof JudgesJudgeIdRoute
+}
+
+const JudgesRouteChildren: JudgesRouteChildren = {
+  JudgesJudgeIdRoute: JudgesJudgeIdRoute,
+}
+
+const JudgesRouteWithChildren =
+  JudgesRoute._addFileChildren(JudgesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
-  DemoRoute: DemoRoute,
-  JudgeRoute: JudgeRoute,
-  JudgesRoute: JudgesRoute,
+  JudgesRoute: JudgesRouteWithChildren,
   OrganiserRoute: OrganiserRoute,
-  OrganisersRoute: OrganisersRoute,
-  OrganizerRoute: OrganizerRoute,
-  OrganizersRoute: OrganizersRoute,
   ResultsRoute: ResultsRoute,
   ContestantsCodeRoute: ContestantsCodeRoute,
 }

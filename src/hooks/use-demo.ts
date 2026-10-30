@@ -1,5 +1,10 @@
 import { useSyncExternalStore, useEffect } from "react";
-import { getState, getServerState, hydrateDemoStore, subscribe } from "@/lib/demo/store";
+import {
+  getState,
+  getServerState,
+  hydrateDemoStore,
+  subscribe,
+} from "@/lib/demo/store";
 import type { DemoState } from "@/lib/demo/types";
 
 /**
