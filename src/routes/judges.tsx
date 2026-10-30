@@ -54,7 +54,7 @@ function JudgesHome() {
           </div>
         )}
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {JUDGES.map((judge) => (
             <button
               key={judge.id}

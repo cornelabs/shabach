@@ -1,10 +1,5 @@
 import { rubricFor } from "./rubrics";
-import type {
-  ActivityKind,
-  PerformanceType,
-  ScorecardStatus,
-  VotingStatus,
-} from "./types";
+import type { ActivityKind, PerformanceType, ScorecardStatus, VotingStatus } from "./types";
 
 export function typeLabel(type: PerformanceType): string {
   return rubricFor(type).label;
@@ -21,10 +16,14 @@ export function formatSeconds(seconds: number | null | undefined): string {
 export function parseDuration(raw: string): number | null {
   const text = raw.trim();
   if (!text) return null;
-  if (/^\d+$/.test(text)) return Number(text);
+  if (/^\d+$/.test(text)) {
+    const val = Number(text);
+    return Number.isFinite(val) && val >= 0 ? val : null;
+  }
   const match = text.match(/^(\d+):([0-5]\d)$/);
   if (!match) return null;
-  return Number(match[1]) * 60 + Number(match[2]);
+  const val = Number(match[1]) * 60 + Number(match[2]);
+  return Number.isFinite(val) && val >= 0 ? val : null;
 }
 
 export const VOTING_STATUS_LABEL: Record<VotingStatus, string> = {
@@ -64,3 +63,16 @@ export function formatLagos(iso: string): string {
 
 export const FINALE_DATE_LABEL = "Saturday, 14 November 2026";
 export const TIMEZONE_LABEL = "Africa/Lagos (WAT)";
+
+export const DISTRICTS_ORDER = [
+  "Epe District",
+  "Ijede District",
+  "Iranwo District",
+  "Igbogbo District",
+  "Badagry District",
+  "Magbon District",
+  "Morogbo District",
+  "State Church",
+] as const;
+
+export const DISTRICTS = DISTRICTS_ORDER;

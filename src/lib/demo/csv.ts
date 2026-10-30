@@ -11,7 +11,6 @@ export function downloadCsvFile(csv: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-
 function csvCell(value: string | number | null): string {
   const text = value === null ? "" : String(value);
   if (/[",\n]/.test(text)) return `"${text.replaceAll('"', '""')}"`;
@@ -34,6 +33,7 @@ export function resultsToCsv(rows: ResultRow[]): string {
     "Judge 1 subtotal",
     "Judge 2 subtotal",
     "Judge 3 subtotal",
+    "Judge 4 subtotal",
     "Judges' average",
     "Valid votes",
     "Audience points",
@@ -51,6 +51,7 @@ export function resultsToCsv(rows: ResultRow[]): string {
     r.judgeSubtotals.judge1 ?? "",
     r.judgeSubtotals.judge2 ?? "",
     r.judgeSubtotals.judge3 ?? "",
+    r.judgeSubtotals.judge4 ?? "",
     n2(r.judgeAverage),
     r.validVotes,
     n2(r.audiencePoints),

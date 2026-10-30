@@ -9,7 +9,7 @@ import { ScorecardEditor } from "@/components/judge/scorecard-editor";
 import { useDemoState } from "@/hooks/use-demo";
 import { SCORECARD_STATUS_LABEL, typeLabel } from "@/lib/demo/labels";
 import { getCard } from "@/lib/demo/store";
-import { JUDGES } from "@/lib/demo/types";
+import { JUDGES, type JudgeId } from "@/lib/demo/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/judges/$judgeId")({
@@ -22,7 +22,8 @@ export const Route = createFileRoute("/judges/$judgeId")({
       { title: "Scorecards — Judges' Workspace — SHABACH 2026" },
       {
         name: "description",
-        content: "Score every Grand Finale act on the category rubric — SHABACH 2026 judges' workspace.",
+        content:
+          "Score every Grand Finale act on the category rubric — SHABACH 2026 judges' workspace.",
       },
     ],
   }),
@@ -31,18 +32,17 @@ export const Route = createFileRoute("/judges/$judgeId")({
 
 function JudgeWorkspace() {
   const { judgeId } = Route.useParams();
-  const judge = JUDGES.find((j) => j.id === judgeId) ?? JUDGES[0];
+  const currentJudge = JUDGES.find((j) => j.id === judgeId) ?? JUDGES[0]!;
+  const activeJudgeId: JudgeId = currentJudge.id;
   const state = useDemoState();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const locked = state.results !== null;
 
   const ordered = [...state.contestants].sort((a, b) => a.order - b.order);
-  const selected = selectedId
-    ? state.contestants.find((c) => c.id === selectedId) ?? null
-    : null;
+  const selected = selectedId ? (state.contestants.find((c) => c.id === selectedId) ?? null) : null;
 
   function statusBadge(contestantId: string) {
-    const card = getCard(state, judgeId as typeof judge.id, contestantId);
+    const card = getCard(state, activeJudgeId, contestantId);
     if (card.conflictDeclared && !card.conflictResolved) {
       return <Badge variant="destructive">Conflict declared</Badge>;
     }
@@ -58,22 +58,23 @@ function JudgeWorkspace() {
     <div className="min-h-screen bg-ivory">
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-10">
-        <Link
-          to="/judges"
-          className="text-sm font-semibold text-charcoal-muted hover:text-forest"
-        >
+        <Link to="/judges" className="text-sm font-semibold text-charcoal-muted hover:text-forest">
           ← Judge seats
         </Link>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="font-display text-3xl text-forest">{judge.name}'s scorecards</h1>
+            <h1 className="font-display text-3xl text-forest">{currentJudge.name}'s scorecards</h1>
             <p className="text-sm text-charcoal-muted">
-              {judge.label} · {ordered.length} contestants · scores stay private until submitted
+              {currentJudge.label} · {ordered.length} contestants · scores stay private until
+              submitted
             </p>
           </div>
           <span className="inline-flex items-center gap-2 rounded-full border border-cream-line bg-card px-3 py-1 text-xs font-semibold text-charcoal">
             <ScrollText className="h-3.5 w-3.5 text-gold" /> {SCORECARD_STATUS_LABEL.submitted}:{" "}
-            {ordered.filter((c) => getCard(state, judgeId as typeof judge.id, c.id).status === "submitted").length}
+            {
+              ordered.filter((c) => getCard(state, activeJudgeId, c.id).status === "submitted")
+                .length
+            }
             /{ordered.length}
           </span>
         </div>
@@ -126,7 +127,7 @@ function JudgeWorkspace() {
             {selected ? (
               <ScorecardEditor
                 key={selected.id}
-                judgeId={judgeId as typeof judge.id}
+                judgeId={activeJudgeId}
                 contestantId={selected.id}
               />
             ) : (

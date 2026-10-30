@@ -61,7 +61,8 @@ export const RUBRICS: Record<PerformanceType, Rubric> = {
         key: "audience",
         name: "Audience Engagement & Impact",
         max: 15,
-        guidance: "Meaningful communication and connection with listeners — not applause volume alone.",
+        guidance:
+          "Meaningful communication and connection with listeners — not applause volume alone.",
       },
     ],
     timeLimitSec: 240,
@@ -101,7 +102,8 @@ export const RUBRICS: Record<PerformanceType, Rubric> = {
         key: "audience",
         name: "Audience Engagement & Impact",
         max: 15,
-        guidance: "Meaningful communication and connection with viewers — not applause volume alone.",
+        guidance:
+          "Meaningful communication and connection with viewers — not applause volume alone.",
       },
     ],
     timeLimitSec: 240,
