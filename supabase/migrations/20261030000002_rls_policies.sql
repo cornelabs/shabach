@@ -185,3 +185,4 @@ CREATE POLICY "Organiser manage audit log"
     TO authenticated
     USING (auth_is_organiser(event_id))
     WITH CHECK (auth_is_organiser(event_id));
+

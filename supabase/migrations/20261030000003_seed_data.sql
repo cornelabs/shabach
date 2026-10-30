@@ -176,3 +176,4 @@ BEGIN
     ON CONFLICT (event_id, role_type, email) DO NOTHING;
 
 END $$;
+
