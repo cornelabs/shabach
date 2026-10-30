@@ -367,7 +367,11 @@ export function verificationGates(
   votingStatus: VotingStatus,
   scoreDeskConfirmed: boolean,
 ): VerificationGate {
-  const unresolvedConflicts = scorecards.some((s) => s.conflictDeclared && !s.conflictResolved);
+  const activeContestantIds = new Set(rows.map((r) => r.contestant.id));
+  const relevantScorecards = scorecards.filter((s) => activeContestantIds.has(s.contestantId));
+  const unresolvedConflicts = relevantScorecards.some(
+    (s) => s.conflictDeclared && !s.conflictResolved,
+  );
   const unresolvedTies = rows.some((r) => r.tieFlags.includes("Judges' review required"));
 
   return {

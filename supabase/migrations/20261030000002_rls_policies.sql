@@ -12,6 +12,7 @@ ALTER TABLE staff_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rubric_versions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scorecards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE durations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE voter_verification_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE verified_voters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE votes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE results_snapshots ENABLE ROW LEVEL SECURITY;
@@ -146,31 +147,30 @@ CREATE POLICY "Organiser manage durations"
     WITH CHECK (auth_is_organiser(event_id));
 
 -- -----------------------------------------------------------------------------
--- 8. Verified Voters & Votes Policies
+-- 8. Verified Voters & Votes Policies (Fraud Prevention: No direct anon insert)
 -- -----------------------------------------------------------------------------
-CREATE POLICY "Anon create verified voters"
-    ON verified_voters FOR INSERT
-    TO anon, authenticated
-    WITH CHECK (true);
-
-CREATE POLICY "Anon cast vote"
-    ON votes FOR INSERT
-    TO anon, authenticated
-    WITH CHECK (true);
+-- Verification tokens and votes are recorded strictly through security definer
+-- RPCs (verify_and_cast_vote / cast_audience_vote) to enforce OTP and single-vote rules.
+CREATE POLICY "Organiser read verified voters"
+    ON verified_voters FOR SELECT
+    TO authenticated
+    USING (auth_is_organiser(event_id));
 
 CREATE POLICY "Organiser read vote counts"
     ON votes FOR SELECT
     TO authenticated
     USING (auth_is_organiser(event_id));
 
--- -----------------------------------------------------------------------------
--- 9. Results Snapshots Policies (Privacy Protected: Public Top-Three only after published)
--- -----------------------------------------------------------------------------
-CREATE POLICY "Public read published official snapshots"
-    ON results_snapshots FOR SELECT
-    TO anon, authenticated
-    USING (published = true AND is_official = true);
+CREATE POLICY "Organiser read verification requests"
+    ON voter_verification_requests FOR SELECT
+    TO authenticated
+    USING (auth_is_organiser(event_id));
 
+-- -----------------------------------------------------------------------------
+-- 9. Results Snapshots Policies (Internal Staff Only - Strict Privacy Protection)
+-- -----------------------------------------------------------------------------
+-- Full snapshots (including internal scores, judge marks, vote totals, and 4th-16th ranks)
+-- are accessible exclusively to authenticated staff and organisers.
 CREATE POLICY "Organiser manage results snapshots"
     ON results_snapshots FOR ALL
     TO authenticated
@@ -178,7 +178,58 @@ CREATE POLICY "Organiser manage results snapshots"
     WITH CHECK (auth_is_organiser(event_id));
 
 -- -----------------------------------------------------------------------------
--- 10. Audit Events Policies
+-- 10. Public Projection: Secure Top-Three Winners Function
+-- -----------------------------------------------------------------------------
+-- Exposes ONLY public identity and rank for 1st, 2nd, and 3rd place winners after publication.
+-- Raw marks, judge subtotals, audience points, and lower placements are never exposed to anon.
+CREATE OR REPLACE FUNCTION get_public_top_three(p_event_id UUID)
+RETURNS TABLE (
+    rank INT,
+    contestant_id TEXT,
+    full_name TEXT,
+    district TEXT,
+    performance_title TEXT,
+    performance_type TEXT,
+    avatar_url TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+STABLE
+AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM results_snapshots
+        WHERE event_id = p_event_id AND is_official = true AND published = true
+    ) THEN
+        RETURN;
+    END IF;
+
+    RETURN QUERY
+    SELECT
+        (elem->>'rank')::int AS rank,
+        (elem->'contestant'->>'id')::text AS contestant_id,
+        (elem->'contestant'->>'name')::text AS full_name,
+        (elem->'contestant'->>'district')::text AS district,
+        (elem->'contestant'->>'title')::text AS performance_title,
+        (elem->'contestant'->>'type')::text AS performance_type,
+        (elem->'contestant'->>'avatarUrl')::text AS avatar_url
+    FROM results_snapshots s,
+         jsonb_array_elements(COALESCE(s.rows_data->'rows', s.rows_data)) elem
+    WHERE s.event_id = p_event_id
+      AND s.is_official = true
+      AND s.published = true
+      AND (elem->>'rank')::int <= 3
+    ORDER BY (elem->>'rank')::int ASC;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_public_top_three(UUID) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION request_voter_otp(UUID, TEXT, TEXT, INT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION verify_and_cast_vote(UUID, UUID, TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION cast_audience_vote(UUID, UUID, TEXT, TEXT) TO anon, authenticated;
+
+-- -----------------------------------------------------------------------------
+-- 11. Audit Events Policies
 -- -----------------------------------------------------------------------------
 CREATE POLICY "Organiser manage audit log"
     ON audit_events FOR ALL

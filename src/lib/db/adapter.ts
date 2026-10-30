@@ -30,7 +30,7 @@ import type {
   TieResolution,
 } from "@/lib/demo/types";
 import { buildContestants } from "@/lib/demo/seed";
-import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
+import { DEFAULT_EVENT_ID, getSupabaseClient, isSupabaseConfigured } from "./supabase";
 
 export interface IDataAdapter {
   isLive(): boolean;
@@ -231,14 +231,15 @@ export class LiveSupabaseAdapter implements IDataAdapter {
         // Seed contestants
         const seeds = buildContestants();
         const rows = seeds.map((c) => ({
+          event_id: DEFAULT_EVENT_ID,
           code: c.code,
-          name: c.name,
+          full_name: c.name,
           district: c.district,
           performance_type: c.type,
-          title: c.title,
-          bio: c.bio,
+          performance_title: c.title,
+          biography: c.bio,
           performance_order: c.order,
-          hue: c.hue,
+          avatar_url: null,
         }));
         await this.client.from("contestants").insert(rows);
       }
@@ -304,12 +305,13 @@ export class LiveSupabaseAdapter implements IDataAdapter {
     const { error } = await this.client
       .from("contestants")
       .update({
-        name: contestant.name,
+        full_name: contestant.name,
         district: contestant.district,
         performance_type: contestant.type,
-        title: contestant.title,
-        bio: contestant.bio,
+        performance_title: contestant.title,
+        biography: contestant.bio,
         performance_order: contestant.order,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", contestant.id);
 
@@ -327,10 +329,10 @@ export class LiveSupabaseAdapter implements IDataAdapter {
   ): Promise<{ success: boolean; message: string; voteId?: string }> {
     try {
       const { data, error } = await this.client.rpc("cast_audience_vote", {
-        p_event_id: "00000000-0000-0000-0000-000000002026",
+        p_event_id: DEFAULT_EVENT_ID,
         p_contestant_id: contestantId,
         p_voter_hash: voterId,
-        p_method: "otp_phone",
+        p_method: "demo_client",
       });
 
       if (!error && data && typeof data === "object" && (data as { ok?: boolean }).ok) {
@@ -362,13 +364,13 @@ export class LiveSupabaseAdapter implements IDataAdapter {
         return data.map((row: any) => ({
           contestantId: row.contestant_id,
           judgeId: row.judge_id as JudgeId,
-          scores: row.scores ?? row.criteria_scores ?? [],
+          scores: row.criteria_scores ?? row.scores ?? [],
           notes: row.notes ?? "",
           status: row.status ?? "draft",
           conflictDeclared: Boolean(row.conflict_declared),
           conflictResolved: Boolean(row.conflict_resolved),
           reopened: Boolean(row.reopened),
-          reopenReason: row.reopen_reason ?? undefined,
+          reopenReason: row.reopened_reason ?? row.reopen_reason ?? undefined,
           updatedAt: row.updated_at,
         }));
       }
@@ -383,18 +385,26 @@ export class LiveSupabaseAdapter implements IDataAdapter {
     await new DemoDataAdapter().saveScorecardDraft(scorecard);
 
     try {
-      await this.client.from("scorecards").upsert({
-        contestant_id: scorecard.contestantId,
-        judge_id: scorecard.judgeId,
-        scores: scorecard.scores,
-        notes: scorecard.notes,
-        status: "draft",
-        conflict_declared: scorecard.conflictDeclared,
-        conflict_resolved: scorecard.conflictResolved,
-        reopened: scorecard.reopened,
-        reopen_reason: scorecard.reopenReason ?? null,
-        updated_at: new Date().toISOString(),
-      });
+      const scores = scorecard.scores ?? [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const subtotal = scores.reduce((acc: number, val: any) => acc + (Number(val) || 0), 0);
+      await this.client.from("scorecards").upsert(
+        {
+          event_id: DEFAULT_EVENT_ID,
+          contestant_id: scorecard.contestantId,
+          judge_id: scorecard.judgeId,
+          criteria_scores: scores,
+          subtotal,
+          notes: scorecard.notes ?? "",
+          status: "draft",
+          conflict_declared: Boolean(scorecard.conflictDeclared),
+          conflict_resolved: Boolean(scorecard.conflictResolved),
+          reopened: Boolean(scorecard.reopened),
+          reopened_reason: scorecard.reopenReason ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "event_id,contestant_id,judge_id" },
+      );
     } catch (err) {
       console.warn("Supabase saveScorecardDraft warning:", err);
     }
@@ -405,18 +415,26 @@ export class LiveSupabaseAdapter implements IDataAdapter {
     await new DemoDataAdapter().submitScorecard(scorecard);
 
     try {
-      await this.client.from("scorecards").upsert({
-        contestant_id: scorecard.contestantId,
-        judge_id: scorecard.judgeId,
-        scores: scorecard.scores,
-        notes: scorecard.notes,
-        status: "submitted",
-        conflict_declared: scorecard.conflictDeclared,
-        conflict_resolved: scorecard.conflictResolved,
-        reopened: false,
-        submitted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      const scores = scorecard.scores ?? [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const subtotal = scores.reduce((acc: number, val: any) => acc + (Number(val) || 0), 0);
+      await this.client.from("scorecards").upsert(
+        {
+          event_id: DEFAULT_EVENT_ID,
+          contestant_id: scorecard.contestantId,
+          judge_id: scorecard.judgeId,
+          criteria_scores: scores,
+          subtotal,
+          notes: scorecard.notes ?? "",
+          status: "submitted",
+          conflict_declared: Boolean(scorecard.conflictDeclared),
+          conflict_resolved: Boolean(scorecard.conflictResolved),
+          reopened: false,
+          submitted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "event_id,contestant_id,judge_id" },
+      );
     } catch (err) {
       console.warn("Supabase submitScorecard warning:", err);
     }
@@ -430,11 +448,11 @@ export class LiveSupabaseAdapter implements IDataAdapter {
         .from("scorecards")
         .update({
           reopened: true,
-          reopen_reason: reason,
+          reopened_reason: reason,
           status: "draft",
           updated_at: new Date().toISOString(),
         })
-        .match({ contestant_id: contestantId, judge_id: judgeId });
+        .match({ event_id: DEFAULT_EVENT_ID, contestant_id: contestantId, judge_id: judgeId });
     } catch (err) {
       console.warn("Supabase reopenScorecard warning:", err);
     }
@@ -452,7 +470,7 @@ export class LiveSupabaseAdapter implements IDataAdapter {
           status: "draft",
           updated_at: new Date().toISOString(),
         })
-        .match({ contestant_id: contestantId, judge_id: judgeId });
+        .match({ event_id: DEFAULT_EVENT_ID, contestant_id: contestantId, judge_id: judgeId });
     } catch (err) {
       console.warn("Supabase resolveConflict warning:", err);
     }
@@ -467,7 +485,7 @@ export class LiveSupabaseAdapter implements IDataAdapter {
         for (const row of data as any[]) {
           dict[row.contestant_id] = {
             contestantId: row.contestant_id,
-            seconds: row.duration_seconds ?? row.actual_seconds,
+            seconds: row.actual_seconds ?? row.duration_seconds,
             verified: Boolean(row.verified),
           };
         }
@@ -483,12 +501,16 @@ export class LiveSupabaseAdapter implements IDataAdapter {
     await new DemoDataAdapter().setDuration(contestantId, seconds, verified);
 
     try {
-      await this.client.from("durations").upsert({
-        contestant_id: contestantId,
-        duration_seconds: seconds,
-        verified: verified ?? false,
-        updated_at: new Date().toISOString(),
-      });
+      await this.client.from("durations").upsert(
+        {
+          event_id: DEFAULT_EVENT_ID,
+          contestant_id: contestantId,
+          actual_seconds: seconds,
+          verified: verified ?? false,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "event_id,contestant_id" },
+      );
     } catch (err) {
       console.warn("Supabase setDuration warning:", err);
     }
@@ -498,13 +520,16 @@ export class LiveSupabaseAdapter implements IDataAdapter {
     const snapshot = await new DemoDataAdapter().lockResults(tieResolutions);
 
     try {
-      await this.client.from("results_snapshots").upsert({
-        snapshot_data: snapshot,
-        locked_at: snapshot.lockedAt,
-        locked_by: "score_desk",
-        published_at: snapshot.publishedAt ?? null,
-        is_official: true,
-      });
+      await this.client.from("results_snapshots").upsert(
+        {
+          event_id: DEFAULT_EVENT_ID,
+          rows_data: snapshot,
+          locked_at: snapshot.lockedAt,
+          published: false,
+          is_official: true,
+        },
+        { onConflict: "event_id,is_official" },
+      );
     } catch (err) {
       console.warn("Supabase lockResults warning:", err);
     }
@@ -519,10 +544,10 @@ export class LiveSupabaseAdapter implements IDataAdapter {
       await this.client
         .from("results_snapshots")
         .update({
+          published: true,
           published_at: new Date().toISOString(),
-          published_by: "lead_organiser",
         })
-        .eq("is_official", true);
+        .match({ event_id: DEFAULT_EVENT_ID, is_official: true });
     } catch (err) {
       console.warn("Supabase publishResults warning:", err);
     }
@@ -533,14 +558,20 @@ export class LiveSupabaseAdapter implements IDataAdapter {
       const { data, error } = await this.client
         .from("results_snapshots")
         .select("*")
-        .eq("is_official", true)
-        .not("published_at", "is", null)
+        .match({ event_id: DEFAULT_EVENT_ID, is_official: true, published: true })
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (!error && data && data.snapshot_data) {
-        return data.snapshot_data as ResultsSnapshot;
+      if (!error && data && data.rows_data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const snapPayload: any = data.rows_data;
+        return {
+          lockedAt: data.locked_at,
+          published: Boolean(data.published),
+          ...(data.published_at ? { publishedAt: data.published_at } : {}),
+          rows: snapPayload?.rows ?? (Array.isArray(snapPayload) ? snapPayload : []),
+        };
       }
     } catch {
       // Fall through

@@ -146,8 +146,21 @@ CREATE TABLE IF NOT EXISTS durations (
 );
 
 -- -----------------------------------------------------------------------------
--- 8. Verified Voters Table (Fraud Prevention)
+-- 8. Voter Verification Requests & Verified Voters (Fraud & Replay Prevention)
 -- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS voter_verification_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    email_or_phone_hash TEXT NOT NULL,
+    otp_hash TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    verified BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_voter_verif_event_email ON voter_verification_requests(event_id, email_or_phone_hash);
+
 CREATE TABLE IF NOT EXISTS verified_voters (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
@@ -209,8 +222,123 @@ CREATE TABLE IF NOT EXISTS audit_events (
 CREATE INDEX IF NOT EXISTS idx_audit_event_time ON audit_events(event_id, created_at DESC);
 
 -- -----------------------------------------------------------------------------
--- 12. Atomic Vote Function (RPC)
+-- 12. Voter OTP & Atomic Vote Functions (RPC)
 -- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION request_voter_otp(
+    p_event_id UUID,
+    p_email_or_phone_hash TEXT,
+    p_otp_hash TEXT,
+    p_ttl_sec INT DEFAULT 900
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_voting_status TEXT;
+    v_recent_count INT;
+BEGIN
+    SELECT voting_status INTO v_voting_status FROM events WHERE id = p_event_id;
+    IF v_voting_status IS NULL THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'event_not_found');
+    END IF;
+    IF v_voting_status != 'open' THEN
+        RETURN jsonb_build_object('ok', false, 'reason', v_voting_status);
+    END IF;
+
+    -- Rate limit check (max 3 requests in last 10 minutes)
+    SELECT COUNT(*) INTO v_recent_count
+    FROM voter_verification_requests
+    WHERE event_id = p_event_id
+      AND email_or_phone_hash = p_email_or_phone_hash
+      AND created_at > (timezone('utc'::text, now()) - INTERVAL '10 minutes');
+
+    IF v_recent_count >= 3 THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'rate_limited');
+    END IF;
+
+    INSERT INTO voter_verification_requests (event_id, email_or_phone_hash, otp_hash, expires_at)
+    VALUES (p_event_id, p_email_or_phone_hash, p_otp_hash, timezone('utc'::text, now()) + (p_ttl_sec || ' seconds')::INTERVAL);
+
+    RETURN jsonb_build_object('ok', true);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION verify_and_cast_vote(
+    p_event_id UUID,
+    p_contestant_id UUID,
+    p_voter_hash TEXT,
+    p_otp_candidate_hash TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_voting_status TEXT;
+    v_req RECORD;
+    v_voter_id UUID;
+    v_vote_id UUID;
+BEGIN
+    SELECT voting_status INTO v_voting_status FROM events WHERE id = p_event_id;
+    IF v_voting_status IS NULL THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'event_not_found');
+    END IF;
+    IF v_voting_status != 'open' THEN
+        RETURN jsonb_build_object('ok', false, 'reason', v_voting_status);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM contestants WHERE id = p_contestant_id AND event_id = p_event_id) THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'contestant_not_found');
+    END IF;
+
+    SELECT * INTO v_req
+    FROM voter_verification_requests
+    WHERE event_id = p_event_id
+      AND email_or_phone_hash = p_voter_hash
+      AND expires_at > timezone('utc'::text, now())
+      AND verified = false
+    ORDER BY created_at DESC
+    LIMIT 1;
+
+    IF v_req IS NULL THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'no_verification_found');
+    END IF;
+
+    IF v_req.attempts >= 5 THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'max_attempts_exceeded');
+    END IF;
+
+    IF v_req.otp_hash != p_otp_candidate_hash THEN
+        UPDATE voter_verification_requests
+        SET attempts = attempts + 1
+        WHERE id = v_req.id;
+        RETURN jsonb_build_object('ok', false, 'reason', 'invalid_code');
+    END IF;
+
+    UPDATE voter_verification_requests
+    SET verified = true, attempts = attempts + 1
+    WHERE id = v_req.id;
+
+    INSERT INTO verified_voters (event_id, voter_token_hash, verification_method)
+    VALUES (p_event_id, p_voter_hash, 'otp_email')
+    ON CONFLICT (event_id, voter_token_hash) DO NOTHING;
+
+    SELECT id INTO v_voter_id FROM verified_voters
+    WHERE event_id = p_event_id AND voter_token_hash = p_voter_hash;
+
+    IF EXISTS (SELECT 1 FROM votes WHERE event_id = p_event_id AND voter_id = v_voter_id) THEN
+        RETURN jsonb_build_object('ok', false, 'reason', 'already_voted');
+    END IF;
+
+    INSERT INTO votes (event_id, voter_id, contestant_id)
+    VALUES (p_event_id, v_voter_id, p_contestant_id)
+    RETURNING id INTO v_vote_id;
+
+    RETURN jsonb_build_object('ok', true, 'vote_id', v_vote_id);
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION cast_audience_vote(
     p_event_id UUID,
     p_contestant_id UUID,
@@ -226,30 +354,34 @@ DECLARE
     v_voter_id UUID;
     v_vote_id UUID;
 BEGIN
-    -- Check voting window is currently open
     SELECT voting_status INTO v_voting_status FROM events WHERE id = p_event_id;
     IF v_voting_status IS NULL THEN
         RETURN jsonb_build_object('ok', false, 'reason', 'event_not_found');
     END IF;
-    IF v_voting_status = 'not_open' THEN
-        RETURN jsonb_build_object('ok', false, 'reason', 'not_open');
-    END IF;
-    IF v_voting_status = 'closed' THEN
-        RETURN jsonb_build_object('ok', false, 'reason', 'closed');
+    IF v_voting_status != 'open' THEN
+        RETURN jsonb_build_object('ok', false, 'reason', v_voting_status);
     END IF;
 
-    -- Verify contestant belongs to this event
     IF NOT EXISTS (SELECT 1 FROM contestants WHERE id = p_contestant_id AND event_id = p_event_id) THEN
         RETURN jsonb_build_object('ok', false, 'reason', 'contestant_not_found');
     END IF;
 
-    -- Upsert voter verification
-    INSERT INTO verified_voters (event_id, voter_token_hash, verification_method)
-    VALUES (p_event_id, p_voter_hash, p_method)
-    ON CONFLICT (event_id, voter_token_hash) DO NOTHING;
-
+    -- Verify voter is already registered as verified
     SELECT id INTO v_voter_id FROM verified_voters
     WHERE event_id = p_event_id AND voter_token_hash = p_voter_hash;
+
+    IF v_voter_id IS NULL THEN
+        -- Allow demo client or verified token fallback
+        IF p_method = 'demo_client' THEN
+            INSERT INTO verified_voters (event_id, voter_token_hash, verification_method)
+            VALUES (p_event_id, p_voter_hash, p_method)
+            ON CONFLICT (event_id, voter_token_hash) DO NOTHING;
+            SELECT id INTO v_voter_id FROM verified_voters
+            WHERE event_id = p_event_id AND voter_token_hash = p_voter_hash;
+        ELSE
+            RETURN jsonb_build_object('ok', false, 'reason', 'unverified_voter');
+        END IF;
+    END IF;
 
     -- Check if voter already cast their single vote
     IF EXISTS (SELECT 1 FROM votes WHERE event_id = p_event_id AND voter_id = v_voter_id) THEN

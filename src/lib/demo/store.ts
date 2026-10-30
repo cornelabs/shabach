@@ -7,7 +7,7 @@ import {
   verificationGates,
 } from "./scoring";
 import { rubricFor } from "./rubrics";
-import { getSupabaseClient, isSupabaseConfigured } from "@/lib/db/supabase";
+import { DEFAULT_EVENT_ID, getSupabaseClient, isSupabaseConfigured } from "@/lib/db/supabase";
 import type {
   ActivityEvent,
   ActivityKind,
@@ -112,59 +112,147 @@ export function hydrateDemoStore() {
       try {
         const client = getSupabaseClient();
         if (!client) return;
+
+        // 1. Hydrate event status & voting status
+        const { data: eventData } = await client
+          .from("events")
+          .select("voting_status, lifecycle_status")
+          .eq("id", DEFAULT_EVENT_ID)
+          .maybeSingle();
+
+        if (eventData && eventData.voting_status) {
+          update((cur) => ({
+            ...cur,
+            votingStatus: eventData.voting_status as VotingStatus,
+          }));
+        }
+
+        // 2. Hydrate contestants
         const { data: contestantsData } = await client
           .from("contestants")
           .select("*")
           .order("performance_order", { ascending: true });
 
+        let activeContestants = state.contestants;
         if (contestantsData && contestantsData.length > 0) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const loadedContestants: Contestant[] = contestantsData.map((row: any) => ({
+          activeContestants = contestantsData.map((row: any) => ({
             id: row.id,
             code: row.code,
-            name: row.name ?? row.full_name,
+            name: row.full_name ?? row.name,
             district: row.district,
             type: (row.performance_type ?? "music") as PerformanceType,
-            title: row.title ?? row.performance_title ?? "",
-            bio: row.bio ?? row.biography ?? "",
+            title: row.performance_title ?? row.title ?? "",
+            bio: row.biography ?? row.bio ?? "",
             order: row.performance_order,
             hue: row.hue ?? (row.performance_order * 23) % 360,
           }));
+        }
+
+        const activeIds = new Set(activeContestants.map((c) => c.id));
+        const JUDGE_IDS: JudgeId[] = ["judge1", "judge2", "judge3", "judge4"];
+
+        // 3. Hydrate scorecards: purge orphaned demo cards and build 64-card matrix
+        const { data: scorecardsData } = await client.from("scorecards").select("*");
+        const liveCardsMap = new Map<string, Scorecard>();
+
+        // Seed base clean draft cards for all active contestants across 4 judges
+        for (const c of activeContestants) {
+          for (const j of JUDGE_IDS) {
+            liveCardsMap.set(`${c.id}:${j}`, {
+              contestantId: c.id,
+              judgeId: j,
+              scores: [],
+              notes: "",
+              status: "draft",
+              conflictDeclared: false,
+              conflictResolved: false,
+              reopened: false,
+            });
+          }
+        }
+
+        // Overlay existing cards in state if they belong to active contestants
+        for (const c of state.scorecards) {
+          if (activeIds.has(c.contestantId)) {
+            liveCardsMap.set(`${c.contestantId}:${c.judgeId}`, c);
+          }
+        }
+
+        // Overlay database scorecards
+        if (scorecardsData && scorecardsData.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          for (const row of scorecardsData as any[]) {
+            if (activeIds.has(row.contestant_id)) {
+              const card: Scorecard = {
+                contestantId: row.contestant_id,
+                judgeId: row.judge_id as JudgeId,
+                scores: row.criteria_scores ?? row.scores ?? [],
+                notes: row.notes ?? "",
+                status: row.status ?? "draft",
+                conflictDeclared: Boolean(row.conflict_declared),
+                conflictResolved: Boolean(row.conflict_resolved),
+                reopened: Boolean(row.reopened),
+                reopenReason: row.reopened_reason ?? row.reopen_reason ?? undefined,
+                updatedAt: row.updated_at,
+              };
+              liveCardsMap.set(`${card.contestantId}:${card.judgeId}`, card);
+            }
+          }
+        }
+
+        update((cur) => ({
+          ...cur,
+          contestants: activeContestants,
+          scorecards: Array.from(liveCardsMap.values()),
+        }));
+
+        // 4. Hydrate performance durations
+        const { data: durationsData } = await client.from("durations").select("*");
+        if (durationsData && durationsData.length > 0) {
+          const loadedDurations: Record<string, DurationEntry> = {};
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          for (const row of durationsData as any[]) {
+            if (activeIds.has(row.contestant_id)) {
+              loadedDurations[row.contestant_id] = {
+                contestantId: row.contestant_id,
+                seconds: row.actual_seconds ?? row.duration_seconds ?? null,
+                verified: Boolean(row.verified),
+              };
+            }
+          }
           update((cur) => ({
             ...cur,
-            contestants: loadedContestants,
+            durations: { ...cur.durations, ...loadedDurations },
           }));
         }
 
-        const { data: scorecardsData } = await client.from("scorecards").select("*");
-        if (scorecardsData && scorecardsData.length > 0) {
+        // 5. Hydrate official results snapshot if present
+        const { data: snapshotData } = await client
+          .from("results_snapshots")
+          .select("*")
+          .eq("is_official", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (snapshotData) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const loadedScorecards: Scorecard[] = scorecardsData.map((row: any) => ({
-            contestantId: row.contestant_id,
-            judgeId: row.judge_id as JudgeId,
-            scores: row.scores ?? row.criteria_scores ?? [],
-            notes: row.notes ?? "",
-            status: row.status ?? "draft",
-            conflictDeclared: Boolean(row.conflict_declared),
-            conflictResolved: Boolean(row.conflict_resolved),
-            reopened: Boolean(row.reopened),
-            reopenReason: row.reopen_reason ?? undefined,
-            updatedAt: row.updated_at,
+          const snapPayload: any = snapshotData.rows_data;
+          const rows = snapPayload?.rows ?? (Array.isArray(snapPayload) ? snapPayload : []);
+          update((cur) => ({
+            ...cur,
+            locked: true,
+            results: {
+              lockedAt: snapshotData.locked_at,
+              published: Boolean(snapshotData.published),
+              ...(snapshotData.published_at ? { publishedAt: snapshotData.published_at } : {}),
+              rows,
+            },
           }));
-          update((cur) => {
-            const merged = [...cur.scorecards];
-            for (const card of loadedScorecards) {
-              const idx = merged.findIndex(
-                (c) => c.contestantId === card.contestantId && c.judgeId === card.judgeId,
-              );
-              if (idx >= 0) merged[idx] = card;
-              else merged.push(card);
-            }
-            return { ...cur, scorecards: merged };
-          });
         }
-      } catch {
-        /* fallback to local store */
+      } catch (err) {
+        console.warn("Supabase hydration background warning:", err);
       }
     })();
   }
@@ -180,44 +268,64 @@ function syncMutationToSupabase(action: string, payload: any) {
 
   try {
     if (action === "scorecard") {
+      const scores = payload.scores ?? [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const subtotal = scores.reduce((acc: number, val: any) => acc + (Number(val) || 0), 0);
       void client
         .from("scorecards")
-        .upsert({
-          contestant_id: payload.contestantId,
-          judge_id: payload.judgeId,
-          scores: payload.scores,
-          notes: payload.notes,
-          status: payload.status,
-          conflict_declared: payload.conflictDeclared,
-          conflict_resolved: payload.conflictResolved,
-          reopened: payload.reopened,
-          reopen_reason: payload.reopenReason ?? null,
-          updated_at: new Date().toISOString(),
-        })
-        .then(() => {});
+        .upsert(
+          {
+            event_id: DEFAULT_EVENT_ID,
+            contestant_id: payload.contestantId,
+            judge_id: payload.judgeId,
+            criteria_scores: scores,
+            subtotal,
+            notes: payload.notes ?? "",
+            status: payload.status ?? "draft",
+            conflict_declared: Boolean(payload.conflictDeclared),
+            conflict_resolved: Boolean(payload.conflictResolved),
+            reopened: Boolean(payload.reopened),
+            reopened_reason: payload.reopenReason ?? null,
+            submitted_at: payload.status === "submitted" ? new Date().toISOString() : null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "event_id,contestant_id,judge_id" },
+        )
+        .then(({ error }) => {
+          if (error) console.warn("Supabase scorecard sync error:", error.message);
+        });
     } else if (action === "duration") {
       void client
         .from("durations")
-        .upsert({
-          contestant_id: payload.contestantId,
-          duration_seconds: payload.seconds,
-          verified: payload.verified,
-          updated_at: new Date().toISOString(),
-        })
-        .then(() => {});
+        .upsert(
+          {
+            event_id: DEFAULT_EVENT_ID,
+            contestant_id: payload.contestantId,
+            actual_seconds: payload.seconds,
+            verified: Boolean(payload.verified),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "event_id,contestant_id" },
+        )
+        .then(({ error }) => {
+          if (error) console.warn("Supabase duration sync error:", error.message);
+        });
     } else if (action === "contestant") {
       void client
         .from("contestants")
         .update({
-          name: payload.name,
+          full_name: payload.name,
           district: payload.district,
           performance_type: payload.type,
-          title: payload.title,
-          bio: payload.bio,
+          performance_title: payload.title,
+          biography: payload.bio,
           performance_order: payload.order,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", payload.id)
-        .then(() => {});
+        .then(({ error }) => {
+          if (error) console.warn("Supabase contestant sync error:", error.message);
+        });
     } else if (action === "voting_status") {
       void client
         .from("events")
@@ -225,22 +333,32 @@ function syncMutationToSupabase(action: string, payload: any) {
           voting_status: payload.status,
           updated_at: new Date().toISOString(),
         })
-        .eq("code", "shabach-2026")
-        .then(() => {});
+        .eq("id", DEFAULT_EVENT_ID)
+        .then(({ error }) => {
+          if (error) console.warn("Supabase voting status sync error:", error.message);
+        });
     } else if (action === "results_snapshot") {
       void client
         .from("results_snapshots")
-        .upsert({
-          snapshot_data: payload.results,
-          locked_at: payload.results.lockedAt,
-          locked_by: "score_desk",
-          published_at: payload.results.publishedAt ?? null,
-          is_official: true,
-        })
-        .then(() => {});
+        .upsert(
+          {
+            event_id: DEFAULT_EVENT_ID,
+            rows_data: payload.results,
+            locked_at: payload.results.lockedAt ?? new Date().toISOString(),
+            published: Boolean(payload.results.published),
+            published_at:
+              payload.results.publishedAt ??
+              (payload.results.published ? new Date().toISOString() : null),
+            is_official: true,
+          },
+          { onConflict: "event_id,is_official" },
+        )
+        .then(({ error }) => {
+          if (error) console.warn("Supabase snapshot sync error:", error.message);
+        });
     }
-  } catch {
-    /* ignore background errors */
+  } catch (err) {
+    console.warn("Supabase sync background exception:", err);
   }
 }
 

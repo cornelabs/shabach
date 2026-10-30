@@ -11,4 +11,3 @@ export type {
   TieResolution,
   VotingStatus,
 } from "@/lib/demo/types";
-

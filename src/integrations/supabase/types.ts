@@ -2,7 +2,8 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 export type VotingStatus = "not_open" | "open" | "closed";
 export type LifecycleStatus = "draft" | "live" | "locked" | "published" | "archived";
-export type PerformanceType = "music" | "dance" | "spoken_word" | "mono_drama" | "visual_arts";
+export type PerformanceType =
+  "music" | "dance" | "spoken_word" | "mono_drama" | "visual_arts" | "drama" | "visual_art";
 export type StaffRoleType =
   "judge_1" | "judge_2" | "judge_3" | "judge_4" | "organiser" | "score_desk" | "admin";
 export type ScorecardStatus = "not_started" | "draft" | "submitted";
@@ -107,13 +108,16 @@ export type Database = {
           id: string;
           event_id: string;
           code: string;
-          name: string;
+          full_name: string;
+          name?: string;
           district: string;
           performance_type: PerformanceType;
-          title: string;
-          bio: string;
+          performance_title: string;
+          title?: string;
+          biography: string;
+          bio?: string;
           performance_order: number;
-          hue: number;
+          hue?: number;
           avatar_url: string | null;
           created_at: string;
           updated_at: string;
@@ -122,11 +126,14 @@ export type Database = {
           id?: string;
           event_id?: string;
           code: string;
-          name: string;
+          full_name?: string;
+          name?: string;
           district: string;
           performance_type: PerformanceType;
-          title: string;
-          bio: string;
+          performance_title?: string;
+          title?: string;
+          biography?: string;
+          bio?: string;
           performance_order: number;
           hue?: number;
           avatar_url?: string | null;
@@ -137,10 +144,13 @@ export type Database = {
           id?: string;
           event_id?: string;
           code?: string;
+          full_name?: string;
           name?: string;
           district?: string;
           performance_type?: PerformanceType;
+          performance_title?: string;
           title?: string;
+          biography?: string;
           bio?: string;
           performance_order?: number;
           hue?: number;
@@ -162,10 +172,12 @@ export type Database = {
         Row: {
           id: string;
           event_id: string;
-          performance_type: PerformanceType;
+          discipline: PerformanceType;
+          performance_type?: PerformanceType;
           time_limit_sec: number;
           penalty_interval_sec: number;
-          penalty_points_per_interval: number;
+          penalty_deduction_points: number;
+          penalty_points_per_interval?: number;
           criteria: Json;
           tiebreak_ladder: Json;
           version: number;
@@ -174,9 +186,11 @@ export type Database = {
         Insert: {
           id?: string;
           event_id?: string;
-          performance_type: PerformanceType;
+          discipline?: PerformanceType;
+          performance_type?: PerformanceType;
           time_limit_sec: number;
           penalty_interval_sec: number;
+          penalty_deduction_points?: number;
           penalty_points_per_interval?: number;
           criteria: Json;
           tiebreak_ladder: Json;
@@ -186,9 +200,11 @@ export type Database = {
         Update: {
           id?: string;
           event_id?: string;
+          discipline?: PerformanceType;
           performance_type?: PerformanceType;
           time_limit_sec?: number;
           penalty_interval_sec?: number;
+          penalty_deduction_points?: number;
           penalty_points_per_interval?: number;
           criteria?: Json;
           tiebreak_ladder?: Json;
@@ -201,26 +217,41 @@ export type Database = {
         Row: {
           id: string;
           event_id: string;
-          role: StaffRoleType;
-          display_name: string;
+          role_type: StaffRoleType;
+          role?: StaffRoleType;
+          full_name: string;
+          display_name?: string;
+          email: string;
           user_id: string | null;
+          active: boolean;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
           event_id?: string;
-          role: StaffRoleType;
-          display_name: string;
+          role_type?: StaffRoleType;
+          role?: StaffRoleType;
+          full_name?: string;
+          display_name?: string;
+          email?: string;
           user_id?: string | null;
+          active?: boolean;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
           event_id?: string;
+          role_type?: StaffRoleType;
           role?: StaffRoleType;
+          full_name?: string;
           display_name?: string;
+          email?: string;
           user_id?: string | null;
+          active?: boolean;
           created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
@@ -230,7 +261,8 @@ export type Database = {
           event_id: string;
           contestant_id: string;
           judge_id: string;
-          scores: Json;
+          criteria_scores: Json;
+          scores?: Json;
           subtotal: number;
           notes: string;
           status: ScorecardStatus;
@@ -238,7 +270,8 @@ export type Database = {
           conflict_resolved: boolean;
           conflict_reason: string | null;
           reopened: boolean;
-          reopen_reason: string | null;
+          reopened_reason: string | null;
+          reopen_reason?: string | null;
           submitted_at: string | null;
           created_at: string;
           updated_at: string;
@@ -248,6 +281,7 @@ export type Database = {
           event_id?: string;
           contestant_id: string;
           judge_id: string;
+          criteria_scores?: Json;
           scores?: Json;
           subtotal?: number;
           notes?: string;
@@ -256,6 +290,7 @@ export type Database = {
           conflict_resolved?: boolean;
           conflict_reason?: string | null;
           reopened?: boolean;
+          reopened_reason?: string | null;
           reopen_reason?: string | null;
           submitted_at?: string | null;
           created_at?: string;
@@ -266,6 +301,7 @@ export type Database = {
           event_id?: string;
           contestant_id?: string;
           judge_id?: string;
+          criteria_scores?: Json;
           scores?: Json;
           subtotal?: number;
           notes?: string;
@@ -274,6 +310,7 @@ export type Database = {
           conflict_resolved?: boolean;
           conflict_reason?: string | null;
           reopened?: boolean;
+          reopened_reason?: string | null;
           reopen_reason?: string | null;
           submitted_at?: string | null;
           created_at?: string;
@@ -294,7 +331,8 @@ export type Database = {
           id: string;
           event_id: string;
           contestant_id: string;
-          duration_seconds: number | null;
+          actual_seconds: number | null;
+          duration_seconds?: number | null;
           verified: boolean;
           verified_by: string | null;
           verified_at: string | null;
@@ -305,6 +343,7 @@ export type Database = {
           id?: string;
           event_id?: string;
           contestant_id: string;
+          actual_seconds?: number | null;
           duration_seconds?: number | null;
           verified?: boolean;
           verified_by?: string | null;
@@ -316,6 +355,7 @@ export type Database = {
           id?: string;
           event_id?: string;
           contestant_id?: string;
+          actual_seconds?: number | null;
           duration_seconds?: number | null;
           verified?: boolean;
           verified_by?: string | null;
@@ -333,29 +373,68 @@ export type Database = {
           },
         ];
       };
-      verified_voters: {
+      voter_verification_requests: {
         Row: {
           id: string;
           event_id: string;
-          identifier_hash: string;
-          verification_method: string;
-          verified_at: string;
-          has_voted: boolean;
+          email_or_phone_hash: string;
+          otp_hash: string;
+          expires_at: string;
+          attempts: number;
+          verified: boolean;
+          created_at: string;
         };
         Insert: {
           id?: string;
           event_id?: string;
-          identifier_hash: string;
+          email_or_phone_hash: string;
+          otp_hash: string;
+          expires_at: string;
+          attempts?: number;
+          verified?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          email_or_phone_hash?: string;
+          otp_hash?: string;
+          expires_at?: string;
+          attempts?: number;
+          verified?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      verified_voters: {
+        Row: {
+          id: string;
+          event_id: string;
+          voter_token_hash: string;
+          identifier_hash?: string;
+          verification_method: string;
+          verified_at: string;
+          ip_hash?: string | null;
+          has_voted?: boolean;
+        };
+        Insert: {
+          id?: string;
+          event_id?: string;
+          voter_token_hash: string;
+          identifier_hash?: string;
           verification_method: string;
           verified_at?: string;
+          ip_hash?: string | null;
           has_voted?: boolean;
         };
         Update: {
           id?: string;
           event_id?: string;
+          voter_token_hash?: string;
           identifier_hash?: string;
           verification_method?: string;
           verified_at?: string;
+          ip_hash?: string | null;
           has_voted?: boolean;
         };
         Relationships: [];
@@ -403,34 +482,43 @@ export type Database = {
         Row: {
           id: string;
           event_id: string;
-          snapshot_data: Json;
+          rows_data: Json;
+          snapshot_data?: Json;
           locked_at: string;
-          locked_by: string;
+          locked_by: string | null;
+          published: boolean;
           published_at: string | null;
           published_by: string | null;
           is_official: boolean;
+          metadata?: Json;
           created_at: string;
         };
         Insert: {
           id?: string;
           event_id?: string;
-          snapshot_data: Json;
-          locked_at: string;
-          locked_by: string;
+          rows_data: Json;
+          snapshot_data?: Json;
+          locked_at?: string;
+          locked_by?: string | null;
+          published?: boolean;
           published_at?: string | null;
           published_by?: string | null;
           is_official?: boolean;
+          metadata?: Json;
           created_at?: string;
         };
         Update: {
           id?: string;
           event_id?: string;
+          rows_data?: Json;
           snapshot_data?: Json;
           locked_at?: string;
-          locked_by?: string;
+          locked_by?: string | null;
+          published?: boolean;
           published_at?: string | null;
           published_by?: string | null;
           is_official?: boolean;
+          metadata?: Json;
           created_at?: string;
         };
         Relationships: [];
@@ -439,17 +527,25 @@ export type Database = {
         Row: {
           id: string;
           event_id: string;
-          kind: string;
-          detail: string;
-          actor: string;
+          action: string;
+          kind?: string;
+          details: string;
+          detail?: string;
+          actor_id: string | null;
+          actor_role: string | null;
+          actor?: string;
           metadata: Json;
           created_at: string;
         };
         Insert: {
           id?: string;
           event_id?: string;
-          kind: string;
-          detail: string;
+          action: string;
+          kind?: string;
+          details: string;
+          detail?: string;
+          actor_id?: string | null;
+          actor_role?: string | null;
           actor?: string;
           metadata?: Json;
           created_at?: string;
@@ -457,8 +553,12 @@ export type Database = {
         Update: {
           id?: string;
           event_id?: string;
+          action?: string;
           kind?: string;
+          details?: string;
           detail?: string;
+          actor_id?: string | null;
+          actor_role?: string | null;
           actor?: string;
           metadata?: Json;
           created_at?: string;
@@ -478,6 +578,38 @@ export type Database = {
           p_method: string;
         };
         Returns: Json;
+      };
+      request_voter_otp: {
+        Args: {
+          p_event_id: string;
+          p_email_or_phone_hash: string;
+          p_otp_hash: string;
+          p_ttl_sec?: number;
+        };
+        Returns: Json;
+      };
+      verify_and_cast_vote: {
+        Args: {
+          p_event_id: string;
+          p_contestant_id: string;
+          p_voter_hash: string;
+          p_otp_candidate_hash: string;
+        };
+        Returns: Json;
+      };
+      get_public_top_three: {
+        Args: {
+          p_event_id: string;
+        };
+        Returns: {
+          rank: number;
+          contestant_id: string;
+          full_name: string;
+          district: string;
+          performance_title: string;
+          performance_type: string;
+          avatar_url: string | null;
+        }[];
       };
     };
     Enums: {

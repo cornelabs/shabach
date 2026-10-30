@@ -171,7 +171,7 @@ function ResultsPage() {
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-charcoal-muted">
               The Grand Finale results will be officially published here following the complete
-              scoring collation, verification of all 48 scorecards, and score-desk confirmation.
+              scoring collation, verification of all 64 scorecards, and score-desk confirmation.
             </p>
             <div className="mt-6 flex justify-center">
               <Link
