@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import * as React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PublicTopThree } from "@/routes/results";
+import { PublicTopThree, Route } from "@/routes/results";
 import {
   loadSampleScores,
   lockResults,
@@ -174,5 +174,17 @@ describe("Public Results Privacy & Presentation", () => {
 
     const initialCheck = publishResults;
     expect(typeof initialCheck).toBe("function");
+  });
+
+  it("displays elegant pending message when results are not yet published", () => {
+    resetDemo();
+    const spyLoader = vi.spyOn(Route, "useLoaderData").mockReturnValue({ publishedSnapshot: null });
+    const ResultsComponent = Route.options.component!;
+    render(<ResultsComponent />);
+    expect(screen.getByText("Official results are being collated...")).toBeInTheDocument();
+    expect(
+      screen.getByText(/The Grand Finale top three placements will be officially published here/i),
+    ).toBeInTheDocument();
+    spyLoader.mockRestore();
   });
 });

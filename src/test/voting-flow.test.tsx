@@ -37,6 +37,56 @@ describe("Public Voting Flow & Confirmation", () => {
     expect(screen.getByText("Lagos Central")).toBeInTheDocument();
     expect(screen.getByText(/One-vote rule/i)).toBeInTheDocument();
     expect(screen.getByText(/Once cast, your vote cannot be cancelled/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Verification enforces one vote per verified email account, not proof of one unique human.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("handles full email OTP verification flow within the confirmation dialog", async () => {
+    setVotingStatus("open");
+    const onVoteCast = vi.fn();
+    const onOpenChange = vi.fn();
+
+    render(
+      <VoteConfirmationDialog
+        open={true}
+        onOpenChange={onOpenChange}
+        contestant={mockContestant}
+        onVoteCast={onVoteCast}
+      />,
+    );
+
+    const emailInput = screen.getByPlaceholderText("Enter email to verify vote...");
+    fireEvent.change(emailInput, { target: { value: "voter1@test.com" } });
+
+    const sendCodeButton = screen.getByText("Send Code");
+    fireEvent.click(sendCodeButton);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("123456")).toBeInTheDocument();
+    });
+
+    // In demo mode, a button with demo code is shown
+    const useCodeButton = screen.getByText(/Use demo code/i);
+    expect(useCodeButton).toBeInTheDocument();
+    fireEvent.click(useCodeButton);
+
+    const verifyButton = screen.getByText("Verify Code");
+    fireEvent.click(verifyButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("Verified")).toBeInTheDocument();
+    });
+
+    const confirmButton = screen.getByText("Confirm Vote");
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(onVoteCast).toHaveBeenCalledTimes(1);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
   });
 
   it("calls onCancel and does not cast vote when cancelled", () => {
