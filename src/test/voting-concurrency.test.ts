@@ -6,6 +6,7 @@ import {
   getState,
   loadSampleScores,
   lockResults,
+  publishResults,
   resetDemo,
   saveDraft,
   setDuration,
@@ -195,6 +196,20 @@ describe("Voting Concurrency, Single-Vote Protection & Locking Gates", () => {
       expect(secondLock.ok).toBe(true);
       expect(getState().results?.lockedAt).toBe(initialLockedAt);
       expect(getState().results?.rows).toHaveLength(16);
+    });
+
+    it("handles publication idempotency safely without corrupting official snapshot", () => {
+      const pub1 = publishResults();
+      expect(pub1.ok).toBe(true);
+
+      const pubAt = getState().results?.publishedAt;
+      expect(pubAt).toBeDefined();
+
+      // Repeated publication is idempotent and preserves initial published timestamp
+      const pub2 = publishResults();
+      expect(pub2.ok).toBe(true);
+      expect(getState().results?.publishedAt).toBe(pubAt);
+      expect(getState().results?.published).toBe(true);
     });
   });
 });
