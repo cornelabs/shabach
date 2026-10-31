@@ -574,8 +574,38 @@ export type Database = {
         Args: {
           p_event_id: string;
           p_contestant_id: string;
-          p_voter_hash: string;
-          p_method: string;
+          p_voter_token?: string | null;
+          p_method?: string;
+          p_voter_hash?: string | null;
+        };
+        Returns: Json;
+      };
+      lock_competition_results: {
+        Args: {
+          p_event_id: string;
+        };
+        Returns: Json;
+      };
+      publish_competition_results: {
+        Args: {
+          p_event_id: string;
+        };
+        Returns: Json;
+      };
+      reopen_judge_scorecard: {
+        Args: {
+          p_event_id: string;
+          p_judge_id: string;
+          p_contestant_id: string;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
+      verify_voter_email_otp: {
+        Args: {
+          p_event_id: string;
+          p_email_hash: string;
+          p_otp_candidate_hash: string;
         };
         Returns: Json;
       };

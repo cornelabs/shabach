@@ -77,6 +77,7 @@ export function hydrateDemoStore() {
       if (parsed && parsed.version === 1 && Array.isArray(parsed.contestants)) {
         state = {
           ...parsed,
+          votes: parsed.votes ?? [],
           tieResolutions: parsed.tieResolutions ?? [],
         };
       } else {
@@ -97,6 +98,7 @@ export function hydrateDemoStore() {
         if (parsed && parsed.version === 1) {
           state = {
             ...parsed,
+            votes: parsed.votes ?? [],
             tieResolutions: parsed.tieResolutions ?? [],
           };
           emit();
@@ -542,20 +544,32 @@ export type CastVoteResult =
       reason: "not_open" | "closed" | "already_voted" | "unknown_contestant";
     };
 
-function checkLocalVoteEligibility(contestantId: string): CastVoteResult {
+function checkLocalVoteEligibility(contestantId: string, voterId?: string): CastVoteResult {
   const s = state;
   if (resultsLocked(s)) return { ok: false, reason: "closed" };
   if (s.votingStatus === "not_open") return { ok: false, reason: "not_open" };
   if (s.votingStatus === "closed") return { ok: false, reason: "closed" };
-  if (s.browserVote) return { ok: false, reason: "already_voted" };
+  if (voterId) {
+    if (s.votes?.some((v) => v.voterId === voterId)) {
+      return { ok: false, reason: "already_voted" };
+    }
+  } else if (s.browserVote) {
+    return { ok: false, reason: "already_voted" };
+  }
   const exists = s.contestants.some((c) => c.id === contestantId || c.code === contestantId);
   if (!exists) return { ok: false, reason: "unknown_contestant" };
   return { ok: true };
 }
 
-function commitLocalVote(contestantId: string) {
+function commitLocalVote(contestantId: string, voterId?: string) {
   update((cur) => {
-    if (resultsLocked(cur) || cur.votingStatus !== "open" || cur.browserVote) {
+    if (resultsLocked(cur) || cur.votingStatus !== "open") {
+      return cur;
+    }
+    if (voterId && cur.votes?.some((v) => v.voterId === voterId)) {
+      return cur;
+    }
+    if (!voterId && cur.browserVote) {
       return cur;
     }
     const targetContestant = cur.contestants.find(
@@ -564,10 +578,21 @@ function commitLocalVote(contestantId: string) {
     const resolvedId = targetContestant ? targetContestant.id : contestantId;
     const newDemoVotes = { ...cur.demoVotes };
     newDemoVotes[resolvedId] = (newDemoVotes[resolvedId] ?? 0) + 1;
+    const nowIso = new Date().toISOString();
+    const newVotes = [...(cur.votes ?? [])];
+    if (voterId) {
+      newVotes.push({
+        id: `vote_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        voterId,
+        contestantId: resolvedId,
+        createdAt: nowIso,
+      });
+    }
     return {
       ...cur,
-      browserVote: { contestantId: resolvedId, at: new Date().toISOString() },
+      browserVote: cur.browserVote ?? { contestantId: resolvedId, at: nowIso },
       demoVotes: newDemoVotes,
+      votes: newVotes,
     };
   });
 }
@@ -599,7 +624,7 @@ export function castVote(
   contestantId: string,
   voterId?: string,
 ): CastVoteResult & Promise<CastVoteResult> {
-  const localCheck = checkLocalVoteEligibility(contestantId);
+  const localCheck = checkLocalVoteEligibility(contestantId, voterId);
   if (!localCheck.ok) {
     const rejected = Promise.resolve(localCheck);
     return Object.assign(rejected, localCheck);
@@ -609,7 +634,7 @@ export function castVote(
   const resolvedContestantId = target ? target.id : contestantId;
 
   // Immediately commit local vote so synchronous single-vote rules and checks hold
-  commitLocalVote(resolvedContestantId);
+  commitLocalVote(resolvedContestantId, voterId);
 
   // In test mode or when Supabase is not configured, complete synchronously
   if (
@@ -732,20 +757,28 @@ export function upsertCard(s: DemoState, next: Scorecard): Scorecard[] {
 }
 
 export function getCard(s: DemoState, judgeId: JudgeId, contestantId: string): Scorecard {
-  return (
-    s.scorecards.find((c) => c.judgeId === judgeId && c.contestantId === contestantId) ?? {
-      contestantId,
-      judgeId,
-      scores: rubricFor(s.contestants.find((c) => c.id === contestantId)!.type).criteria.map(
-        () => null,
-      ),
-      notes: "",
-      status: "not_started",
-      conflictDeclared: false,
-      conflictResolved: false,
-      reopened: false,
-    }
+  const existing = s.scorecards.find(
+    (c) => c.judgeId === judgeId && c.contestantId === contestantId,
   );
+  if (existing) {
+    return {
+      ...existing,
+      subtotal: existing.subtotal ?? judgeSubtotal(existing.scores),
+    };
+  }
+  return {
+    contestantId,
+    judgeId,
+    scores: rubricFor(s.contestants.find((c) => c.id === contestantId)!.type).criteria.map(
+      () => null,
+    ),
+    notes: "",
+    status: "not_started",
+    conflictDeclared: false,
+    conflictResolved: false,
+    reopened: false,
+    subtotal: 0,
+  };
 }
 
 export interface SaveResult {
@@ -758,7 +791,7 @@ export function saveDraft(
   judgeId: JudgeId,
   contestantId: string,
   scores: (number | null)[],
-  notes: string,
+  notes: string = "",
 ): SaveResult {
   const s = state;
   if (resultsLocked(s)) return { ok: false, reason: "results_locked" };
@@ -770,6 +803,7 @@ export function saveDraft(
       ...existing,
       scores,
       notes,
+      subtotal: judgeSubtotal(scores),
       status: "draft",
       updatedAt: new Date().toISOString(),
     }),
@@ -785,7 +819,12 @@ export interface SubmitResult {
 }
 
 /** Final submission requires a fully valid scorecard; runs after an explicit review step. */
-export function submitScorecard(judgeId: JudgeId, contestantId: string): SubmitResult {
+export function submitScorecard(
+  judgeId: JudgeId,
+  contestantId: string,
+  currentScores?: (number | null)[],
+  currentNotes?: string,
+): SubmitResult {
   const s = state;
   if (resultsLocked(s)) return { ok: false, reason: "results_locked" };
   const card = getCard(s, judgeId, contestantId);
@@ -798,19 +837,27 @@ export function submitScorecard(judgeId: JudgeId, contestantId: string): SubmitR
   const contestant = s.contestants.find((c) => c.id === contestantId);
   if (!contestant) return { ok: false, reason: "invalid" };
   const rubric = rubricFor(contestant.type);
-  const validation = validateScores(card.scores, rubric);
+  const effectiveScores = currentScores !== undefined ? currentScores : card.scores;
+  const effectiveNotes = currentNotes !== undefined ? currentNotes : card.notes;
+  const validation = validateScores(effectiveScores, rubric);
   if (!validation.ok) {
     return { ok: false, reason: "incomplete", errors: validation.errors };
   }
+  const now = new Date().toISOString();
+  const subtotal = judgeSubtotal(effectiveScores);
   update((cur) => ({
     ...cur,
     scorecards: upsertCard(cur, {
       ...card,
+      scores: effectiveScores,
+      notes: effectiveNotes,
+      subtotal,
+      submittedAt: now,
       status: "submitted",
       conflictDeclared: false,
       reopened: false,
       reopenReason: undefined,
-      updatedAt: new Date().toISOString(),
+      updatedAt: now,
     }),
   }));
   return { ok: true };

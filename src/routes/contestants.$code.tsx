@@ -10,29 +10,38 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VoteConfirmationDialog } from "@/components/vote-confirmation-dialog";
 import { useDemoState } from "@/hooks/use-demo";
-import { getState } from "@/lib/demo/store";
-import { typeLabel } from "@/lib/demo/labels";
+import { getDataAdapter } from "@/lib/db/adapter";
+import { typeLabel, formatSeconds } from "@/lib/demo/labels";
 import { buildContestants } from "@/lib/demo/seed";
 import { rubricFor } from "@/lib/demo/rubrics";
-import { formatSeconds } from "@/lib/demo/labels";
 import type { Contestant } from "@/lib/demo/types";
 
-function getLiveContestantByCode(code: string): Contestant | undefined {
-  const current = getState().contestants;
-  return (current && current.length > 0 ? current : buildContestants()).find(
-    (c) => c.code.toUpperCase() === code.toUpperCase(),
-  );
+async function resolveContestant(code: string): Promise<Contestant | null> {
+  const cleanCode = code.trim().toUpperCase();
+  try {
+    const adapter = getDataAdapter();
+    const contestant = await adapter.getContestantByCode(cleanCode);
+    if (contestant) return contestant;
+  } catch (err) {
+    console.warn("Error loading contestant from adapter:", err);
+  }
+
+  // Graceful fallback to demo seed
+  const fallback = buildContestants().find((c) => c.code.toUpperCase() === cleanCode);
+  return fallback ?? null;
 }
 
 export const Route = createFileRoute("/contestants/$code")({
-  loader: ({ params }) => {
-    const code = params.code.toUpperCase();
-    const contestant = getLiveContestantByCode(code);
-    if (!contestant) throw notFound();
-    return { code };
+  loader: async ({ params }) => {
+    const code = params.code.trim().toUpperCase();
+    const contestant = await resolveContestant(code);
+    if (!contestant) {
+      throw notFound();
+    }
+    return { code, contestant };
   },
-  head: ({ params }) => {
-    const contestant = getLiveContestantByCode(params.code.toUpperCase());
+  head: ({ loaderData, params }) => {
+    const contestant = loaderData?.contestant;
     return {
       meta: [
         {
@@ -57,6 +66,7 @@ export const Route = createFileRoute("/contestants/$code")({
       ],
     };
   },
+  notFoundComponent: ContestantNotFound,
   component: ContestantProfile,
 });
 
@@ -129,6 +139,33 @@ function VotePanel({ contestant }: { contestant: Contestant }) {
   );
 }
 
+async function copyToClipboard(text: string): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fallback
+    }
+  }
+  if (typeof document !== "undefined") {
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const success = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      return success;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
 function SharePanel({ code }: { code: string }) {
   const [url, setUrl] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -140,21 +177,27 @@ function SharePanel({ code }: { code: string }) {
 
   const qr = useQrDataUrl(url);
 
-  function copyCode() {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      void navigator.clipboard.writeText(code);
+  async function copyCode() {
+    const ok = await copyToClipboard(code);
+    if (ok) {
       setCopiedCode(true);
       toast.success(`Copied code ${code} to clipboard`);
       setTimeout(() => setCopiedCode(false), 2000);
+    } else {
+      toast.error(`Could not copy code ${code}`);
     }
   }
 
-  function copyLink() {
-    if (typeof navigator !== "undefined" && navigator.clipboard && url) {
-      void navigator.clipboard.writeText(url);
+  async function copyLink() {
+    const targetUrl = url || (typeof window !== "undefined" ? window.location.href : "");
+    if (!targetUrl) return;
+    const ok = await copyToClipboard(targetUrl);
+    if (ok) {
       setCopiedLink(true);
       toast.success("Profile link copied to clipboard");
       setTimeout(() => setCopiedLink(false), 2000);
+    } else {
+      toast.error("Could not copy profile link");
     }
   }
 
@@ -202,11 +245,62 @@ function SharePanel({ code }: { code: string }) {
   );
 }
 
+function ContestantNotFound() {
+  let code = "";
+  try {
+    const params = Route.useParams();
+    code = params?.code ? params.code.toUpperCase() : "";
+  } catch {
+    // Outside router context
+  }
+
+  return (
+    <div className="min-h-screen bg-ivory">
+      <SiteHeader />
+      <main className="mx-auto max-w-xl px-4 py-20 text-center">
+        <div className="rounded-2xl border border-cream-line bg-card p-8 shadow-card">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gold-wash text-gold">
+            <Vote className="h-7 w-7" />
+          </div>
+          <p className="mt-4 font-mono text-xs font-bold uppercase tracking-widest text-gold">
+            404 · Finalist Not Found
+          </p>
+          <h1 className="mt-2 font-display text-3xl text-forest">
+            {code ? `No finalist with code “${code}”` : "Contestant not found"}
+          </h1>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-charcoal-muted">
+            We couldn't find an official SHABACH 2026 finalist matching this code. Please check that
+            you entered the correct 6-character code, or explore all 16 finalists below.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 rounded-lg bg-forest px-5 py-2.5 text-sm font-semibold text-ivory hover:bg-forest-deep"
+            >
+              <ArrowLeft className="h-4 w-4" /> All contestants
+            </Link>
+            <Link
+              to="/results"
+              className="inline-flex items-center gap-2 rounded-lg border border-cream-line bg-card px-5 py-2.5 text-sm font-semibold text-forest hover:bg-parchment"
+            >
+              View results
+            </Link>
+          </div>
+        </div>
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
+
 function ContestantProfile() {
-  const { code } = Route.useParams();
+  const loaderData = Route.useLoaderData();
+  const code = loaderData?.code || "";
+  const loaderContestant = loaderData?.contestant;
   const state = useDemoState();
-  const contestant = state.contestants.find((c) => c.code.toUpperCase() === code.toUpperCase());
-  if (!contestant) return null;
+  const contestant =
+    state.contestants.find((c) => c.code.toUpperCase() === code.toUpperCase()) ?? loaderContestant;
+  if (!contestant) return <ContestantNotFound />;
   const rubric = rubricFor(contestant.type);
 
   return (
