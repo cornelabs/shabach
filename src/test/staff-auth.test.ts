@@ -141,6 +141,25 @@ describe("Staff Authentication & Request-Scoped Session Service", () => {
 
       expect(await getStaffSession("malformed-token")).toBeNull();
     });
+
+    it("strictly rejects expired staff session tokens and throws on assertion", async () => {
+      const expiredPayload = {
+        sub: "u-judge-expired",
+        email: "judge1@shabach.org",
+        name: "Judge 1",
+        role: "judge_1",
+        judgeId: "judge1",
+        eventId: "00000000-0000-0000-0000-000000002026",
+        iat: Date.now() - 100000,
+        exp: Date.now() - 1000, // Expired in the past
+      };
+      const encoded = Buffer.from(JSON.stringify(expiredPayload)).toString("base64url");
+      const expiredToken = `shabach_staff_${encoded}.sig`;
+      const session = await getStaffSession(expiredToken);
+      expect(session).toBeNull();
+      expect(() => assertIsStaff(session)).toThrow(StaffAuthError);
+      expect(() => assertIsOrganiser(session)).toThrow(StaffAuthError);
+    });
   });
 
   describe("Blind Judging & Role Authorization Assertions", () => {
