@@ -66,13 +66,18 @@ export class DemoDataAdapter implements IDataAdapter {
   }
 
   async getContestants(): Promise<Contestant[]> {
-    return getDemoState().contestants;
+    const list = getDemoState().contestants;
+    return list && list.length > 0 ? list : buildContestants();
   }
 
   async getContestantByCode(code: string): Promise<Contestant | null> {
-    const contestant = getDemoState().contestants.find(
-      (c) => c.code.toUpperCase() === code.trim().toUpperCase(),
-    );
+    const cleanCode = code.trim().toUpperCase();
+    const list = getDemoState().contestants;
+    const pool = list && list.length > 0 ? list : buildContestants();
+    let contestant = pool.find((c) => c.code.toUpperCase() === cleanCode);
+    if (!contestant) {
+      contestant = buildContestants().find((c) => c.code.toUpperCase() === cleanCode);
+    }
     return contestant || null;
   }
 
@@ -91,10 +96,30 @@ export class DemoDataAdapter implements IDataAdapter {
   }
 
   async castVote(
-    _voterId: string,
+    voterId: string,
     contestantId: string,
   ): Promise<{ success: boolean; message: string; voteId?: string }> {
-    const res = demoCastVote(contestantId);
+    const s = getDemoState();
+    if (s.results !== null) {
+      return {
+        success: false,
+        message: "Competition results are locked. Voting window is permanently closed.",
+      };
+    }
+    if (s.votingStatus === "not_open") {
+      return {
+        success: false,
+        message: "Voting has not opened yet.",
+      };
+    }
+    if (s.votingStatus === "closed") {
+      return {
+        success: false,
+        message: "Voting window is currently closed.",
+      };
+    }
+
+    const res = demoCastVote(contestantId, voterId);
     if (!res.ok) {
       return {
         success: false,
@@ -111,7 +136,7 @@ export class DemoDataAdapter implements IDataAdapter {
     return {
       success: true,
       message: "Vote confirmed and recorded successfully.",
-      voteId: `demo-vote-${Date.now()}`,
+      voteId: `demo-vote-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     };
   }
 
@@ -283,7 +308,7 @@ export class LiveSupabaseAdapter implements IDataAdapter {
       .from("contestants")
       .select("*")
       .ilike("code", code.trim())
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       return new DemoDataAdapter().getContestantByCode(code);
@@ -332,8 +357,9 @@ export class LiveSupabaseAdapter implements IDataAdapter {
       const { data, error } = await this.client.rpc("cast_audience_vote", {
         p_event_id: DEFAULT_EVENT_ID,
         p_contestant_id: contestantId,
+        p_voter_token: voterId,
+        p_method: "otp_email",
         p_voter_hash: voterId,
-        p_method: "audience_web",
       });
 
       if (!error && data && typeof data === "object" && (data as { ok?: boolean }).ok) {
@@ -446,15 +472,25 @@ export class LiveSupabaseAdapter implements IDataAdapter {
     await new DemoDataAdapter().reopenScorecard(contestantId, judgeId, reason);
 
     try {
-      await this.client
-        .from("scorecards")
-        .update({
-          reopened: true,
-          reopened_reason: reason,
-          status: "draft",
-          updated_at: new Date().toISOString(),
-        })
-        .match({ event_id: DEFAULT_EVENT_ID, contestant_id: contestantId, judge_id: judgeId });
+      const { data, error } = await this.client.rpc("reopen_judge_scorecard", {
+        p_event_id: DEFAULT_EVENT_ID,
+        p_judge_id: judgeId,
+        p_contestant_id: contestantId,
+        p_reason: reason,
+      });
+
+      if (error) {
+        // Fallback to direct update if RPC is not yet active
+        await this.client
+          .from("scorecards")
+          .update({
+            reopened: true,
+            reopened_reason: reason,
+            status: "draft",
+            updated_at: new Date().toISOString(),
+          })
+          .match({ event_id: DEFAULT_EVENT_ID, contestant_id: contestantId, judge_id: judgeId });
+      }
     } catch (err) {
       console.warn("Supabase reopenScorecard warning:", err);
     }
@@ -534,6 +570,11 @@ export class LiveSupabaseAdapter implements IDataAdapter {
         },
         { onConflict: "event_id,is_official" },
       );
+
+      // Transition event lifecycle status to 'locked' via authoritative RPC
+      await this.client.rpc("lock_competition_results", {
+        p_event_id: DEFAULT_EVENT_ID,
+      });
     } catch (err) {
       console.warn("Supabase lockResults warning:", err);
     }
@@ -545,13 +586,21 @@ export class LiveSupabaseAdapter implements IDataAdapter {
     await new DemoDataAdapter().publishResults();
 
     try {
-      await this.client
-        .from("results_snapshots")
-        .update({
-          published: true,
-          published_at: new Date().toISOString(),
-        })
-        .match({ event_id: DEFAULT_EVENT_ID, is_official: true });
+      // Publish snapshot and update event lifecycle to 'published' via authoritative RPC
+      const { error } = await this.client.rpc("publish_competition_results", {
+        p_event_id: DEFAULT_EVENT_ID,
+      });
+
+      if (error) {
+        // Fallback update
+        await this.client
+          .from("results_snapshots")
+          .update({
+            published: true,
+            published_at: new Date().toISOString(),
+          })
+          .match({ event_id: DEFAULT_EVENT_ID, is_official: true });
+      }
     } catch (err) {
       console.warn("Supabase publishResults warning:", err);
     }
