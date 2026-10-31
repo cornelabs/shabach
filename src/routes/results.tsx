@@ -6,10 +6,19 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { useDemoState } from "@/hooks/use-demo";
+import { getDataAdapter } from "@/lib/db/adapter";
 import { FINALE_DATE_LABEL, typeLabel } from "@/lib/demo/labels";
 import type { ResultRow } from "@/lib/demo/types";
 
 export const Route = createFileRoute("/results")({
+  loader: async () => {
+    try {
+      const published = await getDataAdapter().getPublishedResults();
+      return { publishedSnapshot: published };
+    } catch {
+      return { publishedSnapshot: null };
+    }
+  },
   head: () => ({
     meta: [
       { title: "Grand Finale Winners & Results — SHABACH 2026" },
@@ -109,8 +118,13 @@ function TopThreeCard({ row, position }: { row: ResultRow; position: number }) {
 }
 
 export function PublicTopThree({ rows }: { rows: ResultRow[] }) {
-  // Filter only ranked contestants and take top 3
-  const topThree = rows.filter((r) => r.rank !== null).slice(0, 3);
+  // STRICT PRIVACY GUARANTEE:
+  // Under no circumstances expose 4th-16th ranks, raw judge marks, or internal vote tallies to public visitors.
+  // Strictly filter only the top three placed finalists (rank 1, 2, 3) sorted by rank.
+  const topThree = rows
+    .filter((r) => r.rank !== null && r.rank >= 1 && r.rank <= 3)
+    .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
+    .slice(0, 3);
 
   return (
     <div className="mt-8">
@@ -147,8 +161,10 @@ export function PublicTopThree({ rows }: { rows: ResultRow[] }) {
 }
 
 function ResultsPage() {
+  const loaderData = Route.useLoaderData();
   const state = useDemoState();
-  const isPublished = Boolean(state.results?.published);
+  const results = state.results?.published ? state.results : loaderData?.publishedSnapshot;
+  const isPublished = Boolean(results?.published && results.rows && results.rows.length > 0);
 
   return (
     <div className="min-h-screen bg-ivory">
@@ -159,19 +175,20 @@ function ResultsPage() {
         </p>
         <h1 className="mt-4 font-display text-4xl text-forest">Results & Winners</h1>
 
-        {isPublished && state.results ? (
-          <PublicTopThree rows={state.results.rows} />
+        {isPublished && results ? (
+          <PublicTopThree rows={results.rows} />
         ) : (
           <div className="mt-8 rounded-2xl border border-cream-line bg-card p-10 text-center shadow-card">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gold-wash text-gold">
               <Clock className="h-7 w-7" />
             </div>
             <h2 className="mt-4 font-display text-2xl text-forest">
-              Results are awaiting official announcement
+              Official results are being collated...
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-charcoal-muted">
-              The Grand Finale results will be officially published here following the complete
-              scoring collation, verification of all 64 scorecards, and score-desk confirmation.
+              Official results are being collated by the score desk. The Grand Finale top three
+              placements will be officially published here following complete scoring collation,
+              verification of all 64 scorecards, and score-desk confirmation.
             </p>
             <div className="mt-6 flex justify-center">
               <Link

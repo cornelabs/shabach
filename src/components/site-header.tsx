@@ -29,7 +29,16 @@ function StatusDot() {
 }
 
 export function SiteHeader() {
-  const matchRoute = useMatchRoute();
+  let isRouteMatched = (_opts: { to: string; fuzzy?: boolean }) => false;
+  try {
+    const matchRoute = useMatchRoute();
+    if (typeof matchRoute === "function") {
+      isRouteMatched = (opts) => Boolean(matchRoute(opts));
+    }
+  } catch {
+    // Graceful fallback when rendered in isolated test contexts without RouterProvider
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-cream-line bg-ivory/90 backdrop-blur print:hidden">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -41,7 +50,7 @@ export function SiteHeader() {
         </Link>
         <nav className="flex items-center gap-1 sm:gap-2">
           {NAV.map((item) => {
-            const active = matchRoute({ to: item.to, fuzzy: true });
+            const active = isRouteMatched({ to: item.to, fuzzy: true });
             return (
               <Link
                 key={item.to}

@@ -53,6 +53,8 @@ export interface Scorecard {
   reopened: boolean;
   reopenReason?: string | undefined;
   updatedAt?: string | undefined;
+  submittedAt?: string | undefined;
+  subtotal?: number | undefined;
 }
 
 export type VotingStatus = "not_open" | "open" | "closed";
@@ -123,6 +125,8 @@ export interface DemoState {
   demoVotes: Record<string, number>;
   /** Votes cast in this demo browser; at most one across the competition. */
   browserVote: { contestantId: string; at: string } | null;
+  /** Granular record of all individual votes cast by verified voter tokens */
+  votes: Array<{ id: string; voterId: string; contestantId: string; createdAt: string }>;
   votingStatus: VotingStatus;
   durations: Record<string, DurationEntry>;
   activity: ActivityEvent[];
