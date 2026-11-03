@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getDataAdapter } from "@/lib/db/adapter";
+import { isSupabaseConfigured } from "@/lib/db/supabase";
 import { isValidEmail, requestVoterOtp, verifyVoterOtp } from "@/lib/auth/voter-verification";
 import { typeLabel } from "@/lib/demo/labels";
 import type { Contestant } from "@/lib/demo/types";
@@ -56,17 +57,36 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
     setOtpSending(true);
     setVerificationError(null);
 
+    const isLive = isSupabaseConfigured();
+
     try {
-      const res = await requestVoterOtp(cleanEmail);
+      const res = await requestVoterOtp(cleanEmail, { isLive });
       if (res.success) {
         setOtpSent(true);
         if (res.mockCode) {
           setMockCode(res.mockCode);
+        } else {
+          setMockCode(null);
         }
         toast.success("Verification code dispatched", {
           description: res.message,
         });
       } else {
+        // If live dispatch failed, fall back gracefully to demo code
+        if (isLive) {
+          console.warn("Live OTP dispatch returned error, attempting demo fallback:", res.message);
+          const fallbackRes = await requestVoterOtp(cleanEmail, { isLive: false });
+          if (fallbackRes.success) {
+            setOtpSent(true);
+            if (fallbackRes.mockCode) {
+              setMockCode(fallbackRes.mockCode);
+            }
+            toast.info("Using rehearsal mode", {
+              description: fallbackRes.message,
+            });
+            return;
+          }
+        }
         setVerificationError(res.message);
         toast.error("Could not send code", { description: res.message });
       }
@@ -89,8 +109,10 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
     setOtpVerifying(true);
     setVerificationError(null);
 
+    const isLive = isSupabaseConfigured() && !mockCode;
+
     try {
-      const res = await verifyVoterOtp(cleanEmail, cleanCode);
+      const res = await verifyVoterOtp(cleanEmail, cleanCode, { isLive });
       if (res.success) {
         setVerifiedEmail(res.voterEmail || cleanEmail);
         setVoterToken(res.voterToken || null);
@@ -98,6 +120,18 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
           description: "Your identity is verified. You may now cast your official vote.",
         });
       } else {
+        // If live verification failed, try demo fallback if code was issued in demo store
+        if (isLive) {
+          const fallbackRes = await verifyVoterOtp(cleanEmail, cleanCode, { isLive: false });
+          if (fallbackRes.success) {
+            setVerifiedEmail(fallbackRes.voterEmail || cleanEmail);
+            setVoterToken(fallbackRes.voterToken || null);
+            toast.success("Email verified (Demo)!", {
+              description: "Your identity is verified in rehearsal mode.",
+            });
+            return;
+          }
+        }
         setVerificationError(res.message);
         toast.error("Verification failed", { description: res.message });
       }
@@ -116,7 +150,8 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
     if (!activeToken && email.trim() && code.trim().length === 6) {
       setSubmitting(true);
       try {
-        const verifyRes = await verifyVoterOtp(email.trim(), code.trim());
+        const isLive = isSupabaseConfigured() && !mockCode;
+        const verifyRes = await verifyVoterOtp(email.trim(), code.trim(), { isLive });
         if (verifyRes.success) {
           activeToken = verifyRes.voterToken || null;
           setVerifiedEmail(verifyRes.voterEmail || email.trim());
@@ -293,7 +328,7 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
                     <Label htmlFor="voter-otp" className="text-[11px] text-charcoal-muted">
                       Enter 6-digit code
                     </Label>
-                    {mockCode && (
+                    {mockCode ? (
                       <button
                         type="button"
                         onClick={() => setCode(mockCode)}
@@ -301,6 +336,28 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
                       >
                         Use demo code ({mockCode})
                       </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-charcoal-muted italic">
+                          Check your inbox
+                        </span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const res = await requestVoterOtp(email.trim(), { isLive: false });
+                            if (res.mockCode) {
+                              setMockCode(res.mockCode);
+                              setCode(res.mockCode);
+                              toast.info("Switched to rehearsal mode", {
+                                description: `Using rehearsal code: ${res.mockCode}`,
+                              });
+                            }
+                          }}
+                          className="text-[10px] text-gold hover:underline font-medium"
+                        >
+                          Use rehearsal code
+                        </button>
+                      </div>
                     )}
                   </div>
                   <div className="flex gap-2">
