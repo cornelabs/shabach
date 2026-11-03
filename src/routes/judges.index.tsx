@@ -1,10 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import * as React from "react";
 import { ArrowRight, Lock, ShieldCheck, UserCheck, Gavel, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { JudgeAccessGate } from "@/components/judge/judge-access-gate";
 import { useActiveJudgeSession } from "@/components/judge/use-active-judge";
 import { useDemoState } from "@/hooks/use-demo";
+import { isJudgeUnlocked, lockJudgeAccess } from "@/lib/auth/judge-access";
 import { getCard, setActiveJudge } from "@/lib/demo/store";
 import { JUDGES, type JudgeId } from "@/lib/demo/types";
 import { cn } from "@/lib/utils";
@@ -17,6 +21,7 @@ function JudgesHome() {
   const navigate = useNavigate();
   const state = useDemoState();
   const { staffSession, activeJudgeId } = useActiveJudgeSession();
+  const [unlocked, setUnlocked] = React.useState(() => isJudgeUnlocked());
   const locked = state.results !== null;
 
   function selectSeat(judgeId: JudgeId) {
@@ -26,11 +31,38 @@ function JudgesHome() {
 
   const activeJudge = JUDGES.find((j) => j.id === activeJudgeId);
 
+  if (!unlocked) {
+    return (
+      <JudgeAccessGate
+        onUnlocked={(seatId) => {
+          setUnlocked(true);
+          if (seatId && seatId !== "all") {
+            selectSeat(seatId);
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-12">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl text-forest">Judges' workspace</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-4xl text-forest">Judges' workspace</h1>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                lockJudgeAccess();
+                setUnlocked(false);
+                toast.info("Judges' workspace locked.");
+              }}
+              className="h-8 border-cream-line text-xs gap-1.5 text-charcoal-muted hover:text-forest"
+            >
+              <Lock className="h-3.5 w-3.5 text-gold" /> Lock Panel
+            </Button>
+          </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-charcoal-muted">
             Each judge scores independently — nobody sees another judge's scores. Pick your seat to
             open your scorecards. In this demo the seats are sample judges; a production build

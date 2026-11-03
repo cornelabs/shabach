@@ -1,11 +1,15 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Lock, ScrollText } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { JudgeAccessGate } from "@/components/judge/judge-access-gate";
 import { JudgeSessionBadge } from "@/components/judge/judge-session-badge";
 import { ScorecardEditor } from "@/components/judge/scorecard-editor";
 import { useDemoState } from "@/hooks/use-demo";
+import { isJudgeUnlocked, lockJudgeAccess } from "@/lib/auth/judge-access";
 import { SCORECARD_STATUS_LABEL, typeLabel } from "@/lib/demo/labels";
 import { getCard, setActiveJudge } from "@/lib/demo/store";
 import { JUDGES, type JudgeId } from "@/lib/demo/types";
@@ -34,6 +38,7 @@ function JudgeWorkspace() {
   const currentJudge = JUDGES.find((j) => j.id === judgeId) ?? JUDGES[0]!;
   const activeJudgeId: JudgeId = currentJudge.id;
   const state = useDemoState();
+  const [unlocked, setUnlocked] = useState(() => isJudgeUnlocked(activeJudgeId));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const locked = state.results !== null;
 
@@ -41,6 +46,25 @@ function JudgeWorkspace() {
   useEffect(() => {
     setActiveJudge(activeJudgeId);
   }, [activeJudgeId]);
+
+  if (!unlocked) {
+    return (
+      <div className="py-6">
+        <div className="mx-auto max-w-md px-4 mb-2">
+          <Link
+            to="/judges"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-charcoal-muted hover:text-forest"
+          >
+            ← View all judge seats
+          </Link>
+        </div>
+        <JudgeAccessGate
+          requiredSeatId={activeJudgeId}
+          onUnlocked={() => setUnlocked(true)}
+        />
+      </div>
+    );
+  }
 
   const ordered = [...state.contestants].sort((a, b) => a.order - b.order);
   const selected = selectedId ? (state.contestants.find((c) => c.id === selectedId) ?? null) : null;
@@ -67,7 +91,21 @@ function JudgeWorkspace() {
         >
           ← Judge seats
         </Link>
-        <JudgeSessionBadge currentSeatId={activeJudgeId} showSwitchAction={true} />
+        <div className="flex items-center gap-2">
+          <JudgeSessionBadge currentSeatId={activeJudgeId} showSwitchAction={true} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              lockJudgeAccess();
+              setUnlocked(false);
+              toast.info(`Seat for ${currentJudge.name} locked.`);
+            }}
+            className="h-8 border-cream-line text-xs gap-1.5 text-charcoal-muted hover:text-forest"
+          >
+            <Lock className="h-3 w-3 text-gold" /> Lock Seat
+          </Button>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
