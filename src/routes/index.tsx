@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDemoState } from "@/hooks/use-demo";
 import { FINALE_DATE_LABEL, VOTING_STATUS_LABEL } from "@/lib/demo/labels";
-import { buildContestants } from "@/lib/demo/seed";
+import { buildContestants, CONTESTANT_SEED, OLD_DUMMY_NAMES } from "@/lib/demo/seed";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -123,8 +123,27 @@ function ContestantGrid() {
   const state = useDemoState();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const pool =
+  const rawPool =
     state.contestants && state.contestants.length > 0 ? state.contestants : buildContestants();
+  const pool = rawPool.map((c) => {
+    const seed = CONTESTANT_SEED.find((s) => s.code === c.code || s.id === c.id);
+    const isLegacy = !c.name || OLD_DUMMY_NAMES.has(c.name);
+    if (isLegacy && seed) {
+      return {
+        ...c,
+        name: seed.name,
+        district: seed.district,
+        type: seed.type,
+        title: seed.title,
+        bio: seed.bio,
+        avatarUrl: seed.avatarUrl,
+      };
+    }
+    if (seed && (!c.avatarUrl || c.avatarUrl !== seed.avatarUrl)) {
+      return { ...c, avatarUrl: seed.avatarUrl };
+    }
+    return c;
+  });
   const query = searchQuery.trim().toLowerCase();
 
   const filtered = pool
@@ -168,7 +187,7 @@ function ContestantGrid() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search contestants by name or code (e.g. Adeyemi, SB7K2M)..."
+              placeholder="Search contestants by name or code (e.g. Lizzy, SB7K2M)..."
               className="pl-9 pr-9 border-cream-line bg-card text-sm focus-visible:ring-forest"
               aria-label="Search contestants"
             />

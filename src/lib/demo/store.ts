@@ -28,7 +28,7 @@ import { JUDGES } from "./types";
  * storage event. No browser API runs at module scope — everything is lazy.
  */
 
-const STORAGE_KEY = "shabach2026.demo.v1";
+const STORAGE_KEY = "shabach2026.demo.v2";
 
 let state: DemoState = createSeedState();
 let hydrated = false;
@@ -70,13 +70,42 @@ export function getServerState(): DemoState {
 export function hydrateDemoStore() {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;
+
+  // Clear legacy v1 localStorage if present
+  try {
+    window.localStorage.removeItem("shabach2026.demo.v1");
+  } catch {
+    /* ignore */
+  }
+
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as DemoState;
-      if (parsed && parsed.version === 1 && Array.isArray(parsed.contestants)) {
+      if (parsed && parsed.version === 2 && Array.isArray(parsed.contestants)) {
+        const upgradedContestants = parsed.contestants.map((c) => {
+          const seed = CONTESTANT_SEED.find((s) => s.code === c.code || s.id === c.id);
+          const isLegacy = !c.name || OLD_DUMMY_NAMES.has(c.name);
+          if (isLegacy && seed) {
+            return {
+              ...c,
+              name: seed.name,
+              district: seed.district,
+              type: seed.type,
+              title: seed.title,
+              bio: seed.bio,
+              avatarUrl: seed.avatarUrl,
+            };
+          }
+          if (seed && (!c.avatarUrl || c.avatarUrl !== seed.avatarUrl)) {
+            return { ...c, avatarUrl: seed.avatarUrl };
+          }
+          return c;
+        });
+
         state = {
           ...parsed,
+          contestants: upgradedContestants,
           votes: parsed.votes ?? [],
           tieResolutions: parsed.tieResolutions ?? [],
         };
@@ -95,7 +124,7 @@ export function hydrateDemoStore() {
       if (e.key !== STORAGE_KEY) return;
       try {
         const parsed = e.newValue ? (JSON.parse(e.newValue) as DemoState) : null;
-        if (parsed && parsed.version === 1) {
+        if (parsed && parsed.version === 2) {
           state = {
             ...parsed,
             votes: parsed.votes ?? [],

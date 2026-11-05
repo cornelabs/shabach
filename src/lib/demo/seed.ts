@@ -353,7 +353,7 @@ export function buildDurations(contestants: Contestant[]): Record<string, Durati
 export function createSeedState(): DemoState {
   const contestants = buildContestants();
   return {
-    version: 1,
+    version: 2,
     contestants,
     scorecards: buildScorecards(contestants),
     demoVotes: { ...DEMO_VOTES_SEED },

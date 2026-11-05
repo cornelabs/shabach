@@ -120,7 +120,7 @@ export interface TieResolution {
 }
 
 export interface DemoState {
-  version: 1;
+  version: 2;
   contestants: Contestant[];
   scorecards: Scorecard[];
   /** Simulated audience votes per contestant id (labelled as demo data). */
