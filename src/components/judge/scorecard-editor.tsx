@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   CheckCircle2,
+  Clock,
   Loader2,
   Lock,
   Minus,
@@ -293,7 +294,10 @@ export function ScorecardEditor({
               № {contestant.order} · {typeLabel(contestant.type)} rubric
             </p>
             <h2 className="mt-1 font-display text-2xl text-forest">{contestant.name}</h2>
-            <p className="text-sm text-charcoal-muted">“{contestant.title}”</p>
+            <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-forest">
+              <Clock className="h-3.5 w-3.5 text-gold shrink-0" />
+              <span>Time: {Math.round(rubric.timeLimitSec / 60)} mins allocated ({contestant.district})</span>
+            </div>
           </div>
           <div className="flex flex-col items-end gap-1.5 text-right">
             <div className="flex items-center gap-2">

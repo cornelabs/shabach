@@ -1,15 +1,13 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Eye, EyeOff, Gavel, KeyRound, Lock, ShieldCheck } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, KeyRound, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  DEFAULT_PANEL_CODE,
   grantJudgeAccess,
-  JUDGE_SEAT_PINS,
   verifyJudgeCode,
 } from "@/lib/auth/judge-access";
 import { JUDGES, type JudgeId } from "@/lib/demo/types";
@@ -26,7 +24,6 @@ export function JudgeAccessGate({ requiredSeatId, onUnlocked }: Props) {
   const [loading, setLoading] = React.useState(false);
 
   const seatJudge = requiredSeatId ? JUDGES.find((j) => j.id === requiredSeatId) : null;
-  const targetPin = requiredSeatId ? JUDGE_SEAT_PINS[requiredSeatId] : null;
 
   function handleSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault();
@@ -68,11 +65,6 @@ export function JudgeAccessGate({ requiredSeatId, onUnlocked }: Props) {
     }
   }
 
-  function handleUseQuickCode(quickCode: string) {
-    setCode(quickCode);
-    setError(null);
-  }
-
   return (
     <div className="mx-auto my-12 max-w-md px-4">
       <div className="rounded-3xl border border-cream-line bg-card p-6 shadow-card sm:p-8">
@@ -82,15 +74,15 @@ export function JudgeAccessGate({ requiredSeatId, onUnlocked }: Props) {
 
         <div className="mt-5 text-center">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1 text-xs font-semibold text-forest">
-            <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Protected Staff Zone
+            <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Protected Judges Zone
           </div>
           <h2 className="mt-3 font-display text-2xl text-forest sm:text-3xl">
             {seatJudge ? `${seatJudge.name}'s Workspace` : "Judges' Workspace Access"}
           </h2>
           <p className="mt-2 text-xs leading-relaxed text-charcoal-muted sm:text-sm">
             {seatJudge
-              ? `Enter your 4-digit seat PIN (${targetPin}) or the Chief Judge access code to open this scorecard desk.`
-              : "Scoring is restricted to appointed competition judges. Please enter your Panel Access Code or 4-digit seat PIN."}
+              ? "Enter your confidential 4-digit seat PIN or the Panel Access Code to open this scorecard desk."
+              : "Scoring is restricted to appointed competition judges. Please enter your confidential Panel Access Code or 4-digit seat PIN."}
           </p>
         </div>
 
@@ -106,7 +98,7 @@ export function JudgeAccessGate({ requiredSeatId, onUnlocked }: Props) {
               <Input
                 id="judge-code"
                 type={showCode ? "text" : "password"}
-                placeholder={requiredSeatId ? `Enter PIN (e.g. ${targetPin})` : "Enter code or PIN..."}
+                placeholder="Enter access code or 4-digit PIN..."
                 value={code}
                 onChange={(e) => {
                   setCode(e.target.value);
@@ -138,30 +130,8 @@ export function JudgeAccessGate({ requiredSeatId, onUnlocked }: Props) {
           </Button>
         </form>
 
-        {/* Quick fill / Rehearsal hints */}
-        <div className="mt-6 rounded-2xl border border-gold/30 bg-gold-wash/50 p-3.5 text-xs">
-          <p className="font-semibold text-forest flex items-center gap-1.5">
-            <Gavel className="h-3.5 w-3.5 text-gold" /> Rehearsal & Testing Access:
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              onClick={() => handleUseQuickCode(DEFAULT_PANEL_CODE)}
-              className="rounded-lg bg-card px-2.5 py-1 font-mono text-[11px] font-semibold text-forest border border-cream-line hover:border-gold"
-            >
-              Panel: {DEFAULT_PANEL_CODE}
-            </button>
-            {JUDGES.map((j) => (
-              <button
-                key={j.id}
-                type="button"
-                onClick={() => handleUseQuickCode(JUDGE_SEAT_PINS[j.id])}
-                className="rounded-lg bg-card px-2 py-1 font-mono text-[11px] text-charcoal border border-cream-line hover:border-gold"
-              >
-                {j.name.split(" ")[1] || j.id}: {JUDGE_SEAT_PINS[j.id]}
-              </button>
-            ))}
-          </div>
+        <div className="mt-6 rounded-2xl border border-cream-line bg-ivory/60 p-3 text-center text-xs text-charcoal-muted">
+          Need access? Seat PINs and access codes are distributed privately to appointed judges by the score desk.
         </div>
 
         <div className="mt-6 text-center">
@@ -169,7 +139,7 @@ export function JudgeAccessGate({ requiredSeatId, onUnlocked }: Props) {
             to="/"
             className="text-xs font-medium text-charcoal-muted hover:text-forest hover:underline"
           >
-            ← Return to Public Home
+            ← Return to Dashboard
           </Link>
         </div>
       </div>

@@ -62,22 +62,22 @@ describe("Judge Access Protection & PIN Verification", () => {
   });
 
   describe("JudgeAccessGate UI Component", () => {
-    it("renders the access gate with title, prompt, and quick buttons", () => {
+    it("renders the access gate with title, prompt, and secure PIN input", () => {
       render(<JudgeAccessGate />);
 
       expect(screen.getByText("Judges' Workspace Access")).toBeInTheDocument();
       expect(
         screen.getByText(/Scoring is restricted to appointed competition judges/i),
       ).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("Enter code or PIN...")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Enter access code or 4-digit PIN...")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Unlock Workspace/i })).toBeInTheDocument();
-      expect(screen.getByText(`Panel: ${DEFAULT_PANEL_CODE}`)).toBeInTheDocument();
+      expect(screen.getByText(/Seat PINs and access codes are distributed privately/i)).toBeInTheDocument();
     });
 
     it("shows error when entering invalid code", async () => {
       render(<JudgeAccessGate />);
 
-      const input = screen.getByPlaceholderText("Enter code or PIN...");
+      const input = screen.getByPlaceholderText("Enter access code or 4-digit PIN...");
       fireEvent.change(input, { target: { value: "INVALID_PIN" } });
 
       const submitBtn = screen.getByRole("button", { name: /Unlock Workspace/i });
@@ -92,7 +92,7 @@ describe("Judge Access Protection & PIN Verification", () => {
       const onUnlocked = vi.fn();
       render(<JudgeAccessGate onUnlocked={onUnlocked} />);
 
-      const input = screen.getByPlaceholderText("Enter code or PIN...");
+      const input = screen.getByPlaceholderText(/Enter access code or 4-digit PIN/i);
       fireEvent.change(input, { target: { value: DEFAULT_PANEL_CODE } });
 
       const submitBtn = screen.getByRole("button", { name: /Unlock Workspace/i });
@@ -108,7 +108,7 @@ describe("Judge Access Protection & PIN Verification", () => {
       // Render gate specifically for judge1
       render(<JudgeAccessGate requiredSeatId="judge1" onUnlocked={onUnlocked} />);
 
-      const input = screen.getByPlaceholderText(/Enter PIN/i);
+      const input = screen.getByPlaceholderText(/Enter access code or 4-digit PIN/i);
       // Try entering judge2's PIN
       fireEvent.change(input, { target: { value: JUDGE_SEAT_PINS.judge2 } });
 
@@ -125,7 +125,7 @@ describe("Judge Access Protection & PIN Verification", () => {
       const onUnlocked = vi.fn();
       render(<JudgeAccessGate requiredSeatId="judge1" onUnlocked={onUnlocked} />);
 
-      const input = screen.getByPlaceholderText(/Enter PIN/i);
+      const input = screen.getByPlaceholderText(/Enter access code or 4-digit PIN/i);
       fireEvent.change(input, { target: { value: JUDGE_SEAT_PINS.judge1 } });
 
       const submitBtn = screen.getByRole("button", { name: /Unlock Workspace/i });

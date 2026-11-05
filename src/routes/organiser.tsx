@@ -73,6 +73,8 @@ import {
   VOTING_STATUS_LABEL,
 } from "@/lib/demo/labels";
 import { rubricFor } from "@/lib/demo/rubrics";
+import { isAdminUnlocked, lockAdminAccess } from "@/lib/auth/admin-access";
+import { AdminAccessGate } from "@/components/admin/admin-access-gate";
 import { computeResults, fmt2, timePenalty, verificationGates } from "@/lib/demo/scoring";
 import {
   checkLockReadiness,
@@ -123,6 +125,7 @@ function downloadCsv(csvContent: string, filename = "shabach-2026-master-results
 }
 
 function OrganiserDashboard() {
+  const [unlocked, setUnlocked] = React.useState(() => isAdminUnlocked());
   const state = useDemoState();
   const [activeTab, setActiveTab] = React.useState("overview");
 
@@ -164,6 +167,16 @@ function OrganiserDashboard() {
   const isLocked = state.results !== null;
   const isPublished = Boolean(state.results?.published);
 
+  if (!unlocked) {
+    return (
+      <div className="min-h-screen bg-ivory">
+        <SiteHeader />
+        <AdminAccessGate onUnlocked={() => setUnlocked(true)} />
+        <SiteFooter />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-ivory">
       <SiteHeader />
@@ -198,6 +211,18 @@ function OrganiserDashboard() {
                 In Progress
               </Badge>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                lockAdminAccess();
+                setUnlocked(false);
+                toast.info("Admin console locked.");
+              }}
+              className="border-cream-line text-xs font-medium text-charcoal hover:text-forest"
+            >
+              <Lock className="mr-1.5 h-3.5 w-3.5 text-gold" /> Lock Console
+            </Button>
           </div>
         </div>
 
@@ -568,7 +593,9 @@ function ContestantsTab({ isLocked }: { isLocked: boolean }) {
                     <Monogram name={c.name} hue={c.hue} size="sm" />
                     <div>
                       <p className="font-semibold text-forest">{c.name}</p>
-                      <p className="text-xs text-charcoal-muted">“{c.title}”</p>
+                      <p className="text-xs font-medium text-forest/80">
+                        {Math.round(rubricFor(c.type).timeLimitSec / 60)} mins allocated
+                      </p>
                     </div>
                   </div>
                 </td>
@@ -668,8 +695,8 @@ function EditContestantDialog({
   }, [state.scorecards, contestant.id]);
 
   const handleSave = () => {
-    if (!name.trim() || !title.trim()) {
-      toast.error("Name and performance title cannot be empty.");
+    if (!name.trim()) {
+      toast.error("Name cannot be empty.");
       return;
     }
 

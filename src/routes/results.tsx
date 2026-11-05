@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDemoState } from "@/hooks/use-demo";
 import { getDataAdapter } from "@/lib/db/adapter";
 import { FINALE_DATE_LABEL, typeLabel } from "@/lib/demo/labels";
+import { rubricFor } from "@/lib/demo/rubrics";
 import type { ResultRow } from "@/lib/demo/types";
 
 export const Route = createFileRoute("/results")({
@@ -94,9 +95,10 @@ function TopThreeCard({ row, position }: { row: ResultRow; position: number }) {
           />
           <div className="min-w-0 flex-1">
             <h3 className="font-display text-2xl text-forest truncate">{row.contestant.name}</h3>
-            <p className="text-sm font-medium text-charcoal italic truncate">
-              “{row.contestant.title}”
-            </p>
+            <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-forest">
+              <Clock className="h-3.5 w-3.5 text-gold shrink-0" />
+              <span>Time: {Math.round(rubricFor(row.contestant.type).timeLimitSec / 60)} mins allocated</span>
+            </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Badge variant="secondary" className="text-xs">
                 {typeLabel(row.contestant.type)}

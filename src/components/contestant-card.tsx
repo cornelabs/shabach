@@ -1,11 +1,13 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
+import { Clock } from "lucide-react";
 
 import { ContestantAvatar } from "@/components/contestant-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VoteConfirmationDialog } from "@/components/vote-confirmation-dialog";
 import { typeLabel } from "@/lib/demo/labels";
+import { rubricFor } from "@/lib/demo/rubrics";
 import type { Contestant, VotingStatus } from "@/lib/demo/types";
 
 interface Props {
@@ -19,6 +21,8 @@ export function ContestantCard({ contestant, votingStatus, myVote }: Props) {
   const [voteDialogOpen, setVoteDialogOpen] = React.useState(false);
   const votedForThis = myVote === contestant.id || myVote === contestant.code;
   const votingDisabled = votingStatus !== "open" || myVote !== null;
+  const rubric = rubricFor(contestant.type);
+  const allocatedMinutes = Math.round(rubric.timeLimitSec / 60);
 
   return (
     <>
@@ -41,14 +45,15 @@ export function ContestantCard({ contestant, votingStatus, myVote }: Props) {
                 № {contestant.order}
               </span>
             </div>
-            {contestant.title && (
-              <p className="truncate text-sm text-charcoal-muted">{contestant.title}</p>
-            )}
+            <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-forest">
+              <Clock className="h-3.5 w-3.5 text-gold shrink-0" />
+              <span>Time: {allocatedMinutes} mins allocated</span>
+            </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              <Badge variant="secondary" className="font-medium">
+              <Badge variant="secondary" className="font-medium text-xs">
                 {typeLabel(contestant.type)}
               </Badge>
-              <Badge variant="outline" className="font-medium">
+              <Badge variant="outline" className="font-medium text-xs">
                 {contestant.district}
               </Badge>
             </div>

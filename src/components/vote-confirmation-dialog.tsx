@@ -1,6 +1,6 @@
 import * as React from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2, Mail, Vote } from "lucide-react";
+import { CheckCircle2, Clock, Loader2, Mail, Vote } from "lucide-react";
 
 import {
   AlertDialog,
@@ -19,6 +19,7 @@ import { getDataAdapter } from "@/lib/db/adapter";
 import { isSupabaseConfigured } from "@/lib/db/supabase";
 import { isValidEmail, requestVoterOtp, verifyVoterOtp } from "@/lib/auth/voter-verification";
 import { typeLabel } from "@/lib/demo/labels";
+import { rubricFor } from "@/lib/demo/rubrics";
 import type { Contestant } from "@/lib/demo/types";
 
 interface Props {
@@ -261,7 +262,10 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
               {contestant.code}
             </span>
           </div>
-          <p className="mt-1 text-sm font-medium text-charcoal italic">“{contestant.title}”</p>
+          <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-forest">
+            <Clock className="h-3.5 w-3.5 text-gold shrink-0" />
+            <span>Time: {Math.round(rubricFor(contestant.type).timeLimitSec / 60)} mins allocated</span>
+          </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
             <Badge variant="secondary" className="text-xs">
               {typeLabel(contestant.type)}

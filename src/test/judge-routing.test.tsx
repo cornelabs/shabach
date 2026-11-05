@@ -160,8 +160,8 @@ describe("Judge Routing & Workspace Navigation", () => {
       expect(contestantButton).not.toBeNull();
       fireEvent.click(contestantButton!);
 
-      // Scorecard editor opens for Min. Lizzy
-      expect(screen.getByText("“Vocal & Worship Ministry”")).toBeInTheDocument();
+      // Scorecard editor opens for Min. Lizzy with allocated duration
+      expect(screen.getByText(/4 mins allocated/i)).toBeInTheDocument();
       expect(screen.getByText(/Music rubric/i)).toBeInTheDocument();
       expect(screen.getByText("Raw subtotal")).toBeInTheDocument();
 

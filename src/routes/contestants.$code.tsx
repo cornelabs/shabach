@@ -51,7 +51,7 @@ export const Route = createFileRoute("/contestants/$code")({
         {
           name: "description",
           content: contestant
-            ? `${contestant.name} (${contestant.district}) performs "${contestant.title}" at the SHABACH 2026 Grand Finale. Meet the act and cast your public vote.`
+            ? `${contestant.name} (${contestant.district}) competing at the SHABACH 2026 Grand Finale. Meet the act and cast your public vote.`
             : "Meet the contestants of SHABACH 2026.",
         },
         {
