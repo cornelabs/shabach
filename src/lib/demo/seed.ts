@@ -1,9 +1,31 @@
 import type { Contestant, DemoState, DurationEntry, JudgeId, Scorecard } from "./types";
 
 /**
- * Demo seed data — 16 fictional contestants, two per district, mixed
- * performance types, simulated votes and a mixture of draft, submitted and
- * incomplete judge scorecards. All content is demo material.
+ * Legacy placeholder names from early mock seed.
+ * Used to ensure live database rows that haven't been migrated yet
+ * are safely upgraded to the official 14 finalists from the auditions.
+ */
+export const OLD_DUMMY_NAMES = new Set([
+  "Grace Adeyemi",
+  "Igbogbo Daughters",
+  "Emmanuel Ojo",
+  "Tobi Odukoya",
+  "Badagry Young Voices",
+  "The Redemptive Move",
+  "Samuel Adeleke",
+  "David Balogun",
+  "Epe Praise Crew",
+  "Morogbo Youth Choir",
+  "Femi Towolawi",
+  "Nkechi Obi",
+  "Folake Awolowo",
+  "Seun Amolegbe",
+  "Bisi Ogundipe",
+  "Ijede Acts Troupe",
+]);
+
+/**
+ * Demo seed data — 16 finalists (14 confirmed from Google Drive + 2 Magbon placeholders)
  */
 
 export const CONTESTANT_SEED: Omit<Contestant, "order" | "hue">[] = [

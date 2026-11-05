@@ -1,4 +1,4 @@
-import { CONTESTANT_SEED, createSeedState } from "./seed";
+import { CONTESTANT_SEED, OLD_DUMMY_NAMES, createSeedState } from "./seed";
 import {
   canLock,
   computeResults,
@@ -167,14 +167,15 @@ export async function refreshFromSupabase(): Promise<void> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       activeContestants = contestantsData.map((row: any) => {
         const seed = CONTESTANT_SEED.find((s) => s.code === row.code || s.id === row.id);
+        const isLegacyDummy = !row.full_name || OLD_DUMMY_NAMES.has(row.full_name);
         return {
           id: row.id,
           code: row.code,
-          name: row.full_name ?? row.name ?? seed?.name,
-          district: row.district ?? seed?.district,
-          type: (row.performance_type ?? seed?.type ?? "music") as PerformanceType,
-          title: row.performance_title ?? row.title ?? seed?.title ?? "",
-          bio: row.biography ?? row.bio ?? seed?.bio ?? "",
+          name: isLegacyDummy ? (seed?.name ?? row.full_name ?? row.name) : (row.full_name ?? row.name ?? seed?.name),
+          district: (isLegacyDummy ? seed?.district : null) ?? row.district ?? seed?.district,
+          type: ((isLegacyDummy ? seed?.type : null) ?? row.performance_type ?? seed?.type ?? "music") as PerformanceType,
+          title: (isLegacyDummy ? seed?.title : null) ?? row.performance_title ?? row.title ?? seed?.title ?? "",
+          bio: (isLegacyDummy ? seed?.bio : null) ?? row.biography ?? row.bio ?? seed?.bio ?? "",
           order: row.performance_order,
           hue: row.hue ?? (row.performance_order * 23) % 360,
           avatarUrl: row.avatar_url ?? row.image_url ?? seed?.avatarUrl ?? undefined,

@@ -898,7 +898,7 @@ BEGIN
     -- 4. Insert 16 Finalists
     INSERT INTO contestants (
         event_id, code, full_name, district, performance_type, performance_order,
-        performance_title, biography
+        performance_title, biography, avatar_url
     ) VALUES
     (v_event_id, 'SB7K2M', 'Min. Lizzy', 'Epe District', 'music', 1, 'Vocal & Worship Ministry', 'Ministering from Epe District in the Music category.', '/contestants/min-lizzy.jpeg'),
     (v_event_id, 'V4Q9TP', 'The Painters', 'Epe District', 'mono_drama', 9, 'Dramatic Presentation', 'Ministering from Epe District in the Drama category.', '/contestants/the-painters.png'),

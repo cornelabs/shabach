@@ -21,7 +21,6 @@ BEGIN
     -- Epe District
     UPDATE contestants SET
         full_name = 'Min. Lizzy',
-        name = 'Min. Lizzy',
         performance_type = 'music',
         performance_title = 'Vocal & Worship Ministry',
         biography = 'Ministering from Epe District in the Music category.',
@@ -31,7 +30,6 @@ BEGIN
 
     UPDATE contestants SET
         full_name = 'The Painters',
-        name = 'The Painters',
         performance_type = 'mono_drama',
         performance_title = 'Dramatic Presentation',
         biography = 'Ministering from Epe District in the Drama category.',
@@ -42,7 +40,6 @@ BEGIN
     -- Igbogbo District
     UPDATE contestants SET
         full_name = 'The Preacher',
-        name = 'The Preacher',
         performance_type = 'music',
         performance_title = 'Choral & Vocal Ministry',
         biography = 'Ministering from Igbogbo District in the Music category.',
@@ -52,7 +49,6 @@ BEGIN
 
     UPDATE contestants SET
         full_name = 'The Wise Ones',
-        name = 'The Wise Ones',
         performance_type = 'spoken_word',
         performance_title = 'Poetic & Spoken Word Presentation',
         biography = 'Ministering from Igbogbo District in the Spoken Word category.',
@@ -63,7 +59,6 @@ BEGIN
     -- Morogbo District
     UPDATE contestants SET
         full_name = 'HOPENDHOUSE DANCE',
-        name = 'HOPENDHOUSE DANCE',
         performance_type = 'dance',
         performance_title = 'Dance Ministry',
         biography = 'Ministering from Morogbo District in the Dance category.',
@@ -73,7 +68,6 @@ BEGIN
 
     UPDATE contestants SET
         full_name = 'The Gideonite Speaks',
-        name = 'The Gideonite Speaks',
         performance_type = 'spoken_word',
         performance_title = 'Spoken Word Ministry',
         biography = 'Ministering from Morogbo District in the Spoken Word category.',
@@ -84,7 +78,6 @@ BEGIN
     -- Ijede District
     UPDATE contestants SET
         full_name = 'Min. Kehinde Akintola',
-        name = 'Min. Kehinde Akintola',
         performance_type = 'music',
         performance_title = 'Worship Rendition',
         biography = 'Ministering from Ijede District in the Music category.',
@@ -94,7 +87,6 @@ BEGIN
 
     UPDATE contestants SET
         full_name = 'Min. TaegarGee',
-        name = 'Min. TaegarGee',
         performance_type = 'music',
         performance_title = 'Praise Rendition',
         biography = 'Ministering from Ijede District in the Music category.',
@@ -105,7 +97,6 @@ BEGIN
     -- Badagry District
     UPDATE contestants SET
         full_name = 'Elijah Victor',
-        name = 'Elijah Victor',
         performance_type = 'music',
         performance_title = 'Music Ministry',
         biography = 'Ministering from Badagry District in the Music category.',
@@ -115,7 +106,6 @@ BEGIN
 
     UPDATE contestants SET
         full_name = 'LFC Dynasty',
-        name = 'LFC Dynasty',
         performance_type = 'dance',
         performance_title = 'Choreographed Dance Ministry',
         biography = 'Ministering from Badagry District in the Dance category.',
@@ -123,10 +113,9 @@ BEGIN
         updated_at = timezone('utc'::text, now())
     WHERE event_id = v_event_id AND code = 'D4PN6T';
 
-    -- Magbon District (Audition Saturday)
+    -- Magbon District (Auditions Saturday)
     UPDATE contestants SET
         full_name = 'Magbon Finalist 1 (Auditions Saturday)',
-        name = 'Magbon Finalist 1 (Auditions Saturday)',
         performance_type = 'dance',
         performance_title = 'Auditions Saturday',
         biography = 'Magbon District Auditions taking place Saturday.',
@@ -136,7 +125,6 @@ BEGIN
 
     UPDATE contestants SET
         full_name = 'Magbon Finalist 2 (Auditions Saturday)',
-        name = 'Magbon Finalist 2 (Auditions Saturday)',
         performance_type = 'visual_arts',
         performance_title = 'Auditions Saturday',
         biography = 'Magbon District Auditions taking place Saturday.',
@@ -147,7 +135,7 @@ BEGIN
     -- State Church
     UPDATE contestants SET
         full_name = 'Favour Chukwudi',
-        name = 'Favour Chukwudi',
+        district = 'State Church',
         performance_type = 'spoken_word',
         performance_title = 'Spoken Word Ministry',
         biography = 'Ministering from State Church in the Spoken Word category.',
@@ -157,7 +145,7 @@ BEGIN
 
     UPDATE contestants SET
         full_name = 'Min. Blessing',
-        name = 'Min. Blessing',
+        district = 'State Church',
         performance_type = 'music',
         performance_title = 'Music Ministry',
         biography = 'Ministering from State Church in the Music category.',
@@ -168,7 +156,6 @@ BEGIN
     -- Iranwo District
     UPDATE contestants SET
         full_name = 'SUCCESS',
-        name = 'SUCCESS',
         performance_type = 'music',
         performance_title = 'Gospel Rendition',
         biography = 'Ministering from Iranwo District in the Music category.',
@@ -178,7 +165,6 @@ BEGIN
 
     UPDATE contestants SET
         full_name = 'Victoria',
-        name = 'Victoria',
         performance_type = 'spoken_word',
         performance_title = 'Spoken Word Ministry',
         biography = 'Ministering from Iranwo District in the Spoken Word category.',
