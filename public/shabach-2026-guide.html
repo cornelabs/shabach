@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SHABACH 2026 — Team & Officials Access Guide</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm 10mm 12mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #1f2421;
+      background-color: #ffffff;
+      line-height: 1.35;
+      font-size: 9pt;
+    }
+    .page-container {
+      height: 277mm;
+      max-height: 277mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    /* HEADER */
+    .header-banner {
+      background: linear-gradient(135deg, #07271e 0%, #0e3d30 60%, #154c3c 100%);
+      color: #ffffff;
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border-left: 5px solid #d4af37;
+    }
+    .header-badge {
+      display: inline-block;
+      background-color: rgba(212, 175, 55, 0.25);
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      color: #f3e5ab;
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 1px 7px;
+      border-radius: 10px;
+      margin-bottom: 4px;
+    }
+    .header-title {
+      font-size: 19pt;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin: 0;
+      color: #ffffff;
+      line-height: 1.1;
+    }
+    .header-title span {
+      color: #d4af37;
+    }
+    .header-subtitle {
+      font-size: 10.5pt;
+      font-weight: 500;
+      color: #f3e5ab;
+      margin-top: 2px;
+    }
+    .header-meta {
+      font-size: 8pt;
+      color: rgba(255, 255, 255, 0.9);
+      margin-top: 6px;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .confidential-tag {
+      display: inline-block;
+      background-color: #fee2e2;
+      border: 1px solid #ef4444;
+      color: #991b1b;
+      font-weight: 800;
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    /* SECTION TITLES */
+    .section-title {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #0e3d30;
+      border-bottom: 1.5px solid #e5e7eb;
+      padding-bottom: 3px;
+      margin-top: 8px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* TABLES */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8px;
+      font-size: 8.5pt;
+    }
+    th {
+      background-color: #f3f4f6;
+      color: #0e3d30;
+      text-align: left;
+      padding: 5px 8px;
+      font-weight: 700;
+      border-top: 1px solid #e5e7eb;
+      border-bottom: 1.5px solid #d1d5db;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 5px 8px;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: middle;
+    }
+    tr:nth-child(even) td {
+      background-color: #fafaf9;
+    }
+    .code-chip {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 9.5pt;
+      font-weight: 800;
+      background-color: #0e3d30;
+      color: #f3e5ab;
+      padding: 1.5px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.8px;
+      display: inline-block;
+    }
+    .code-chip.admin {
+      background-color: #831843;
+      color: #fdf2f8;
+    }
+
+    /* CARDS */
+    .card-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin-bottom: 8px;
+    }
+    .card-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .card {
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 7px 9px;
+      background-color: #fafaf9;
+    }
+    .card.highlight {
+      border-left: 3px solid #d4af37;
+      background-color: #fefce8;
+    }
+    .card.admin {
+      border-left: 3px solid #be185d;
+      background-color: #fff1f2;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 8.5pt;
+      color: #0e3d30;
+      margin-bottom: 2px;
+    }
+    .card-text {
+      font-size: 7.5pt;
+      color: #4b5563;
+      line-height: 1.3;
+    }
+
+    /* BADGES & NOTICES */
+    .badge {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 7.5pt;
+      font-weight: 600;
+    }
+    .badge-gold {
+      background-color: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    .badge-forest {
+      background-color: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    .notice-box {
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-top: 6px;
+      margin-bottom: 8px;
+      font-size: 8pt;
+      color: #166534;
+      line-height: 1.35;
+    }
+    .notice-box.warning {
+      background-color: #fffbeb;
+      border-color: #fde68a;
+      color: #92400e;
+    }
+
+    /* FOOTER */
+    .footer-note {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 6px;
+      font-size: 7.5pt;
+      color: #6b7280;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== PAGE 1: ACCESS CREDENTIALS & NAVIGATION DIRECTORY ==================== -->
+  <div class="page-container">
+    <div>
+      <!-- HEADER -->
+      <div class="header-banner">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div class="header-badge">Executive Officials & Committee Reference</div>
+            <h1 class="header-title">SHABACH <span>2026</span></h1>
+            <div class="header-subtitle">Talent for Christ — Grand Finale Team Access & Operating Guide</div>
+          </div>
+          <div class="confidential-tag">Confidential</div>
+        </div>
+        <div class="header-meta">
+          <span><strong>Finale Date:</strong> Saturday, 14 November 2026</span>
+          <span><strong>Timezone:</strong> Africa/Lagos (WAT)</span>
+          <span><strong>Web Portal:</strong> https://shabach.vercel.app</span>
+          <span><strong>Organiser:</strong> Youth Alive Fellowship (YAF), LFC Lagos State</span>
+        </div>
+      </div>
+
+      <!-- SECTION 1: ACCESS CREDENTIALS -->
+      <div class="section-title">
+        <span>1. Official Access Credentials (Judges & Score Desk)</span>
+        <span style="font-size: 8pt; font-weight: normal; color: #6b7280;">Keep strictly confidential</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 26%;">Role / Seat</th>
+            <th style="width: 22%;">Access Code / PIN</th>
+            <th style="width: 24%;">Portal Route</th>
+            <th style="width: 28%;">Unlocked Capabilities</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Judging Panel Master</strong></td>
+            <td><span class="code-chip">JUDGE2026</span></td>
+            <td><code>/judges</code></td>
+            <td>Unlocks full judging panel & all 4 seat desks</td>
+          </tr>
+          <tr>
+            <td><strong>Judge 1 Seat</strong></td>
+            <td><span class="code-chip">7101</span></td>
+            <td><code>/judges/judge1</code></td>
+            <td>Judge 1 scorecard adjudication desk</td>
+          </tr>
+          <tr>
+            <td><strong>Judge 2 Seat</strong></td>
+            <td><span class="code-chip">7102</span></td>
+            <td><code>/judges/judge2</code></td>
+            <td>Judge 2 scorecard adjudication desk</td>
+          </tr>
+          <tr>
+            <td><strong>Judge 3 Seat</strong></td>
+            <td><span class="code-chip">7103</span></td>
+            <td><code>/judges/judge3</code></td>
+            <td>Judge 3 scorecard adjudication desk</td>
+          </tr>
+          <tr>
+            <td><strong>Judge 4 Seat</strong></td>
+            <td><span class="code-chip">7104</span></td>
+            <td><code>/judges/judge4</code></td>
+            <td>Judge 4 scorecard adjudication desk</td>
+          </tr>
+          <tr>
+            <td><strong>Score Desk Administrator</strong></td>
+            <td><span class="code-chip admin">ADMIN2026</span></td>
+            <td><code>/organiser</code></td>
+            <td>Collation, durations, timer audit & result lock</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="notice-box warning">
+        <strong>Confidentiality Rule:</strong> Codes are case-insensitive. All access codes and seat PINs have been completely removed from the public website interface. Appointed judges enter their 4-digit PIN to open their personal seat. Master codes (<code>JUDGE2026</code> and <code>ADMIN2026</code>) are reserved exclusively for the Chief Judge and Executive Score Desk. Also accepts fallback master code: <code>SHABACH2026</code>.
+      </div>
+
+      <!-- SECTION 2: PLATFORM DIRECTORY -->
+      <div class="section-title">
+        <span>2. Platform Navigation Directory (Dedicated URLs)</span>
+      </div>
+
+      <div class="card-grid-3">
+        <div class="card highlight">
+          <div class="card-title">1. Public Home Portal</div>
+          <div class="card-text">
+            <strong>URL:</strong> <code>https://shabach.vercel.app/</code><br>
+            Single-screen dashboard fitting mobile & desktop viewports with 1-tap navigation portal cards.
+          </div>
+        </div>
+        <div class="card highlight">
+          <div class="card-title">2. Contestants & Voting</div>
+          <div class="card-text">
+            <strong>URL:</strong> <code>https://shabach.vercel.app/contestants</code><br>
+            Browse 16 finalists, see photos, category durations, and cast 1 verified vote via email OTP.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">3. Official Results Desk</div>
+          <div class="card-text">
+            <strong>URL:</strong> <code>https://shabach.vercel.app/results</code><br>
+            Podium announcement (1st, 2nd, 3rd) and standings. Sealed until all 6 gates are cleared.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">4. Judges Workspace</div>
+          <div class="card-text">
+            <strong>URL:</strong> <code>https://shabach.vercel.app/judges</code><br>
+            Protected scoring desk. Judges enter their 4-digit PIN to evaluate acts on category rubrics.
+          </div>
+        </div>
+        <div class="card admin">
+          <div class="card-title">5. Admin / Organiser Desk</div>
+          <div class="card-text">
+            <strong>URL:</strong> <code>https://shabach.vercel.app/organiser</code><br>
+            Master collation: timer audits, conflict reviews, scorecard resets, CSV export, and result lock.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">6. Program Details & Rules</div>
+          <div class="card-text">
+            <strong>URL:</strong> <code>https://shabach.vercel.app/program</code><br>
+            100-Point Cake model, allocated durations table, overtime rules, and collation safeguards.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER PAGE 1 -->
+    <div class="footer-note">
+      <span>SHABACH 2026 · Grand Finale Officials Guide · Page 1 of 2</span>
+      <span>Confidential Committee Document · 14 November 2026</span>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE 2: RULES, SCORING & PROTOCOL ==================== -->
+  <div class="page-container page-break">
+    <div>
+      <!-- SECTION 3: DURATIONS -->
+      <div class="section-title" style="margin-top: 0;">
+        <span>3. Allocated Category Durations & Overtime Discipline</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 22%;">Category</th>
+            <th style="width: 20%;">Allocated Time</th>
+            <th style="width: 18%;">Time in Seconds</th>
+            <th style="width: 40%;">Primary Rubric Focus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Music</strong></td>
+            <td><span class="badge badge-gold">4 minutes</span></td>
+            <td>240 sec</td>
+            <td>Vocal mastery, arrangement, biblical depth, harmony</td>
+          </tr>
+          <tr>
+            <td><strong>Spoken Word</strong></td>
+            <td><span class="badge badge-gold">4 minutes</span></td>
+            <td>240 sec</td>
+            <td>Poetic meter, diction, theological depth, delivery</td>
+          </tr>
+          <tr>
+            <td><strong>Dance</strong></td>
+            <td><span class="badge badge-gold">4 minutes</span></td>
+            <td>240 sec</td>
+            <td>Choreography, synchronisation, interpretive message</td>
+          </tr>
+          <tr>
+            <td><strong>Drama</strong></td>
+            <td><span class="badge badge-forest">7 minutes</span></td>
+            <td>420 sec</td>
+            <td>Scriptural alignment, characterisation, narrative arc</td>
+          </tr>
+          <tr>
+            <td><strong>Visual Arts</strong></td>
+            <td><span class="badge badge-forest">10 minutes</span></td>
+            <td>600 sec</td>
+            <td>Live execution, composition, spiritual thematic depth</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="notice-box warning">
+        <strong>Overtime Penalty Rule:</strong> Performances that run past their category's designated time limit receive an automatic <strong>2-point deduction</strong> for each completed overtime interval. Durations are officially recorded by the score desk stopwatches and verified before collation locking.
+      </div>
+
+      <!-- SECTION 4: 100-POINT CAKE -->
+      <div class="section-title">
+        <span>4. The 100-Point Cake Adjudication Model</span>
+      </div>
+
+      <div class="card-grid-2">
+        <div class="card">
+          <div class="card-title">95% — Independent Judges Panel</div>
+          <div class="card-text">
+            Four appointed judges evaluate every finalist on a 5-criterion rubric:
+            <ul style="margin-left: 14px; margin-top: 3px; font-size: 7.5pt; line-height: 1.3;">
+              <li>Musicality / Technical Execution (20 pts)</li>
+              <li>Biblical Depth & Message (20 pts)</li>
+              <li>Originality & Creativity (20 pts)</li>
+              <li>Stage Craft & Presentation (20 pts)</li>
+              <li>Audience Engagement & Ministry (15 pts)</li>
+            </ul>
+            Subtotal out of 95. The four judges' raw subtotals are averaged.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">5% — Verified Public Audience Vote</div>
+          <div class="card-text">
+            Audience members vote via email OTP verification (1 vote per person).
+            <ul style="margin-left: 14px; margin-top: 3px; font-size: 7.5pt; line-height: 1.3;">
+              <li>Top vote-getter earns the full <strong>5.0 points</strong></li>
+              <li>Remaining acts receive points scaled proportionally</li>
+              <li>Votes cannot be cancelled or changed once recorded</li>
+            </ul>
+            Final Score = (Judges Average / 95 * 95) + Audience Points - Overtime Penalties.
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 5: OPERATIONAL PROTOCOL -->
+      <div class="section-title">
+        <span>5. Officials Operational Protocol & Integrity Safeguards</span>
+      </div>
+
+      <div class="card-grid-3">
+        <div class="card">
+          <div class="card-title">For Judges</div>
+          <div class="card-text">
+            1. Navigate to <code>/judges</code> and enter your 4-digit PIN.<br>
+            2. Score each criterion (0 to max) as acts perform.<br>
+            3. Save drafts if needed. Verify all 5 criteria before clicking Submit.<br>
+            4. Declare conflicts of interest if scoring acts from your own district.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">For Score Desk (Admin)</div>
+          <div class="card-text">
+            1. Unlock <code>/organiser</code> with <code>ADMIN2026</code>.<br>
+            2. Enter stopwatch durations for all 16 acts.<br>
+            3. Verify all 64 scorecards (4 judges x 16 acts) are submitted.<br>
+            4. Confirm tie-breaks and score desk review.<br>
+            5. Lock results to publish podium standings to <code>/results</code>.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">For Technical & Ushers</div>
+          <div class="card-text">
+            1. Direct audience to <code>/contestants</code> to vote.<br>
+            2. Advise voters to enter their email and verify the 6-digit code sent to inbox.<br>
+            3. Remind voters that every person receives only 1 vote across all acts.<br>
+            4. In case of issues, contact the Chief Score Desk.
+          </div>
+        </div>
+      </div>
+
+      <div class="notice-box">
+        <strong>Six Mandatory Integrity Gates before Result Publication:</strong><br>
+        ① Voting Closed & Verified &nbsp;•&nbsp; ② 64 Submitted Scorecards &nbsp;•&nbsp; ③ Durations Logged & Audited &nbsp;•&nbsp; ④ Conflict Declarations Resolved &nbsp;•&nbsp; ⑤ Deterministic Tie-Breaks Verified &nbsp;•&nbsp; ⑥ Executive Score Desk Dual-Lock Confirmation.
+      </div>
+    </div>
+
+    <!-- FOOTER PAGE 2 -->
+    <div class="footer-note">
+      <span>SHABACH 2026 · Grand Finale Officials Guide · Page 2 of 2</span>
+      <span>Youth Alive Fellowship · Living Faith Church, Lagos State</span>
+    </div>
+  </div>
+
+</body>
+</html>
