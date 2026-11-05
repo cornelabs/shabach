@@ -152,8 +152,8 @@ export const RUBRICS: Record<PerformanceType, Rubric> = {
   },
   mono_drama: {
     type: "mono_drama",
-    label: "Mono-Drama",
-    shortLabel: "Mono-Drama",
+    label: "Drama",
+    shortLabel: "Drama",
     criteria: [
       {
         key: "storyline",
@@ -186,7 +186,7 @@ export const RUBRICS: Record<PerformanceType, Rubric> = {
         guidance: "Meaningful communication and connection — not applause volume alone.",
       },
     ],
-    timeLimitSec: 300,
+    timeLimitSec: 420,
     penaltyIntervalSec: 15,
     tiebreak: { spiritual: 2, technical: 1, creativity: 0 },
   },

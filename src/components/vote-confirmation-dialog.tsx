@@ -169,11 +169,26 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
       }
     }
 
+    const isLive = isSupabaseConfigured();
+    if (!activeToken) {
+      if (!isLive && !email.trim()) {
+        activeToken = `audience_browser_${Date.now()}`;
+      } else {
+        setVerificationError(
+          "Email verification required: please enter your email and verify the 6-digit code sent to your inbox."
+        );
+        toast.error("Verification required", {
+          description: "Please enter your email and verify your 6-digit code before confirming your vote.",
+        });
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     try {
       const adapter = getDataAdapter();
-      const voterId = activeToken || `audience_browser_${Date.now()}`;
+      const voterId = activeToken;
 
       // 15-second timeout safeguard to prevent hanging state
       const res = await Promise.race([
@@ -289,7 +304,7 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
                 <CheckCircle2 className="h-3 w-3 text-forest" /> Verified
               </Badge>
             ) : (
-              <span className="text-[11px] text-charcoal-muted">Optional in demo</span>
+              <span className="text-[11px] text-forest font-medium">Required · 1 vote per person</span>
             )}
           </div>
 

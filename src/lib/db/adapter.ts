@@ -30,7 +30,7 @@ import type {
   Scorecard,
   TieResolution,
 } from "@/lib/demo/types";
-import { buildContestants } from "@/lib/demo/seed";
+import { buildContestants, CONTESTANT_SEED } from "@/lib/demo/seed";
 import { DEFAULT_EVENT_ID, getSupabaseClient, isSupabaseConfigured } from "./supabase";
 
 export interface IDataAdapter {
@@ -290,17 +290,21 @@ export class LiveSupabaseAdapter implements IDataAdapter {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (data || []).map((row: any) => ({
-      id: row.id,
-      code: row.code,
-      name: row.name ?? row.full_name,
-      district: row.district,
-      type: (row.performance_type ?? "music") as PerformanceType,
-      title: row.title ?? row.performance_title ?? "",
-      bio: row.bio ?? row.biography ?? "",
-      order: row.performance_order,
-      hue: row.hue ?? (row.performance_order * 23) % 360,
-    }));
+    return (data || []).map((row: any) => {
+      const seed = CONTESTANT_SEED.find((s) => s.code === row.code || s.id === row.id);
+      return {
+        id: row.id,
+        code: row.code,
+        name: row.name ?? row.full_name ?? seed?.name,
+        district: row.district ?? seed?.district,
+        type: (row.performance_type ?? seed?.type ?? "music") as PerformanceType,
+        title: row.title ?? row.performance_title ?? seed?.title ?? "",
+        bio: row.bio ?? row.biography ?? seed?.bio ?? "",
+        order: row.performance_order,
+        hue: row.hue ?? (row.performance_order * 23) % 360,
+        avatarUrl: row.avatar_url ?? row.image_url ?? seed?.avatarUrl ?? undefined,
+      };
+    });
   }
 
   async getContestantByCode(code: string): Promise<Contestant | null> {
@@ -314,16 +318,18 @@ export class LiveSupabaseAdapter implements IDataAdapter {
       return new DemoDataAdapter().getContestantByCode(code);
     }
 
+    const seed = CONTESTANT_SEED.find((s) => s.code === data.code || s.id === data.id);
     return {
       id: data.id,
       code: data.code,
-      name: data.name ?? data.full_name,
-      district: data.district,
-      type: (data.performance_type ?? "music") as PerformanceType,
-      title: data.title ?? data.performance_title ?? "",
-      bio: data.bio ?? data.biography ?? "",
+      name: data.name ?? data.full_name ?? seed?.name,
+      district: data.district ?? seed?.district,
+      type: (data.performance_type ?? seed?.type ?? "music") as PerformanceType,
+      title: data.title ?? data.performance_title ?? seed?.title ?? "",
+      bio: data.bio ?? data.biography ?? seed?.bio ?? "",
       order: data.performance_order,
       hue: data.hue ?? (data.performance_order * 23) % 360,
+      avatarUrl: data.avatar_url ?? data.image_url ?? seed?.avatarUrl ?? undefined,
     };
   }
 

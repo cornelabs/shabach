@@ -65,8 +65,8 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
       const searchInput = screen.getByPlaceholderText(/Search contestants by name or code/i);
 
       // Search by partial lower-case name
-      fireEvent.change(searchInput, { target: { value: "emmanuel" } });
-      expect(screen.getByText("Emmanuel Ojo")).toBeInTheDocument();
+      fireEvent.change(searchInput, { target: { value: "hopendhouse" } });
+      expect(screen.getByText("HOPENDHOUSE DANCE")).toBeInTheDocument();
       expect(screen.getByText("Showing 1 of 16 contestants")).toBeInTheDocument();
 
       // Clear search
@@ -82,11 +82,11 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
 
       // Search with leading/trailing spaces and lower case
       fireEvent.change(searchInput, { target: { value: "   b6f4pt   " } });
-      expect(screen.getByText("Emmanuel Ojo")).toBeInTheDocument();
+      expect(screen.getByText("HOPENDHOUSE DANCE")).toBeInTheDocument();
       expect(screen.getByText("Showing 1 of 16 contestants")).toBeInTheDocument();
 
       fireEvent.change(searchInput, { target: { value: "SB7K2M" } });
-      expect(screen.getByText("Grace Adeyemi")).toBeInTheDocument();
+      expect(screen.getByText("Min. Lizzy")).toBeInTheDocument();
       expect(screen.getByText("Showing 1 of 16 contestants")).toBeInTheDocument();
     });
 
@@ -96,10 +96,10 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
 
       const searchInput = screen.getByPlaceholderText(/Search contestants by name or code/i);
 
-      // Search by district: "Morogbo" (has 2 acts: Emmanuel Ojo and Morogbo Youth Choir)
+      // Search by district: "Morogbo" (has 2 acts: HOPENDHOUSE DANCE and The Gideonite Speaks)
       fireEvent.change(searchInput, { target: { value: "Morogbo" } });
-      expect(screen.getByText("Emmanuel Ojo")).toBeInTheDocument();
-      expect(screen.getByText("Morogbo Youth Choir")).toBeInTheDocument();
+      expect(screen.getByText("HOPENDHOUSE DANCE")).toBeInTheDocument();
+      expect(screen.getByText("The Gideonite Speaks")).toBeInTheDocument();
       expect(screen.getByText("Showing 2 of 16 contestants")).toBeInTheDocument();
     });
 
@@ -119,7 +119,7 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
       fireEvent.click(clearBtns[0]!);
 
       expect(screen.getByText("All 16 finalists in running order")).toBeInTheDocument();
-      expect(screen.getByText("Grace Adeyemi")).toBeInTheDocument();
+      expect(screen.getByText("Min. Lizzy")).toBeInTheDocument();
     });
   });
 
@@ -127,9 +127,9 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
     it("asynchronously loads direct contestant profile /contestants/B6F4PT in fresh context", async () => {
       const contestant = await adapter.getContestantByCode("B6F4PT");
       expect(contestant).not.toBeNull();
-      expect(contestant?.name).toBe("Emmanuel Ojo");
+      expect(contestant?.name).toBe("HOPENDHOUSE DANCE");
       expect(contestant?.district).toBe("Morogbo District");
-      expect(contestant?.title).toBe("My Lifter — Saxophone Solo");
+      expect(contestant?.title).toBe("Dance Ministry");
       expect(contestant?.order).toBe(3);
     });
 

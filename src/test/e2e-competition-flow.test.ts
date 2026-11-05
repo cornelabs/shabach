@@ -63,7 +63,7 @@ describe("SHABACH 2026 Grand Finale — Complete End-to-End Competition Lifecycl
     // Lookup contestant by code
     const c01 = await adapter.getContestantByCode("SB7K2M");
     expect(c01).not.toBeNull();
-    expect(c01?.name).toBe("Grace Adeyemi");
+    expect(c01?.name).toBe("Min. Lizzy");
     expect(c01?.district).toBe("Epe District");
 
     // Organiser edits contestant identity before scores exist

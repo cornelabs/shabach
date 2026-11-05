@@ -147,8 +147,8 @@ describe("Judge Routing & Workspace Navigation", () => {
 
       // Sidebar contains 16 contestants
       expect(screen.getByText("№ 1")).toBeInTheDocument();
-      expect(screen.getByText("Grace Adeyemi")).toBeInTheDocument();
-      expect(screen.getByText("Epe Praise Crew")).toBeInTheDocument();
+      expect(screen.getByText("Min. Lizzy")).toBeInTheDocument();
+      expect(screen.getByText("The Painters")).toBeInTheDocument();
 
       // Initially shows guidance placeholder to pick a contestant
       expect(
@@ -156,12 +156,12 @@ describe("Judge Routing & Workspace Navigation", () => {
       ).toBeInTheDocument();
 
       // Clicking a contestant in the sidebar opens their scorecard editor
-      const contestantButton = screen.getByText("Grace Adeyemi").closest("button");
+      const contestantButton = screen.getByText("Min. Lizzy").closest("button");
       expect(contestantButton).not.toBeNull();
       fireEvent.click(contestantButton!);
 
-      // Scorecard editor opens for Grace Adeyemi
-      expect(screen.getByText("“Great Are You Lord — Acoustic Rendition”")).toBeInTheDocument();
+      // Scorecard editor opens for Min. Lizzy
+      expect(screen.getByText("“Vocal & Worship Ministry”")).toBeInTheDocument();
       expect(screen.getByText(/Music rubric/i)).toBeInTheDocument();
       expect(screen.getByText("Raw subtotal")).toBeInTheDocument();
 

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link } from "@tanstack/react-router";
 
-import { Monogram } from "@/components/monogram";
+import { ContestantAvatar } from "@/components/contestant-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VoteConfirmationDialog } from "@/components/vote-confirmation-dialog";
@@ -28,7 +28,12 @@ export function ContestantCard({ contestant, votingStatus, myVote }: Props) {
           params={{ code: contestant.code }}
           className="flex items-start gap-3"
         >
-          <Monogram name={contestant.name} hue={contestant.hue} size="md" />
+          <ContestantAvatar
+            name={contestant.name}
+            avatarUrl={contestant.avatarUrl}
+            hue={contestant.hue}
+            size="md"
+          />
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <h3 className="truncate font-display text-lg text-forest">{contestant.name}</h3>
@@ -36,7 +41,9 @@ export function ContestantCard({ contestant, votingStatus, myVote }: Props) {
                 № {contestant.order}
               </span>
             </div>
-            <p className="truncate text-sm text-charcoal-muted">{contestant.title}</p>
+            {contestant.title && (
+              <p className="truncate text-sm text-charcoal-muted">{contestant.title}</p>
+            )}
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Badge variant="secondary" className="font-medium">
                 {typeLabel(contestant.type)}

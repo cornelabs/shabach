@@ -1,4 +1,4 @@
-import { createSeedState } from "./seed";
+import { CONTESTANT_SEED, createSeedState } from "./seed";
 import {
   canLock,
   computeResults,
@@ -165,17 +165,21 @@ export async function refreshFromSupabase(): Promise<void> {
     let activeContestants = state.contestants;
     if (contestantsData && contestantsData.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      activeContestants = contestantsData.map((row: any) => ({
-        id: row.id,
-        code: row.code,
-        name: row.full_name ?? row.name,
-        district: row.district,
-        type: (row.performance_type ?? "music") as PerformanceType,
-        title: row.performance_title ?? row.title ?? "",
-        bio: row.biography ?? row.bio ?? "",
-        order: row.performance_order,
-        hue: row.hue ?? (row.performance_order * 23) % 360,
-      }));
+      activeContestants = contestantsData.map((row: any) => {
+        const seed = CONTESTANT_SEED.find((s) => s.code === row.code || s.id === row.id);
+        return {
+          id: row.id,
+          code: row.code,
+          name: row.full_name ?? row.name ?? seed?.name,
+          district: row.district ?? seed?.district,
+          type: (row.performance_type ?? seed?.type ?? "music") as PerformanceType,
+          title: row.performance_title ?? row.title ?? seed?.title ?? "",
+          bio: row.biography ?? row.bio ?? seed?.bio ?? "",
+          order: row.performance_order,
+          hue: row.hue ?? (row.performance_order * 23) % 360,
+          avatarUrl: row.avatar_url ?? row.image_url ?? seed?.avatarUrl ?? undefined,
+        };
+      });
     }
 
     const activeIds = new Set(activeContestants.map((c) => c.id));

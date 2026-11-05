@@ -36,6 +36,8 @@ export interface Contestant {
   order: number;
   /** Hue (0-360) used for the monogram placeholder. */
   hue: number;
+  /** Contestant photo URL (from public/contestants/ or remote storage). */
+  avatarUrl?: string | null | undefined;
 }
 
 export type ScorecardStatus = "not_started" | "draft" | "submitted";

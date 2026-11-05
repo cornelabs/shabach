@@ -78,19 +78,19 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
       }
     });
 
-    it("specifically loads B6F4PT (Emmanuel Ojo) and SB7K2M (Grace Adeyemi)", async () => {
+    it("specifically loads B6F4PT (HOPENDHOUSE DANCE) and SB7K2M (Min. Lizzy)", async () => {
       const adapter = getDataAdapter();
 
-      const emmanuel = await adapter.getContestantByCode("B6F4PT");
-      expect(emmanuel).not.toBeNull();
-      expect(emmanuel?.name).toBe("Emmanuel Ojo");
-      expect(emmanuel?.district).toBe("Morogbo District");
-      expect(emmanuel?.type).toBe("music");
+      const hopendhouse = await adapter.getContestantByCode("B6F4PT");
+      expect(hopendhouse).not.toBeNull();
+      expect(hopendhouse?.name).toBe("HOPENDHOUSE DANCE");
+      expect(hopendhouse?.district).toBe("Morogbo District");
+      expect(hopendhouse?.type).toBe("dance");
 
-      const grace = await adapter.getContestantByCode("SB7K2M");
-      expect(grace).not.toBeNull();
-      expect(grace?.name).toBe("Grace Adeyemi");
-      expect(grace?.district).toBe("Epe District");
+      const lizzy = await adapter.getContestantByCode("SB7K2M");
+      expect(lizzy).not.toBeNull();
+      expect(lizzy?.name).toBe("Min. Lizzy");
+      expect(lizzy?.district).toBe("Epe District");
     });
 
     it("tolerates whitespace and lowercased input during code lookup", async () => {
@@ -98,7 +98,7 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
       const res = await adapter.getContestantByCode("   b6f4pt   ");
       expect(res).not.toBeNull();
       expect(res?.code).toBe("B6F4PT");
-      expect(res?.name).toBe("Emmanuel Ojo");
+      expect(res?.name).toBe("HOPENDHOUSE DANCE");
     });
 
     it("returns null for genuine unknown codes to trigger not-found state", async () => {
@@ -116,7 +116,7 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const validResult: any = await loader({ params: { code: "B6F4PT" } } as any);
       expect(validResult.code).toBe("B6F4PT");
-      expect(validResult.contestant.name).toBe("Emmanuel Ojo");
+      expect(validResult.contestant.name).toBe("HOPENDHOUSE DANCE");
 
       // Invalid code should reject/throw
       await expect(
@@ -141,12 +141,12 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
     const contestants = buildContestants();
 
     it("filters contestants by name case-insensitively and whitespace-tolerantly", () => {
-      const search = "   adeyemi   ".trim().toLowerCase();
+      const search = "   lizzy   ".trim().toLowerCase();
       const matches = contestants.filter(
         (c) => c.name.toLowerCase().includes(search) || c.code.toLowerCase().includes(search),
       );
       expect(matches).toHaveLength(1);
-      expect(matches[0]?.name).toBe("Grace Adeyemi");
+      expect(matches[0]?.name).toBe("Min. Lizzy");
     });
 
     it("filters contestants by 6-character code case-insensitively", () => {
@@ -155,7 +155,7 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
         (c) => c.name.toLowerCase().includes(search) || c.code.toLowerCase().includes(search),
       );
       expect(matches).toHaveLength(1);
-      expect(matches[0]?.name).toBe("Emmanuel Ojo");
+      expect(matches[0]?.name).toBe("HOPENDHOUSE DANCE");
       expect(matches[0]?.code).toBe("B6F4PT");
     });
 
@@ -175,8 +175,8 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
       expect(searchInput).toBeInTheDocument();
 
       // Search for specific name
-      fireEvent.change(searchInput, { target: { value: "Adeyemi" } });
-      expect(screen.getByText("Grace Adeyemi")).toBeInTheDocument();
+      fireEvent.change(searchInput, { target: { value: "Lizzy" } });
+      expect(screen.getByText("Min. Lizzy")).toBeInTheDocument();
       expect(screen.getByText("Showing 1 of 16 contestants")).toBeInTheDocument();
 
       // Search for non-existent artist

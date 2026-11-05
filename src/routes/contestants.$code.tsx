@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, BadgeCheck, Check, Copy, QrCode, Share2, Vote } from "lucide-react";
 
-import { Monogram } from "@/components/monogram";
+import { ContestantAvatar } from "@/components/contestant-avatar";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { VoteConfirmationDialog } from "@/components/vote-confirmation-dialog";
 import { useDemoState } from "@/hooks/use-demo";
 import { getDataAdapter } from "@/lib/db/adapter";
+import { refreshFromSupabase } from "@/lib/demo/store";
 import { typeLabel, formatSeconds } from "@/lib/demo/labels";
 import { buildContestants } from "@/lib/demo/seed";
 import { rubricFor } from "@/lib/demo/rubrics";
@@ -134,6 +135,9 @@ function VotePanel({ contestant }: { contestant: Contestant }) {
         contestant={contestant}
         open={voteDialogOpen}
         onOpenChange={setVoteDialogOpen}
+        onVoteCast={() => {
+          void refreshFromSupabase();
+        }}
       />
     </>
   );
@@ -317,7 +321,12 @@ function ContestantProfile() {
         <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_360px]">
           <div>
             <div className="flex items-center gap-4">
-              <Monogram name={contestant.name} hue={contestant.hue} size="xl" />
+              <ContestantAvatar
+                name={contestant.name}
+                avatarUrl={contestant.avatarUrl}
+                hue={contestant.hue}
+                size="xl"
+              />
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-gold">
                   Running order № {contestant.order} · {contestant.code}
@@ -332,9 +341,24 @@ function ContestantProfile() {
             </div>
 
             <div className="mt-8 rounded-2xl border border-cream-line bg-card p-6 shadow-card">
-              <h2 className="font-display text-xl text-forest">Performance</h2>
-              <p className="mt-2 text-lg font-semibold text-charcoal">“{contestant.title}”</p>
-              <p className="mt-3 leading-relaxed text-charcoal-muted">{contestant.bio}</p>
+              <h2 className="font-display text-xl text-forest">Contestant Profile</h2>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 text-sm">
+                <div className="rounded-xl border border-cream-line bg-ivory p-3.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-charcoal-muted">
+                    District Representation
+                  </span>
+                  <p className="mt-1 font-display text-lg text-forest">{contestant.district}</p>
+                </div>
+                <div className="rounded-xl border border-cream-line bg-ivory p-3.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-charcoal-muted">
+                    Competition Category
+                  </span>
+                  <p className="mt-1 font-display text-lg text-forest">{typeLabel(contestant.type)}</p>
+                </div>
+              </div>
+              <p className="mt-4 text-sm text-charcoal-muted leading-relaxed">
+                Official finalist representing {contestant.district} in the {typeLabel(contestant.type)} category at the SHABACH 2026 Grand Finale. Adjudicated live by the panel of 4 judges and public audience vote.
+              </p>
             </div>
 
             <div className="mt-4 rounded-2xl border border-cream-line bg-card p-6 shadow-card">

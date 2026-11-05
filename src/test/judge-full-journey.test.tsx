@@ -91,7 +91,7 @@ describe("Phase 7: Full-Platform Judge Journey & Scoring Verification", () => {
         expect(screen.getByText("← Judge seats")).toBeInTheDocument();
 
         // Contestant list is populated
-        expect(screen.getByText("Grace Adeyemi")).toBeInTheDocument();
+        expect(screen.getByText("Min. Lizzy")).toBeInTheDocument();
 
         spyUseParams.mockRestore();
         unmount();

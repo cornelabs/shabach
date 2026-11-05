@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Clock, Medal, Trophy } from "lucide-react";
 
-import { Monogram } from "@/components/monogram";
+import { ContestantAvatar } from "@/components/contestant-avatar";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
@@ -86,7 +86,12 @@ function TopThreeCard({ row, position }: { row: ResultRow; position: number }) {
         </div>
 
         <div className="mt-6 flex items-center gap-4">
-          <Monogram name={row.contestant.name} hue={row.contestant.hue} size="lg" />
+          <ContestantAvatar
+            name={row.contestant.name}
+            avatarUrl={row.contestant.avatarUrl}
+            hue={row.contestant.hue}
+            size="lg"
+          />
           <div className="min-w-0 flex-1">
             <h3 className="font-display text-2xl text-forest truncate">{row.contestant.name}</h3>
             <p className="text-sm font-medium text-charcoal italic truncate">

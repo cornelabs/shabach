@@ -866,7 +866,7 @@ BEGIN
         v_event_id,
         'mono_drama',
         1,
-        300,
+        420,
         15,
         2.0,
         '[
@@ -900,22 +900,22 @@ BEGIN
         event_id, code, full_name, district, performance_type, performance_order,
         performance_title, biography
     ) VALUES
-    (v_event_id, 'SB7K2M', 'Grace Adeyemi', 'Epe District', 'music', 1, 'Great Are You Lord — Acoustic Rendition', 'A 200-level student who leads worship at her campus fellowship and has been singing since age nine.'),
-    (v_event_id, 'V4Q9TP', 'Epe Praise Crew', 'Epe District', 'dance', 9, 'Hallelujah Challenge — Choreographed Piece', 'A five-member dance family from Epe who rehearse on the beach every Saturday morning.'),
-    (v_event_id, 'NH6R8W', 'Tobi Odukoya', 'Ijede District', 'spoken_word', 4, 'The Potter''s Wheel', 'Spoken-word artist and final-year law student who writes poems about grace and second chances.'),
-    (v_event_id, 'K2M5C7', 'Ijede Acts Troupe', 'Ijede District', 'mono_drama', 16, 'The Return of the Son', 'A drama team of four that stages street sketches in Ijede every market day.'),
-    (v_event_id, 'P9X3JA', 'David Balogun', 'Iranwo District', 'music', 8, 'Nara Kele — Medley of Thanks', 'Self-taught guitarist and tenor who composes in Yoruba, English and Pidgin.'),
-    (v_event_id, 'T8B4ND', 'Seun Amolegbe', 'Iranwo District', 'visual_arts', 14, 'Light in the Tenement', 'Painter and printer who works with discarded wood and found pigments.'),
-    (v_event_id, 'W5H7FE', 'Igbogbo Daughters', 'Igbogbo District', 'dance', 2, 'Daughters of Zion — Unity Dance', 'Three sisters who grew up dancing in their father''s living room in Igbogbo.'),
-    (v_event_id, 'Y3K9RU', 'Nkechi Obi', 'Igbogbo District', 'spoken_word', 12, 'Salt & Lamp', 'Campus poet whose verses call young believers to visible, everyday faith.'),
-    (v_event_id, 'A7W2SM', 'Badagry Young Voices', 'Badagry District', 'music', 5, 'Voice of the Lagoon — Choral Set', 'A six-voice choir of teenagers from coastal Badagry, directed by a volunteer music teacher.'),
-    (v_event_id, 'D4PN6T', 'Femi Towolawi', 'Badagry District', 'mono_drama', 11, 'Fisher of Men', 'Solo monologue tracing an old fisherman''s encounter with the Master by the sea.'),
-    (v_event_id, 'M8C3XE', 'The Redemptive Move', 'Magbon District', 'dance', 6, 'Oil of Joy for Mourning', 'Seven youth who use hip-hop, contemporary and West African footwork to portray redemption.'),
-    (v_event_id, 'L1Z8RQ', 'Folake Awolowo', 'Magbon District', 'visual_arts', 13, 'The Narrow Road', 'Architect-turned-printmaker who creates large linocuts depicting pilgrimage.'),
-    (v_event_id, 'B6F4PT', 'Emmanuel Ojo', 'Morogbo District', 'music', 3, 'My Lifter — Saxophone Solo', 'Tenor saxophonist whose soaring lines blend jazz voicings with traditional praise.'),
-    (v_event_id, 'G9D2KY', 'Morogbo Youth Choir', 'Morogbo District', 'dance', 10, 'Garment of Praise', 'Sixteen choristers who dance in formation while singing unaccompanied hymns in four parts.'),
-    (v_event_id, 'H5N8TC', 'Samuel Adeleke', 'State Church', 'spoken_word', 7, 'Letters to the Seven', 'Epic verse cycle reflecting on the letters to the churches in Revelation.'),
-    (v_event_id, 'E3QK4V', 'Bisi Ogundipe', 'State Church', 'visual_arts', 15, 'The Vine — Mixed Media', 'Textile artist who embroiders scripture into fabric collages from remnant cloth.')
+    (v_event_id, 'SB7K2M', 'Min. Lizzy', 'Epe District', 'music', 1, 'Vocal & Worship Ministry', 'Ministering from Epe District in the Music category.', '/contestants/min-lizzy.jpeg'),
+    (v_event_id, 'V4Q9TP', 'The Painters', 'Epe District', 'mono_drama', 9, 'Dramatic Presentation', 'Ministering from Epe District in the Drama category.', '/contestants/the-painters.png'),
+    (v_event_id, 'NH6R8W', 'Min. Kehinde Akintola', 'Ijede District', 'music', 4, 'Worship Rendition', 'Ministering from Ijede District in the Music category.', '/contestants/min-kehinde-akintola.jpeg'),
+    (v_event_id, 'K2M5C7', 'Min. TaegarGee', 'Ijede District', 'music', 16, 'Praise Rendition', 'Ministering from Ijede District in the Music category.', '/contestants/min-taegargee.png'),
+    (v_event_id, 'P9X3JA', 'SUCCESS', 'Iranwo District', 'music', 8, 'Gospel Rendition', 'Ministering from Iranwo District in the Music category.', '/contestants/success.png'),
+    (v_event_id, 'T8B4ND', 'Victoria', 'Iranwo District', 'spoken_word', 14, 'Spoken Word Ministry', 'Ministering from Iranwo District in the Spoken Word category.', '/contestants/victoria.jpeg'),
+    (v_event_id, 'W5H7FE', 'The Preacher', 'Igbogbo District', 'music', 2, 'Choral & Vocal Ministry', 'Ministering from Igbogbo District in the Music category.', '/contestants/the-preacher.png'),
+    (v_event_id, 'Y3K9RU', 'The Wise Ones', 'Igbogbo District', 'spoken_word', 12, 'Poetic & Spoken Word Presentation', 'Ministering from Igbogbo District in the Spoken Word category.', '/contestants/the-wise-ones.png'),
+    (v_event_id, 'A7W2SM', 'Elijah Victor', 'Badagry District', 'music', 5, 'Music Ministry', 'Ministering from Badagry District in the Music category.', '/contestants/elijah-victor.jpeg'),
+    (v_event_id, 'D4PN6T', 'LFC Dynasty', 'Badagry District', 'dance', 11, 'Choreographed Dance Ministry', 'Ministering from Badagry District in the Dance category.', '/contestants/lfc-dynasty.png'),
+    (v_event_id, 'M8C3XE', 'Magbon Finalist 1 (Auditions Saturday)', 'Magbon District', 'dance', 6, 'Auditions Saturday', 'Magbon District Auditions taking place Saturday.', NULL),
+    (v_event_id, 'L1Z8RQ', 'Magbon Finalist 2 (Auditions Saturday)', 'Magbon District', 'visual_arts', 13, 'Auditions Saturday', 'Magbon District Auditions taking place Saturday.', NULL),
+    (v_event_id, 'B6F4PT', 'HOPENDHOUSE DANCE', 'Morogbo District', 'dance', 3, 'Dance Ministry', 'Ministering from Morogbo District in the Dance category.', '/contestants/hopendhouse-dance.jpeg'),
+    (v_event_id, 'G9D2KY', 'The Gideonite Speaks', 'Morogbo District', 'spoken_word', 10, 'Spoken Word Ministry', 'Ministering from Morogbo District in the Spoken Word category.', '/contestants/the-gideonite-speaks.png'),
+    (v_event_id, 'H5N8TC', 'Favour Chukwudi', 'State Church', 'spoken_word', 7, 'Spoken Word Ministry', 'Ministering from State Church in the Spoken Word category.', '/contestants/favour-chukwudi.png'),
+    (v_event_id, 'E3QK4V', 'Min. Blessing', 'State Church', 'music', 15, 'Music Ministry', 'Ministering from State Church in the Music category.', '/contestants/min-blessing.png')
     ON CONFLICT (event_id, code) DO NOTHING;
 
     -- 5. Seed Staff Roles (All 4 Judges + Organiser + Score Desk)

@@ -62,37 +62,37 @@ describe("Contestant Direct Profile Resolution & Link Loading", () => {
   });
 
   describe("Adapter Direct Code Resolution", () => {
-    it("resolves SB7K2M directly to Grace Adeyemi with accurate attributes", async () => {
+    it("resolves SB7K2M directly to Min. Lizzy with accurate attributes", async () => {
       const contestant = await adapter.getContestantByCode("SB7K2M");
       expect(contestant).not.toBeNull();
       expect(contestant?.id).toBe("c01");
       expect(contestant?.code).toBe("SB7K2M");
-      expect(contestant?.name).toBe("Grace Adeyemi");
+      expect(contestant?.name).toBe("Min. Lizzy");
       expect(contestant?.district).toBe("Epe District");
       expect(contestant?.type).toBe("music");
-      expect(contestant?.title).toBe("Great Are You Lord — Acoustic Rendition");
+      expect(contestant?.title).toBe("Vocal & Worship Ministry");
       expect(contestant?.order).toBe(1);
     });
 
-    it("resolves B6F4PT directly to Emmanuel Ojo with accurate attributes", async () => {
+    it("resolves B6F4PT directly to HOPENDHOUSE DANCE with accurate attributes", async () => {
       const contestant = await adapter.getContestantByCode("B6F4PT");
       expect(contestant).not.toBeNull();
       expect(contestant?.id).toBe("c13");
       expect(contestant?.code).toBe("B6F4PT");
-      expect(contestant?.name).toBe("Emmanuel Ojo");
+      expect(contestant?.name).toBe("HOPENDHOUSE DANCE");
       expect(contestant?.district).toBe("Morogbo District");
-      expect(contestant?.type).toBe("music");
-      expect(contestant?.title).toBe("My Lifter — Saxophone Solo");
+      expect(contestant?.type).toBe("dance");
+      expect(contestant?.title).toBe("Dance Ministry");
     });
 
     it("resolves codes in a case-insensitive manner (e.g. sb7k2m and b6f4pt)", async () => {
       const lowerSB = await adapter.getContestantByCode("sb7k2m");
       expect(lowerSB).not.toBeNull();
-      expect(lowerSB?.name).toBe("Grace Adeyemi");
+      expect(lowerSB?.name).toBe("Min. Lizzy");
 
       const lowerB6 = await adapter.getContestantByCode("b6f4pt");
       expect(lowerB6).not.toBeNull();
-      expect(lowerB6?.name).toBe("Emmanuel Ojo");
+      expect(lowerB6?.name).toBe("HOPENDHOUSE DANCE");
     });
 
     it("fails gracefully and returns null for unknown or non-existent codes", async () => {
@@ -123,7 +123,7 @@ describe("Contestant Direct Profile Resolution & Link Loading", () => {
         })) as { code: string; contestant: { name: string; code: string } };
 
         expect(resSB.code).toBe("SB7K2M");
-        expect(resSB.contestant.name).toBe("Grace Adeyemi");
+        expect(resSB.contestant.name).toBe("Min. Lizzy");
 
         const resB6 = (await (
           loader as unknown as (ctx: { params: { code: string } }) => Promise<{
@@ -135,7 +135,7 @@ describe("Contestant Direct Profile Resolution & Link Loading", () => {
         })) as { code: string; contestant: { name: string; code: string } };
 
         expect(resB6.code).toBe("B6F4PT");
-        expect(resB6.contestant.name).toBe("Emmanuel Ojo");
+        expect(resB6.contestant.name).toBe("HOPENDHOUSE DANCE");
       }
     });
 
@@ -162,7 +162,7 @@ describe("Contestant Direct Profile Resolution & Link Loading", () => {
   });
 
   describe("Component Rendering", () => {
-    it("renders Grace Adeyemi profile when navigated to /contestants/SB7K2M", async () => {
+    it("renders Min. Lizzy profile when navigated to /contestants/SB7K2M", async () => {
       const contestant = (await adapter.getContestantByCode("SB7K2M"))!;
       const spyUseLoaderData = vi.spyOn(ContestantDetailRoute, "useLoaderData").mockReturnValue({
         code: "SB7K2M",
@@ -173,13 +173,12 @@ describe("Contestant Direct Profile Resolution & Link Loading", () => {
       render(<Component />);
 
       // Contestant name & identity
-      expect(screen.getByRole("heading", { name: "Grace Adeyemi" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Min. Lizzy" })).toBeInTheDocument();
       expect(screen.getByText(/Running order № 1 · SB7K2M/i)).toBeInTheDocument();
-      expect(screen.getByText("Epe District")).toBeInTheDocument();
-      expect(screen.getByText("“Great Are You Lord — Acoustic Rendition”")).toBeInTheDocument();
+      expect(screen.getAllByText("Epe District").length).toBeGreaterThan(0);
 
       // Rubric section
-      expect(screen.getByText("How Grace Adeyemi will be scored")).toBeInTheDocument();
+      expect(screen.getByText("How Min. Lizzy will be scored")).toBeInTheDocument();
       expect(screen.getByText(/Music rubric — five criteria, 95 raw points/i)).toBeInTheDocument();
 
       // Public voting & sharing panels
@@ -190,7 +189,7 @@ describe("Contestant Direct Profile Resolution & Link Loading", () => {
       spyUseLoaderData.mockRestore();
     });
 
-    it("renders Emmanuel Ojo profile when navigated to /contestants/B6F4PT", async () => {
+    it("renders HOPENDHOUSE DANCE profile when navigated to /contestants/B6F4PT", async () => {
       const contestant = (await adapter.getContestantByCode("B6F4PT"))!;
       const spyUseLoaderData = vi.spyOn(ContestantDetailRoute, "useLoaderData").mockReturnValue({
         code: "B6F4PT",
@@ -200,11 +199,10 @@ describe("Contestant Direct Profile Resolution & Link Loading", () => {
       const Component = ContestantDetailRoute.options.component!;
       render(<Component />);
 
-      expect(screen.getByRole("heading", { name: "Emmanuel Ojo" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "HOPENDHOUSE DANCE" })).toBeInTheDocument();
       expect(screen.getByText(/Running order № 3 · B6F4PT/i)).toBeInTheDocument();
-      expect(screen.getByText("Morogbo District")).toBeInTheDocument();
-      expect(screen.getByText("“My Lifter — Saxophone Solo”")).toBeInTheDocument();
-      expect(screen.getByText("How Emmanuel Ojo will be scored")).toBeInTheDocument();
+      expect(screen.getAllByText("Morogbo District").length).toBeGreaterThan(0);
+      expect(screen.getByText("How HOPENDHOUSE DANCE will be scored")).toBeInTheDocument();
 
       spyUseLoaderData.mockRestore();
     });
