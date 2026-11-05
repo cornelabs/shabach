@@ -157,7 +157,7 @@ export function PublicTopThree({ rows }: { rows: ResultRow[] }) {
           official score desk records.
         </p>
         <Link
-          to="/"
+          to="/contestants"
           className="mt-5 inline-flex items-center gap-2 rounded-lg bg-forest px-5 py-2.5 text-sm font-semibold text-ivory hover:bg-forest-deep"
         >
           <ArrowLeft className="h-4 w-4" /> Meet all 16 finalists
@@ -199,7 +199,7 @@ function ResultsPage() {
             </p>
             <div className="mt-6 flex justify-center">
               <Link
-                to="/"
+                to="/contestants"
                 className="inline-flex items-center gap-2 rounded-lg bg-forest px-5 py-2.5 text-sm font-semibold text-ivory hover:bg-forest-deep"
               >
                 Browse contestants & voting

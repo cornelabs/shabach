@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ContestantCard } from "@/components/contestant-card";
 import { VoteConfirmationDialog } from "@/components/vote-confirmation-dialog";
 import { Route as IndexRoute } from "@/routes/index";
+import { Route as ContestantsRoute } from "@/routes/contestants.index";
 import { PublicTopThree, Route as ResultsRoute } from "@/routes/results";
 import { Route as ContestantRoute } from "@/routes/contestants.$code";
 import { getDataAdapter } from "@/lib/db/adapter";
@@ -57,10 +58,21 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
     });
   });
 
-  describe("1. Home Page Contestant Search (Name, Code, District)", () => {
-    it("interactively filters by contestant name (case-insensitive)", () => {
+  describe("1. Home Page Viewport Portal & Contestants Search", () => {
+    it("renders Home page with 5 viewport navigation portal cards", () => {
       const IndexComp = IndexRoute.options.component!;
       render(<IndexComp />);
+
+      expect(screen.getByText("1. Vote Contestant")).toBeInTheDocument();
+      expect(screen.getByText("2. Results")).toBeInTheDocument();
+      expect(screen.getByText("3. Judges")).toBeInTheDocument();
+      expect(screen.getByText("4. Admin")).toBeInTheDocument();
+      expect(screen.getByText("5. Program")).toBeInTheDocument();
+    });
+
+    it("interactively filters by contestant name (case-insensitive)", () => {
+      const ContestantsComp = ContestantsRoute.options.component!;
+      render(<ContestantsComp />);
 
       const searchInput = screen.getByPlaceholderText(/Search contestants by name or code/i);
 
@@ -75,8 +87,8 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
     });
 
     it("interactively filters by 6-character code with whitespace tolerance", () => {
-      const IndexComp = IndexRoute.options.component!;
-      render(<IndexComp />);
+      const ContestantsComp = ContestantsRoute.options.component!;
+      render(<ContestantsComp />);
 
       const searchInput = screen.getByPlaceholderText(/Search contestants by name or code/i);
 
@@ -91,8 +103,8 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
     });
 
     it("interactively filters by district name across contestants", () => {
-      const IndexComp = IndexRoute.options.component!;
-      render(<IndexComp />);
+      const ContestantsComp = ContestantsRoute.options.component!;
+      render(<ContestantsComp />);
 
       const searchInput = screen.getByPlaceholderText(/Search contestants by name or code/i);
 
@@ -104,8 +116,8 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
     });
 
     it("renders clean friendly empty state when no query matches and allows quick reset", () => {
-      const IndexComp = IndexRoute.options.component!;
-      render(<IndexComp />);
+      const ContestantsComp = ContestantsRoute.options.component!;
+      render(<ContestantsComp />);
 
       const searchInput = screen.getByPlaceholderText(/Search contestants by name or code/i);
       fireEvent.change(searchInput, { target: { value: "NoMatchQuery99" } });

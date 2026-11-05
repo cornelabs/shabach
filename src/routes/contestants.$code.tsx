@@ -278,7 +278,7 @@ function ContestantNotFound() {
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
-              to="/"
+              to="/contestants"
               className="inline-flex items-center gap-2 rounded-lg bg-forest px-5 py-2.5 text-sm font-semibold text-ivory hover:bg-forest-deep"
             >
               <ArrowLeft className="h-4 w-4" /> All contestants
@@ -312,7 +312,7 @@ function ContestantProfile() {
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-10">
         <Link
-          to="/"
+          to="/contestants"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-charcoal-muted hover:text-forest"
         >
           <ArrowLeft className="h-4 w-4" /> All contestants

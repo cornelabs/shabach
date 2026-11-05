@@ -5,9 +5,11 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/" as const, label: "Home" },
+  { to: "/contestants" as const, label: "Contestants" },
   { to: "/results" as const, label: "Results" },
   { to: "/judges" as const, label: "Judges" },
   { to: "/organiser" as const, label: "Organiser" },
+  { to: "/program" as const, label: "Program" },
 ];
 
 function StatusDot() {

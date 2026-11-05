@@ -12,13 +12,16 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as DemoRouteImport } from './routes/demo'
+import { Route as DetailsRouteImport } from './routes/details'
 import { Route as JudgeRouteImport } from './routes/judge'
 import { Route as JudgesRouteImport } from './routes/judges'
 import { Route as OrganiserRouteImport } from './routes/organiser'
 import { Route as OrganisersRouteImport } from './routes/organisers'
 import { Route as OrganizerRouteImport } from './routes/organizer'
 import { Route as OrganizersRouteImport } from './routes/organizers'
+import { Route as ProgramRouteImport } from './routes/program'
 import { Route as ResultsRouteImport } from './routes/results'
+import { Route as ContestantsIndexRouteImport } from './routes/contestants.index'
 import { Route as ContestantsCodeRouteImport } from './routes/contestants.$code'
 import { Route as JudgesIndexRouteImport } from './routes/judges.index'
 import { Route as JudgesJudgeIdRouteImport } from './routes/judges.$judgeId'
@@ -36,6 +39,11 @@ const AdminRoute = AdminRouteImport.update({
 const DemoRoute = DemoRouteImport.update({
   id: '/demo',
   path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DetailsRoute = DetailsRouteImport.update({
+  id: '/details',
+  path: '/details',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JudgeRoute = JudgeRouteImport.update({
@@ -68,9 +76,19 @@ const OrganizersRoute = OrganizersRouteImport.update({
   path: '/organizers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProgramRoute = ProgramRouteImport.update({
+  id: '/program',
+  path: '/program',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResultsRoute = ResultsRouteImport.update({
   id: '/results',
   path: '/results',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContestantsIndexRoute = ContestantsIndexRouteImport.update({
+  id: '/contestants/',
+  path: '/contestants/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContestantsCodeRoute = ContestantsCodeRouteImport.update({
@@ -93,29 +111,35 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/demo': typeof DemoRoute
+  '/details': typeof DetailsRoute
   '/judge': typeof JudgeRoute
   '/judges': typeof JudgesRouteWithChildren
   '/organiser': typeof OrganiserRoute
   '/organisers': typeof OrganisersRoute
   '/organizer': typeof OrganizerRoute
   '/organizers': typeof OrganizersRoute
+  '/program': typeof ProgramRoute
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
   '/judges/$judgeId': typeof JudgesJudgeIdRoute
+  '/contestants/': typeof ContestantsIndexRoute
   '/judges/': typeof JudgesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/demo': typeof DemoRoute
+  '/details': typeof DetailsRoute
   '/judge': typeof JudgeRoute
   '/organiser': typeof OrganiserRoute
   '/organisers': typeof OrganisersRoute
   '/organizer': typeof OrganizerRoute
   '/organizers': typeof OrganizersRoute
+  '/program': typeof ProgramRoute
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
   '/judges/$judgeId': typeof JudgesJudgeIdRoute
+  '/contestants': typeof ContestantsIndexRoute
   '/judges': typeof JudgesIndexRoute
 }
 export interface FileRoutesById {
@@ -123,15 +147,18 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/demo': typeof DemoRoute
+  '/details': typeof DetailsRoute
   '/judge': typeof JudgeRoute
   '/judges': typeof JudgesRouteWithChildren
   '/organiser': typeof OrganiserRoute
   '/organisers': typeof OrganisersRoute
   '/organizer': typeof OrganizerRoute
   '/organizers': typeof OrganizersRoute
+  '/program': typeof ProgramRoute
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
   '/judges/$judgeId': typeof JudgesJudgeIdRoute
+  '/contestants/': typeof ContestantsIndexRoute
   '/judges/': typeof JudgesIndexRoute
 }
 export interface FileRouteTypes {
@@ -140,44 +167,53 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/demo'
+    | '/details'
     | '/judge'
     | '/judges'
     | '/organiser'
     | '/organisers'
     | '/organizer'
     | '/organizers'
+    | '/program'
     | '/results'
     | '/contestants/$code'
     | '/judges/$judgeId'
+    | '/contestants/'
     | '/judges/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
     | '/demo'
+    | '/details'
     | '/judge'
     | '/organiser'
     | '/organisers'
     | '/organizer'
     | '/organizers'
+    | '/program'
     | '/results'
     | '/contestants/$code'
     | '/judges/$judgeId'
+    | '/contestants'
     | '/judges'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/demo'
+    | '/details'
     | '/judge'
     | '/judges'
     | '/organiser'
     | '/organisers'
     | '/organizer'
     | '/organizers'
+    | '/program'
     | '/results'
     | '/contestants/$code'
     | '/judges/$judgeId'
+    | '/contestants/'
     | '/judges/'
   fileRoutesById: FileRoutesById
 }
@@ -185,14 +221,17 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   DemoRoute: typeof DemoRoute
+  DetailsRoute: typeof DetailsRoute
   JudgeRoute: typeof JudgeRoute
   JudgesRoute: typeof JudgesRouteWithChildren
   OrganiserRoute: typeof OrganiserRoute
   OrganisersRoute: typeof OrganisersRoute
   OrganizerRoute: typeof OrganizerRoute
   OrganizersRoute: typeof OrganizersRoute
+  ProgramRoute: typeof ProgramRoute
   ResultsRoute: typeof ResultsRoute
   ContestantsCodeRoute: typeof ContestantsCodeRoute
+  ContestantsIndexRoute: typeof ContestantsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -216,6 +255,13 @@ declare module '@tanstack/react-router' {
       path: '/demo'
       fullPath: '/demo'
       preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/details': {
+      id: '/details'
+      path: '/details'
+      fullPath: '/details'
+      preLoaderRoute: typeof DetailsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/judge': {
@@ -260,11 +306,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/program': {
+      id: '/program'
+      path: '/program'
+      fullPath: '/program'
+      preLoaderRoute: typeof ProgramRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/results': {
       id: '/results'
       path: '/results'
       fullPath: '/results'
       preLoaderRoute: typeof ResultsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contestants/': {
+      id: '/contestants/'
+      path: '/contestants'
+      fullPath: '/contestants/'
+      preLoaderRoute: typeof ContestantsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contestants/$code': {
@@ -308,14 +368,17 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   DemoRoute: DemoRoute,
+  DetailsRoute: DetailsRoute,
   JudgeRoute: JudgeRoute,
   JudgesRoute: JudgesRouteWithChildren,
   OrganiserRoute: OrganiserRoute,
   OrganisersRoute: OrganisersRoute,
   OrganizerRoute: OrganizerRoute,
   OrganizersRoute: OrganizersRoute,
+  ProgramRoute: ProgramRoute,
   ResultsRoute: ResultsRoute,
   ContestantsCodeRoute: ContestantsCodeRoute,
+  ContestantsIndexRoute: ContestantsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

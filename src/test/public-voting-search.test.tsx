@@ -6,6 +6,7 @@ import { VoteConfirmationDialog } from "@/components/vote-confirmation-dialog";
 import { ContestantCard } from "@/components/contestant-card";
 import { PublicTopThree } from "@/routes/results";
 import { Route as IndexRoute } from "@/routes/index";
+import { Route as ContestantsRoute } from "@/routes/contestants.index";
 import { Route as ContestantRoute } from "@/routes/contestants.$code";
 import { getDataAdapter } from "@/lib/db/adapter";
 import { buildContestants } from "@/lib/demo/seed";
@@ -167,9 +168,20 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
       expect(matches).toHaveLength(0);
     });
 
-    it("renders Home page search UI and interactively filters contestants with clean empty state", () => {
+    it("renders Home page with 5 viewport navigation cards", () => {
       const IndexComp = IndexRoute.options.component!;
       render(<IndexComp />);
+
+      expect(screen.getByText("1. Vote Contestant")).toBeInTheDocument();
+      expect(screen.getByText("2. Results")).toBeInTheDocument();
+      expect(screen.getByText("3. Judges")).toBeInTheDocument();
+      expect(screen.getByText("4. Admin")).toBeInTheDocument();
+      expect(screen.getByText("5. Program")).toBeInTheDocument();
+    });
+
+    it("renders Contestants page search UI and interactively filters contestants with clean empty state", () => {
+      const ContestantsComp = ContestantsRoute.options.component!;
+      render(<ContestantsComp />);
 
       const searchInput = screen.getByPlaceholderText(/Search contestants by name or code/i);
       expect(searchInput).toBeInTheDocument();

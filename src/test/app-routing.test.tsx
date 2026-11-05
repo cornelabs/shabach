@@ -64,4 +64,16 @@ describe("App routing", () => {
     const adminMatches = router.matchRoutes("/admin");
     expect(adminMatches.some((m) => m.routeId === "/admin")).toBe(true);
   });
+
+  it("matches the contestants list page at /contestants", () => {
+    const matches = router.matchRoutes("/contestants");
+    expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
+    expect(matches.some((m) => m.routeId === "/contestants/")).toBe(true);
+  });
+
+  it("matches the program details page at /program", () => {
+    const matches = router.matchRoutes("/program");
+    expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
+    expect(matches.some((m) => m.routeId === "/program")).toBe(true);
+  });
 });

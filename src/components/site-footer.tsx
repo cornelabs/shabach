@@ -20,7 +20,7 @@ export function SiteFooter() {
           <p className="font-semibold text-ivory">Explore</p>
           <ul className="mt-1 space-y-1">
             <li>
-              <Link to="/" className="hover:text-gold">
+              <Link to="/contestants" className="hover:text-gold">
                 Contestants & voting
               </Link>
             </li>
@@ -37,6 +37,11 @@ export function SiteFooter() {
             <li>
               <Link to="/organiser" className="hover:text-gold">
                 Organiser dashboard
+              </Link>
+            </li>
+            <li>
+              <Link to="/program" className="hover:text-gold">
+                Program & scoring rules
               </Link>
             </li>
           </ul>
