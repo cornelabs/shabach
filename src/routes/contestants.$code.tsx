@@ -154,9 +154,33 @@ function ContestantHero({ contestant, rubric }: { contestant: Contestant; rubric
 function VotePanel({ contestant }: { contestant: Contestant }) {
   const [voteDialogOpen, setVoteDialogOpen] = useState(false);
   const state = useDemoState();
-  const myVote = state.browserVote?.contestantId ?? null;
+  const storedVoteId = React.useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem("shabach_browser_vote");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.contestantId) return parsed.contestantId as string;
+      }
+      return window.localStorage.getItem("shabach_voted_contestant_id");
+    } catch {
+      return null;
+    }
+  }, [voteDialogOpen]);
+
+  const myVote = state.browserVote?.contestantId ?? storedVoteId ?? null;
+  const votedContestant = myVote
+    ? (state.contestants.find(
+        (c) => c.id === myVote || c.code.toUpperCase() === myVote.toUpperCase(),
+      ) ??
+      (contestant.id === myVote || contestant.code.toUpperCase() === myVote.toUpperCase()
+        ? contestant
+        : null))
+    : null;
   const votedForThis = myVote === contestant.id || myVote === contestant.code;
-  const hasVoted = Boolean(myVote);
+  const hasVoted =
+    Boolean(myVote) ||
+    (typeof window !== "undefined" && window.localStorage.getItem("shabach_has_voted") === "true");
 
   return (
     <>
@@ -181,7 +205,7 @@ function VotePanel({ contestant }: { contestant: Contestant }) {
               <p className="text-xs sm:text-sm font-medium text-charcoal">
                 {votedForThis
                   ? `Your official verified vote for ${contestant.name} has been recorded.`
-                  : "You have already cast your single vote across the competition in this browser."}
+                  : `You have already cast your single vote for ${votedContestant?.name ?? "another contestant"}.`}
               </p>
               <Button
                 disabled
@@ -189,6 +213,13 @@ function VotePanel({ contestant }: { contestant: Contestant }) {
               >
                 <Check className="h-4 w-4" /> You voted already
               </Button>
+              <button
+                type="button"
+                onClick={() => setVoteDialogOpen(true)}
+                className="w-full text-center text-xs font-semibold text-forest hover:underline pt-1 cursor-pointer"
+              >
+                View your recorded vote
+              </button>
             </div>
           ) : (
             <div className="mt-4 space-y-3">
@@ -212,9 +243,18 @@ function VotePanel({ contestant }: { contestant: Contestant }) {
                 : "Public voting opens officially during the Grand Finale live broadcast."}
             </p>
             {hasVoted && (
-              <Button disabled className="w-full bg-forest/40 text-ivory/70 cursor-not-allowed text-sm">
-                You voted already
-              </Button>
+              <>
+                <Button disabled className="w-full bg-forest/40 text-ivory/70 cursor-not-allowed text-sm">
+                  You voted already
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setVoteDialogOpen(true)}
+                  className="w-full text-center text-xs font-semibold text-forest hover:underline pt-1 cursor-pointer"
+                >
+                  View your recorded vote
+                </button>
+              </>
             )}
           </div>
         )}

@@ -1295,6 +1295,8 @@ export function resetDemo() {
       window.localStorage.removeItem("shabach_has_voted");
       window.localStorage.removeItem("shabach_voter_token");
       window.localStorage.removeItem("shabach_voter_email");
+      window.localStorage.removeItem("shabach_browser_vote");
+      window.localStorage.removeItem("shabach_voted_contestant_id");
     } catch {
       // ignore
     }

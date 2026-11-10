@@ -20,7 +20,7 @@ interface Props {
 export function ContestantCard({ contestant, votingStatus, myVote }: Props) {
   const [voteDialogOpen, setVoteDialogOpen] = React.useState(false);
   const votedForThis = myVote === contestant.id || myVote === contestant.code;
-  const votingDisabled = votingStatus !== "open" || myVote !== null;
+  const votingDisabled = votingStatus !== "open" && !myVote;
   const rubric = rubricFor(contestant.type);
   const allocatedMinutes = Math.round(rubric.timeLimitSec / 60);
 
@@ -61,9 +61,20 @@ export function ContestantCard({ contestant, votingStatus, myVote }: Props) {
         </Link>
         <div className="mt-3 flex items-center justify-between gap-2 border-t border-cream-line pt-3">
           {votedForThis ? (
-            <span className="text-sm font-semibold text-forest-soft">✓ Your vote is here</span>
+            <button
+              type="button"
+              onClick={() => setVoteDialogOpen(true)}
+              className="text-sm font-semibold text-forest-soft hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              ✓ Your vote is here
+            </button>
           ) : (
-            <Button size="sm" disabled={votingDisabled} onClick={() => setVoteDialogOpen(true)}>
+            <Button
+              size="sm"
+              disabled={votingDisabled}
+              onClick={() => setVoteDialogOpen(true)}
+              className={myVote ? "bg-forest-soft/90 text-ivory text-xs" : ""}
+            >
               {myVote ? "You voted already" : "Vote"}
             </Button>
           )}

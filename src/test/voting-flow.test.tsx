@@ -8,6 +8,9 @@ import { castVote, resetDemo, setVotingStatus } from "@/lib/demo/store";
 describe("Public Voting Flow & Confirmation", () => {
   beforeEach(() => {
     resetDemo();
+    if (typeof window !== "undefined") {
+      window.localStorage.clear();
+    }
   });
 
   const mockContestant = {
@@ -85,8 +88,12 @@ describe("Public Voting Flow & Confirmation", () => {
 
     await waitFor(() => {
       expect(onVoteCast).toHaveBeenCalledTimes(1);
-      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(screen.getByText("Your vote has been recorded")).toBeInTheDocument();
     });
+
+    const closeButton = screen.getByText("Close");
+    fireEvent.click(closeButton);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   it("calls onCancel and does not cast vote when cancelled", () => {
@@ -128,9 +135,60 @@ describe("Public Voting Flow & Confirmation", () => {
     await waitFor(
       () => {
         expect(onVoteCast).toHaveBeenCalledTimes(1);
+        expect(screen.getByText("Your vote has been recorded")).toBeInTheDocument();
       },
       { timeout: 1000 },
     );
+  });
+
+  it("shows 'Your vote has been recorded' in the modal when already voted (same contestant)", () => {
+    castVote(mockContestant.id);
+
+    render(
+      <VoteConfirmationDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        contestant={mockContestant}
+        onVoteCast={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Your vote has been recorded")).toBeInTheDocument();
+    expect(screen.queryByText("Confirm your vote")).not.toBeInTheDocument();
+    expect(screen.queryByText("Confirm Vote")).not.toBeInTheDocument();
+    expect(screen.getByText("Close")).toBeInTheDocument();
+    expect(screen.getByText("✓ Official Vote Cast")).toBeInTheDocument();
+  });
+
+  it("shows 'Your vote has been recorded' with original contestant when viewing a different contestant", () => {
+    castVote(mockContestant.id);
+
+    const otherContestant = {
+      id: "c02",
+      code: "SHB-02",
+      name: "David Olanrewaju",
+      district: "Badagry District",
+      type: "dance" as const,
+      title: "Praise Step",
+      bio: "Test bio 2",
+      order: 2,
+      hue: 120,
+    };
+
+    render(
+      <VoteConfirmationDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        contestant={otherContestant}
+        onVoteCast={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Your vote has been recorded")).toBeInTheDocument();
+    expect(screen.queryByText("Confirm your vote")).not.toBeInTheDocument();
+    expect(screen.queryByText("Confirm Vote")).not.toBeInTheDocument();
+    expect(screen.getByText(/Viewing David Olanrewaju/i)).toBeInTheDocument();
+    expect(screen.getByText("Close")).toBeInTheDocument();
   });
 
   it("enforces voting window: rejects vote when voting is not open", () => {

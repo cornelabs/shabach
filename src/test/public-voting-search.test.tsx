@@ -432,8 +432,11 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
 
       await waitFor(() => {
         expect(onVoteCast).toHaveBeenCalledTimes(1);
-        expect(onOpenChange).toHaveBeenCalledWith(false);
+        expect(screen.getByText("Your vote has been recorded")).toBeInTheDocument();
       });
+
+      fireEvent.click(screen.getByText("Close"));
+      expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });
 });

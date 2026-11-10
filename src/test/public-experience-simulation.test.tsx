@@ -236,8 +236,11 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
 
       await waitFor(() => {
         expect(onVoteCast).toHaveBeenCalledTimes(1);
-        expect(onOpenChange).toHaveBeenCalledWith(false);
+        expect(screen.getByText("Your vote has been recorded")).toBeInTheDocument();
       });
+
+      fireEvent.click(screen.getByText("Close"));
+      expect(onOpenChange).toHaveBeenCalledWith(false);
 
       // Card now displays vote receipt badge
       rerender(<ContestantCard contestant={emmanuel} votingStatus="open" myVote={emmanuel.id} />);
