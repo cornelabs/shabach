@@ -149,10 +149,10 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
 
       expect(screen.getByText("1. Vote Contestant")).toBeInTheDocument();
       expect(screen.getByText("2. Results")).toBeInTheDocument();
-      expect(screen.getByText("3. Judges")).toBeInTheDocument();
-      expect(screen.getByText("4. Admin")).toBeInTheDocument();
-      expect(screen.getByText("5. Program")).toBeInTheDocument();
-      expect(screen.getByText("6. Meet the Judges")).toBeInTheDocument();
+      expect(screen.getByText("3. Judging Panel")).toBeInTheDocument();
+      expect(screen.getByText("4. Meet the Judges")).toBeInTheDocument();
+      expect(screen.getByText("5. Program details")).toBeInTheDocument();
+      expect(screen.getByText("6. Admin")).toBeInTheDocument();
       expect(
         screen.getByText("Meet the 4 Grand Finale adjudicators, their profiles & backgrounds."),
       ).toBeInTheDocument();

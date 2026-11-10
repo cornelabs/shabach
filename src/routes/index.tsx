@@ -142,7 +142,7 @@ function Index() {
             </div>
           </Link>
 
-          {/* Card 3: Judges Panel */}
+          {/* Card 3: Judging Panel */}
           <Link
             to="/judges"
             className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border border-cream-line/25 bg-forest/70 p-3 sm:p-4 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:bg-forest/90 focus:outline-none focus:ring-2 focus:ring-gold"
@@ -157,7 +157,7 @@ function Index() {
             </div>
             <div className="mt-2 sm:mt-3">
               <h2 className="font-display text-sm sm:text-base font-bold text-ivory group-hover:text-gold transition-colors flex items-center justify-between">
-                <span>3. Judges</span>
+                <span>3. Judging Panel</span>
                 <ArrowRight className="h-3.5 w-3.5 text-gold-soft group-hover:translate-x-1 transition-transform" />
               </h2>
               <p className="mt-0.5 text-[10px] sm:text-[11px] leading-snug text-ivory/75 line-clamp-2">
@@ -166,55 +166,7 @@ function Index() {
             </div>
           </Link>
 
-          {/* Card 4: Admin */}
-          <Link
-            to="/organiser"
-            className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border border-cream-line/25 bg-forest/70 p-3 sm:p-4 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:bg-forest/90 focus:outline-none focus:ring-2 focus:ring-gold"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-destructive/30 text-destructive-foreground shadow-sm">
-                <ShieldCheck className="h-4 w-4 text-gold" />
-              </div>
-              <Badge variant="outline" className="border-gold/40 text-gold-soft text-[10px] px-1.5 py-0 flex items-center gap-1">
-                <Lock className="h-2.5 w-2.5" /> Admin
-              </Badge>
-            </div>
-            <div className="mt-2 sm:mt-3">
-              <h2 className="font-display text-sm sm:text-base font-bold text-ivory group-hover:text-gold transition-colors flex items-center justify-between">
-                <span>4. Admin</span>
-                <ArrowRight className="h-3.5 w-3.5 text-gold-soft group-hover:translate-x-1 transition-transform" />
-              </h2>
-              <p className="mt-0.5 text-[10px] sm:text-[11px] leading-snug text-ivory/75 line-clamp-2">
-                Score desk, duration verification & lock.
-              </p>
-            </div>
-          </Link>
-
-          {/* Card 5: Program Details */}
-          <Link
-            to="/program"
-            className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border border-cream-line/25 bg-forest/70 p-3 sm:p-4 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:bg-forest/90 focus:outline-none focus:ring-2 focus:ring-gold"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-gold/20 text-gold shadow-sm">
-                <Info className="h-4 w-4" />
-              </div>
-              <Badge variant="outline" className="border-gold/40 text-gold-soft text-[10px] px-1.5 py-0">
-                Rules
-              </Badge>
-            </div>
-            <div className="mt-2 sm:mt-3">
-              <h2 className="font-display text-sm sm:text-base font-bold text-ivory group-hover:text-gold transition-colors flex items-center justify-between">
-                <span>5. Program</span>
-                <ArrowRight className="h-3.5 w-3.5 text-gold-soft group-hover:translate-x-1 transition-transform" />
-              </h2>
-              <p className="mt-0.5 text-[10px] sm:text-[11px] leading-snug text-ivory/75 line-clamp-2">
-                100-Point Cake, category durations & criteria.
-              </p>
-            </div>
-          </Link>
-
-          {/* Card 6: Meet the Judges */}
+          {/* Card 4: Meet the Judges */}
           <Link
             to="/judges/meet"
             className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border border-cream-line/25 bg-forest/70 p-3 sm:p-4 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:bg-forest/90 focus:outline-none focus:ring-2 focus:ring-gold"
@@ -229,11 +181,59 @@ function Index() {
             </div>
             <div className="mt-2 sm:mt-3">
               <h2 className="font-display text-sm sm:text-base font-bold text-ivory group-hover:text-gold transition-colors flex items-center justify-between">
-                <span>6. Meet the Judges</span>
+                <span>4. Meet the Judges</span>
                 <ArrowRight className="h-3.5 w-3.5 text-gold-soft group-hover:translate-x-1 transition-transform" />
               </h2>
               <p className="mt-0.5 text-[10px] sm:text-[11px] leading-snug text-ivory/75 line-clamp-2">
                 Meet the 4 Grand Finale adjudicators, their profiles & backgrounds.
+              </p>
+            </div>
+          </Link>
+
+          {/* Card 5: Program details */}
+          <Link
+            to="/program"
+            className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border border-cream-line/25 bg-forest/70 p-3 sm:p-4 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:bg-forest/90 focus:outline-none focus:ring-2 focus:ring-gold"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-gold/20 text-gold shadow-sm">
+                <Info className="h-4 w-4" />
+              </div>
+              <Badge variant="outline" className="border-gold/40 text-gold-soft text-[10px] px-1.5 py-0">
+                Rules
+              </Badge>
+            </div>
+            <div className="mt-2 sm:mt-3">
+              <h2 className="font-display text-sm sm:text-base font-bold text-ivory group-hover:text-gold transition-colors flex items-center justify-between">
+                <span>5. Program details</span>
+                <ArrowRight className="h-3.5 w-3.5 text-gold-soft group-hover:translate-x-1 transition-transform" />
+              </h2>
+              <p className="mt-0.5 text-[10px] sm:text-[11px] leading-snug text-ivory/75 line-clamp-2">
+                100-Point Cake, category durations & criteria.
+              </p>
+            </div>
+          </Link>
+
+          {/* Card 6: Admin (Last card) */}
+          <Link
+            to="/organiser"
+            className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border border-cream-line/25 bg-forest/70 p-3 sm:p-4 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:bg-forest/90 focus:outline-none focus:ring-2 focus:ring-gold"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-destructive/30 text-destructive-foreground shadow-sm">
+                <ShieldCheck className="h-4 w-4 text-gold" />
+              </div>
+              <Badge variant="outline" className="border-gold/40 text-gold-soft text-[10px] px-1.5 py-0 flex items-center gap-1">
+                <Lock className="h-2.5 w-2.5" /> Admin
+              </Badge>
+            </div>
+            <div className="mt-2 sm:mt-3">
+              <h2 className="font-display text-sm sm:text-base font-bold text-ivory group-hover:text-gold transition-colors flex items-center justify-between">
+                <span>6. Admin</span>
+                <ArrowRight className="h-3.5 w-3.5 text-gold-soft group-hover:translate-x-1 transition-transform" />
+              </h2>
+              <p className="mt-0.5 text-[10px] sm:text-[11px] leading-snug text-ivory/75 line-clamp-2">
+                Score desk, duration verification & lock.
               </p>
             </div>
           </Link>
