@@ -404,7 +404,6 @@ function JudgesHome() {
                     <Input
                       id="seat-code"
                       type={showCode ? "text" : "password"}
-                      placeholder="e.g. 7101 or JUDGE1-SECURE"
                       value={accessCodeInput}
                       onChange={(e) => {
                         setAccessCodeInput(e.target.value);

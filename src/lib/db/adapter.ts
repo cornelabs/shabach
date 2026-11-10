@@ -19,6 +19,7 @@ import {
   updateContestant as demoUpdateContestant,
   voteCountsOf as demoVoteCountsOf,
   refreshFromSupabase,
+  recordBrowserVote,
 } from "@/lib/demo/store";
 import type {
   Contestant,
@@ -404,8 +405,8 @@ export class LiveSupabaseAdapter implements IDataAdapter {
       if (data && typeof data === "object") {
         const payload = data as { ok?: boolean; reason?: string; vote_id?: string };
         if (payload.ok) {
-          // Reflect locally in demo store
-          new DemoDataAdapter().castVote(voterId, contestantId);
+          // Reflect locally in store authoritatively so UI updates immediately in the background
+          recordBrowserVote(contestantId, voterId);
           void refreshFromSupabase();
           return {
             success: true,

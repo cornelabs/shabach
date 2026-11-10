@@ -451,8 +451,23 @@ export async function refreshFromSupabase(): Promise<void> {
         };
       }
 
+      // Ensure browserVote is preserved across background database refreshes
+      let activeBrowserVote = cur.browserVote;
+      if (!activeBrowserVote && typeof window !== "undefined") {
+        try {
+          const raw = window.localStorage.getItem("shabach_browser_vote");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.contestantId) activeBrowserVote = parsed;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
       return {
         ...cur,
+        browserVote: activeBrowserVote,
         votingStatus: (eventData?.voting_status as VotingStatus) ?? cur.votingStatus,
         contestants: activeContestants,
         scorecards: reconciledScorecards,
@@ -633,44 +648,42 @@ function checkLocalVoteEligibility(contestantId: string, voterId?: string): Cast
   return { ok: true };
 }
 
-function commitLocalVote(contestantId: string, voterId?: string) {
+/**
+ * Authoritatively records a browser's single vote in state and localStorage,
+ * immediately broadcasting the state change to all listeners so that
+ * all contestant cards and vote panels disable voting in the background
+ * without requiring any manual page refresh.
+ */
+export function recordBrowserVote(contestantId: string, voterId?: string) {
+  const target = state.contestants.find((c) => c.id === contestantId || c.code === contestantId);
+  const resolvedId = target ? target.id : contestantId;
+  const nowIso = new Date().toISOString();
+  const browserVote = { contestantId: resolvedId, at: nowIso };
+
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem("shabach_has_voted", "true");
+      window.localStorage.setItem("shabach_browser_vote", JSON.stringify(browserVote));
+      window.localStorage.setItem("shabach_voted_contestant_id", resolvedId);
+      if (voterId) {
+        window.localStorage.setItem("shabach_voter_token", voterId);
+      }
+    } catch {
+      /* storage may be unavailable */
+    }
+  }
+
   update((cur) => {
-    if (resultsLocked(cur) || cur.votingStatus !== "open") {
-      return cur;
-    }
-    if (voterId && cur.votes?.some((v) => v.voterId === voterId)) {
-      return cur;
-    }
-    if (!voterId && cur.browserVote) {
-      return cur;
-    }
-    const targetContestant = cur.contestants.find(
-      (c) => c.id === contestantId || c.code === contestantId,
-    );
-    const resolvedId = targetContestant ? targetContestant.id : contestantId;
     const newDemoVotes = { ...cur.demoVotes };
     newDemoVotes[resolvedId] = (newDemoVotes[resolvedId] ?? 0) + 1;
-    const nowIso = new Date().toISOString();
     const newVotes = [...(cur.votes ?? [])];
-    if (voterId) {
+    if (voterId && !newVotes.some((v) => v.voterId === voterId)) {
       newVotes.push({
         id: `vote_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         voterId,
         contestantId: resolvedId,
         createdAt: nowIso,
       });
-    }
-    const browserVote = cur.browserVote ?? { contestantId: resolvedId, at: nowIso };
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.setItem("shabach_has_voted", "true");
-        window.localStorage.setItem("shabach_browser_vote", JSON.stringify(browserVote));
-        if (voterId) {
-          window.localStorage.setItem("shabach_voter_token", voterId);
-        }
-      } catch {
-        /* storage may be unavailable */
-      }
     }
     return {
       ...cur,
@@ -679,6 +692,10 @@ function commitLocalVote(contestantId: string, voterId?: string) {
       votes: newVotes,
     };
   });
+}
+
+function commitLocalVote(contestantId: string, voterId?: string) {
+  recordBrowserVote(contestantId, voterId);
 }
 
 function rollbackLocalVote(contestantId: string) {

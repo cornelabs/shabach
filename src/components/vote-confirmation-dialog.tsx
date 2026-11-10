@@ -20,6 +20,7 @@ import { getDataAdapter } from "@/lib/db/adapter";
 import { isSupabaseConfigured } from "@/lib/db/supabase";
 import { hasVoterVoted, isValidEmail, requestVoterOtp, verifyVoterOtp } from "@/lib/auth/voter-verification";
 import { useDemoState } from "@/hooks/use-demo";
+import { recordBrowserVote } from "@/lib/demo/store";
 import { typeLabel } from "@/lib/demo/labels";
 import { rubricFor } from "@/lib/demo/rubrics";
 import type { Contestant } from "@/lib/demo/types";
@@ -259,6 +260,7 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
       ]);
 
       if (res.success) {
+        recordBrowserVote(contestant.id, activeToken ?? undefined);
         if (typeof window !== "undefined") {
           window.localStorage.setItem("shabach_has_voted", "true");
           window.localStorage.setItem(
@@ -282,11 +284,13 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
       } else {
         const msg = res.message.toLowerCase();
         if (msg.includes("already") || msg.includes("single vote")) {
+          recordBrowserVote(contestant.id, activeToken ?? undefined);
           setHasVotedToken(true);
           setJustRecorded(true);
           if (typeof window !== "undefined") {
             window.localStorage.setItem("shabach_has_voted", "true");
           }
+          onVoteCast?.();
         } else if (msg.includes("not open") || msg.includes("not_open")) {
           toast.info("Voting is not open yet.", {
             description: "Voting will open officially during the Grand Finale.",
