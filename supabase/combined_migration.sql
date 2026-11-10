@@ -895,28 +895,35 @@ BEGIN
         '{"spiritual": 0, "technical": 1, "creativity": 2}'::jsonb
     ) ON CONFLICT (event_id, discipline, version) DO NOTHING;
 
-    -- 4. Insert 16 Finalists
+    -- 4. Insert 16 Finalists (Ordered by district: State Church first, then alphabetical)
     INSERT INTO contestants (
         event_id, code, full_name, district, performance_type, performance_order,
         performance_title, biography, avatar_url
     ) VALUES
-    (v_event_id, 'SB7K2M', 'Min. Lizzy', 'Epe District', 'music', 1, 'Vocal & Worship Ministry', 'Ministering from Epe District in the Music category.', '/contestants/min-lizzy.jpeg'),
-    (v_event_id, 'V4Q9TP', 'The Painters', 'Epe District', 'mono_drama', 9, 'Dramatic Presentation', 'Ministering from Epe District in the Drama category.', '/contestants/the-painters.png'),
-    (v_event_id, 'NH6R8W', 'Min. Kehinde Akintola', 'Ijede District', 'music', 4, 'Worship Rendition', 'Ministering from Ijede District in the Music category.', '/contestants/min-kehinde-akintola.jpeg'),
-    (v_event_id, 'K2M5C7', 'Min. TaegarGee', 'Ijede District', 'music', 16, 'Praise Rendition', 'Ministering from Ijede District in the Music category.', '/contestants/min-taegargee.png'),
-    (v_event_id, 'P9X3JA', 'SUCCESS', 'Iranwo District', 'music', 8, 'Gospel Rendition', 'Ministering from Iranwo District in the Music category.', '/contestants/success.png'),
-    (v_event_id, 'T8B4ND', 'Victoria', 'Iranwo District', 'spoken_word', 14, 'Spoken Word Ministry', 'Ministering from Iranwo District in the Spoken Word category.', '/contestants/victoria.jpeg'),
-    (v_event_id, 'W5H7FE', 'The Preacher', 'Igbogbo District', 'music', 2, 'Choral & Vocal Ministry', 'Ministering from Igbogbo District in the Music category.', '/contestants/the-preacher.png'),
-    (v_event_id, 'Y3K9RU', 'The Wise Ones', 'Igbogbo District', 'spoken_word', 12, 'Poetic & Spoken Word Presentation', 'Ministering from Igbogbo District in the Spoken Word category.', '/contestants/the-wise-ones.png'),
-    (v_event_id, 'A7W2SM', 'Elijah Victor', 'Badagry District', 'music', 5, 'Music Ministry', 'Ministering from Badagry District in the Music category.', '/contestants/elijah-victor.jpeg'),
-    (v_event_id, 'D4PN6T', 'LFC Dynasty', 'Badagry District', 'dance', 11, 'Choreographed Dance Ministry', 'Ministering from Badagry District in the Dance category.', '/contestants/lfc-dynasty.png'),
-    (v_event_id, 'M8C3XE', 'Min. Elizabeth', 'Magbon District', 'music', 6, 'Music Ministry', 'Ministering from Magbon District in the Music category.', '/contestants/min-elizabeth.jpeg'),
-    (v_event_id, 'L1Z8RQ', 'Spirit, Soul & Body Dancers', 'Magbon District', 'dance', 13, 'Choreographed Dance Ministry', 'Ministering from Magbon District in the Dance category.', '/contestants/spirit-soul-body-dancers.jpeg'),
-    (v_event_id, 'B6F4PT', 'HOPENDHOUSE DANCE', 'Morogbo District', 'dance', 3, 'Dance Ministry', 'Ministering from Morogbo District in the Dance category.', '/contestants/hopendhouse-dance.jpeg'),
-    (v_event_id, 'G9D2KY', 'The Gideonite Speaks', 'Morogbo District', 'spoken_word', 10, 'Spoken Word Ministry', 'Ministering from Morogbo District in the Spoken Word category.', '/contestants/the-gideonite-speaks.png'),
-    (v_event_id, 'H5N8TC', 'Favour Chukwudi', 'State Church', 'spoken_word', 7, 'Spoken Word Ministry', 'Ministering from State Church in the Spoken Word category.', '/contestants/favour-chukwudi.png'),
-    (v_event_id, 'E3QK4V', 'Min. Blessing', 'State Church', 'music', 15, 'Music Ministry', 'Ministering from State Church in the Music category.', '/contestants/min-blessing.png')
-    ON CONFLICT (event_id, code) DO NOTHING;
+    (v_event_id, 'H5N8TC', 'Favour Chukwudi', 'State Church', 'spoken_word', 1, 'Spoken Word Ministry', 'Ministering from State Church in the Spoken Word category.', '/contestants/favour-chukwudi.png'),
+    (v_event_id, 'E3QK4V', 'Min. Blessing', 'State Church', 'music', 2, 'Music Ministry', 'Ministering from State Church in the Music category.', '/contestants/min-blessing.png'),
+    (v_event_id, 'A7W2SM', 'Elijah Victor', 'Badagry District', 'music', 3, 'Music Ministry', 'Ministering from Badagry District in the Music category.', '/contestants/elijah-victor.jpeg'),
+    (v_event_id, 'D4PN6T', 'LFC Dynasty', 'Badagry District', 'dance', 4, 'Choreographed Dance Ministry', 'Ministering from Badagry District in the Dance category.', '/contestants/lfc-dynasty.png'),
+    (v_event_id, 'SB7K2M', 'Min. Lizzy', 'Epe District', 'music', 5, 'Vocal & Worship Ministry', 'Ministering from Epe District in the Music category.', '/contestants/min-lizzy.jpeg'),
+    (v_event_id, 'V4Q9TP', 'The Painters', 'Epe District', 'mono_drama', 6, 'Dramatic Presentation', 'Ministering from Epe District in the Drama category.', '/contestants/the-painters.png'),
+    (v_event_id, 'W5H7FE', 'The Preacher', 'Igbogbo District', 'music', 7, 'Choral & Vocal Ministry', 'Ministering from Igbogbo District in the Music category.', '/contestants/the-preacher.png'),
+    (v_event_id, 'Y3K9RU', 'The Wise Ones', 'Igbogbo District', 'spoken_word', 8, 'Poetic & Spoken Word Presentation', 'Ministering from Igbogbo District in the Spoken Word category.', '/contestants/the-wise-ones.png'),
+    (v_event_id, 'NH6R8W', 'Min. Kehinde Akintola', 'Ijede District', 'music', 9, 'Praise & Worship Ministry', 'Ministering from Ijede District in the Music category.', '/contestants/min-kehinde-akintola.png'),
+    (v_event_id, 'K2M5C7', 'Min. TaegarGee', 'Ijede District', 'music', 10, 'Gospel Music Performance', 'Ministering from Ijede District in the Music category.', '/contestants/min-taegargee.png'),
+    (v_event_id, 'P9X3JA', 'SUCCESS', 'Irawo District', 'music', 11, 'Gospel Rendition', 'Ministering from Irawo District in the Music category.', '/contestants/success.png'),
+    (v_event_id, 'T8B4ND', 'Victoria', 'Irawo District', 'spoken_word', 12, 'Spoken Word Ministry', 'Ministering from Irawo District in the Spoken Word category.', '/contestants/victoria.jpeg'),
+    (v_event_id, 'M8C3XE', 'Min. Elizabeth', 'Magbon District', 'music', 13, 'Music Ministry', 'Ministering from Magbon District in the Music category.', '/contestants/min-elizabeth.jpeg'),
+    (v_event_id, 'L1Z8RQ', 'Spirit, Soul & Body Dancers', 'Magbon District', 'dance', 14, 'Choreographed Dance Ministry', 'Ministering from Magbon District in the Dance category.', '/contestants/spirit-soul-body-dancers.jpeg'),
+    (v_event_id, 'B6F4PT', 'HOPENDHOUSE DANCE', 'Morogbo District', 'dance', 15, 'Dance Ministry', 'Ministering from Morogbo District in the Dance category.', '/contestants/hopendhouse-dance.jpeg'),
+    (v_event_id, 'G9D2KY', 'The Gideonite Speaks', 'Morogbo District', 'spoken_word', 16, 'Spoken Word Ministry', 'Ministering from Morogbo District in the Spoken Word category.', '/contestants/the-gideonite-speaks.png')
+    ON CONFLICT (event_id, code) DO UPDATE SET
+        full_name = EXCLUDED.full_name,
+        district = EXCLUDED.district,
+        performance_type = EXCLUDED.performance_type,
+        performance_order = EXCLUDED.performance_order,
+        performance_title = EXCLUDED.performance_title,
+        biography = EXCLUDED.biography,
+        avatar_url = EXCLUDED.avatar_url;
 
     -- 5. Seed Staff Roles (All 4 Judges + Organiser + Score Desk)
     INSERT INTO staff_roles (event_id, role_type, full_name, email, active)

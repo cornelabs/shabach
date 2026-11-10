@@ -65,14 +65,29 @@ export const FINALE_DATE_LABEL = "Saturday, 14 November 2026";
 export const TIMEZONE_LABEL = "Africa/Lagos (WAT)";
 
 export const DISTRICTS_ORDER = [
-  "Epe District",
-  "Ijede District",
-  "Iranwo District",
-  "Igbogbo District",
+  "State Church",
   "Badagry District",
+  "Epe District",
+  "Igbogbo District",
+  "Ijede District",
+  "Irawo District",
   "Magbon District",
   "Morogbo District",
-  "State Church",
 ] as const;
 
 export const DISTRICTS = DISTRICTS_ORDER;
+
+export function districtSortIndex(district: string): number {
+  const clean = district.trim().replace(/Iranwo/i, "Irawo");
+  const idx = (DISTRICTS_ORDER as readonly string[]).indexOf(clean);
+  return idx === -1 ? 999 : idx;
+}
+
+export function compareContestantsByDistrict(
+  a: { district: string; order?: number; name?: string },
+  b: { district: string; order?: number; name?: string },
+): number {
+  const dDiff = districtSortIndex(a.district) - districtSortIndex(b.district);
+  if (dDiff !== 0) return dDiff;
+  return (a.order ?? 0) - (b.order ?? 0);
+}

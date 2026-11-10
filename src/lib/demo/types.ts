@@ -185,12 +185,12 @@ export interface DemoState {
 }
 
 export const DISTRICTS = [
-  "Epe District",
-  "Ijede District",
-  "Iranwo District",
-  "Igbogbo District",
+  "State Church",
   "Badagry District",
+  "Epe District",
+  "Igbogbo District",
+  "Ijede District",
+  "Irawo District",
   "Magbon District",
   "Morogbo District",
-  "State Church",
 ] as const;

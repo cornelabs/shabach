@@ -399,7 +399,7 @@ describe("Database Permission & RLS Isolation Tests", () => {
           contestant: {
             id: "c05",
             name: "David Balogun",
-            district: "Iranwo District",
+            district: "Irawo District",
             title: "Nara Kele",
             type: "music",
           },

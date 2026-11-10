@@ -21,6 +21,7 @@ import type {
   VotingStatus,
 } from "./types";
 import { JUDGES } from "./types";
+import { compareContestantsByDistrict } from "./labels";
 
 /**
  * Single shared demo data store with a replaceable data-access layer.
@@ -28,7 +29,7 @@ import { JUDGES } from "./types";
  * storage event. No browser API runs at module scope — everything is lazy.
  */
 
-const STORAGE_KEY = "shabach2026.demo.v3";
+const STORAGE_KEY = "shabach2026.demo.v4";
 
 let state: DemoState = createSeedState();
 let hydrated = false;
@@ -71,10 +72,11 @@ export function hydrateDemoStore() {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;
 
-  // Clear legacy v1/v2 localStorage if present
+  // Clear legacy v1/v2/v3 localStorage if present
   try {
     window.localStorage.removeItem("shabach2026.demo.v1");
     window.localStorage.removeItem("shabach2026.demo.v2");
+    window.localStorage.removeItem("shabach2026.demo.v3");
   } catch {
     /* ignore */
   }
@@ -84,24 +86,30 @@ export function hydrateDemoStore() {
     if (raw) {
       const parsed = JSON.parse(raw) as DemoState;
       if (parsed && parsed.version === 2 && Array.isArray(parsed.contestants)) {
+        const canonicalContestants = createSeedState().contestants;
         const upgradedContestants = parsed.contestants.map((c) => {
-          const seed = CONTESTANT_SEED.find((s) => s.code === c.code || s.id === c.id);
+          const seed = canonicalContestants.find((s) => s.code === c.code || s.id === c.id);
           const isLegacy = !c.name || OLD_DUMMY_NAMES.has(c.name);
+          const rawDistrict = (isLegacy && seed ? seed.district : c.district) || seed?.district || "";
+          const cleanDistrict = rawDistrict.replace(/Iranwo/i, "Irawo");
           if (isLegacy && seed) {
             return {
               ...c,
               name: seed.name,
-              district: seed.district,
+              district: cleanDistrict,
               type: seed.type,
               title: seed.title,
               bio: seed.bio,
               avatarUrl: seed.avatarUrl,
+              order: seed.order,
             };
           }
-          if (seed && (!c.avatarUrl || c.avatarUrl !== seed.avatarUrl)) {
-            return { ...c, avatarUrl: seed.avatarUrl };
-          }
-          return c;
+          return {
+            ...c,
+            district: cleanDistrict,
+            avatarUrl: seed?.avatarUrl ?? c.avatarUrl,
+            order: seed?.order ?? c.order,
+          };
         });
 
         state = {
@@ -209,23 +217,27 @@ export async function refreshFromSupabase(): Promise<void> {
 
     let activeContestants = state.contestants;
     if (contestantsData && contestantsData.length > 0) {
+      const canonicalContestants = createSeedState().contestants;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       activeContestants = contestantsData.map((row: any) => {
-        const seed = CONTESTANT_SEED.find((s) => s.code === row.code || s.id === row.id);
+        const seed = canonicalContestants.find((s) => s.code === row.code || s.id === row.id);
         const isLegacyDummy = !row.full_name || OLD_DUMMY_NAMES.has(row.full_name);
+        const rawDistrict = (isLegacyDummy ? seed?.district : null) ?? row.district ?? seed?.district ?? "";
+        const cleanDistrict = rawDistrict.replace(/Iranwo/i, "Irawo");
         return {
           id: row.id,
           code: row.code,
           name: isLegacyDummy ? (seed?.name ?? row.full_name ?? row.name) : (row.full_name ?? row.name ?? seed?.name),
-          district: (isLegacyDummy ? seed?.district : null) ?? row.district ?? seed?.district,
+          district: cleanDistrict,
           type: ((isLegacyDummy ? seed?.type : null) ?? row.performance_type ?? seed?.type ?? "music") as PerformanceType,
           title: (isLegacyDummy ? seed?.title : null) ?? row.performance_title ?? row.title ?? seed?.title ?? "",
           bio: (isLegacyDummy ? seed?.bio : null) ?? row.biography ?? row.bio ?? seed?.bio ?? "",
-          order: row.performance_order,
+          order: seed?.order ?? row.performance_order,
           hue: row.hue ?? (row.performance_order * 23) % 360,
           avatarUrl: row.avatar_url ?? row.image_url ?? seed?.avatarUrl ?? undefined,
         };
       });
+      activeContestants.sort(compareContestantsByDistrict);
     }
 
     const activeIds = new Set(activeContestants.map((c) => c.id));

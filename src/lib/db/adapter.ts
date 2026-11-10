@@ -31,6 +31,7 @@ import type {
   TieResolution,
 } from "@/lib/demo/types";
 import { buildContestants, CONTESTANT_SEED, OLD_DUMMY_NAMES } from "@/lib/demo/seed";
+import { compareContestantsByDistrict } from "@/lib/demo/labels";
 import { DEFAULT_EVENT_ID, getSupabaseClient, isSupabaseConfigured } from "./supabase";
 
 export interface IDataAdapter {
@@ -289,23 +290,27 @@ export class LiveSupabaseAdapter implements IDataAdapter {
       return getDemoState().contestants;
     }
 
+    const canonicalContestants = buildContestants();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (data || []).map((row: any) => {
-      const seed = CONTESTANT_SEED.find((s) => s.code === row.code || s.id === row.id);
+    const list: Contestant[] = (data || []).map((row: any) => {
+      const seed = canonicalContestants.find((s) => s.code === row.code || s.id === row.id);
       const isLegacyDummy = !row.full_name || OLD_DUMMY_NAMES.has(row.full_name);
+      const rawDistrict = (isLegacyDummy ? seed?.district : null) ?? row.district ?? seed?.district ?? "";
+      const cleanDistrict = rawDistrict.replace(/Iranwo/i, "Irawo");
       return {
         id: row.id,
         code: row.code,
         name: isLegacyDummy ? (seed?.name ?? row.full_name ?? row.name) : (row.full_name ?? row.name ?? seed?.name),
-        district: (isLegacyDummy ? seed?.district : null) ?? row.district ?? seed?.district,
+        district: cleanDistrict,
         type: ((isLegacyDummy ? seed?.type : null) ?? row.performance_type ?? seed?.type ?? "music") as PerformanceType,
         title: (isLegacyDummy ? seed?.title : null) ?? row.title ?? row.performance_title ?? seed?.title ?? "",
         bio: (isLegacyDummy ? seed?.bio : null) ?? row.bio ?? row.biography ?? seed?.bio ?? "",
-        order: row.performance_order,
+        order: seed?.order ?? row.performance_order,
         hue: row.hue ?? (row.performance_order * 23) % 360,
         avatarUrl: row.avatar_url ?? row.image_url ?? seed?.avatarUrl ?? undefined,
       };
     });
+    return list.sort(compareContestantsByDistrict);
   }
 
   async getContestantByCode(code: string): Promise<Contestant | null> {
@@ -319,17 +324,20 @@ export class LiveSupabaseAdapter implements IDataAdapter {
       return new DemoDataAdapter().getContestantByCode(code);
     }
 
-    const seed = CONTESTANT_SEED.find((s) => s.code === data.code || s.id === data.id);
+    const canonicalContestants = buildContestants();
+    const seed = canonicalContestants.find((s) => s.code === data.code || s.id === data.id);
     const isLegacyDummy = !data.full_name || OLD_DUMMY_NAMES.has(data.full_name);
+    const rawDistrict = (isLegacyDummy ? seed?.district : null) ?? data.district ?? seed?.district ?? "";
+    const cleanDistrict = rawDistrict.replace(/Iranwo/i, "Irawo");
     return {
       id: data.id,
       code: data.code,
       name: isLegacyDummy ? (seed?.name ?? data.full_name ?? data.name) : (data.full_name ?? data.name ?? seed?.name),
-      district: (isLegacyDummy ? seed?.district : null) ?? data.district ?? seed?.district,
+      district: cleanDistrict,
       type: ((isLegacyDummy ? seed?.type : null) ?? data.performance_type ?? seed?.type ?? "music") as PerformanceType,
       title: (isLegacyDummy ? seed?.title : null) ?? data.title ?? data.performance_title ?? seed?.title ?? "",
       bio: (isLegacyDummy ? seed?.bio : null) ?? data.bio ?? data.biography ?? seed?.bio ?? "",
-      order: data.performance_order,
+      order: seed?.order ?? data.performance_order,
       hue: data.hue ?? (data.performance_order * 23) % 360,
       avatarUrl: data.avatar_url ?? data.image_url ?? seed?.avatarUrl ?? undefined,
     };
