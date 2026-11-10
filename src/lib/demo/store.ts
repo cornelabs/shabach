@@ -28,7 +28,7 @@ import { JUDGES } from "./types";
  * storage event. No browser API runs at module scope — everything is lazy.
  */
 
-const STORAGE_KEY = "shabach2026.demo.v2";
+const STORAGE_KEY = "shabach2026.demo.v3";
 
 let state: DemoState = createSeedState();
 let hydrated = false;
@@ -71,9 +71,10 @@ export function hydrateDemoStore() {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;
 
-  // Clear legacy v1 localStorage if present
+  // Clear legacy v1/v2 localStorage if present
   try {
     window.localStorage.removeItem("shabach2026.demo.v1");
+    window.localStorage.removeItem("shabach2026.demo.v2");
   } catch {
     /* ignore */
   }

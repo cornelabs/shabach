@@ -22,10 +22,14 @@ export const OLD_DUMMY_NAMES = new Set([
   "Seun Amolegbe",
   "Bisi Ogundipe",
   "Ijede Acts Troupe",
+  "Magbon Finalist 1",
+  "Magbon Finalist 2",
+  "Magbon Finalist 1 (Auditions Saturday)",
+  "Magbon Finalist 2 (Auditions Saturday)",
 ]);
 
 /**
- * Demo seed data — 16 finalists (14 confirmed from Google Drive + 2 Magbon placeholders)
+ * Demo seed data — 16 confirmed finalists from Google Drive
  */
 
 export const CONTESTANT_SEED: Omit<Contestant, "order" | "hue">[] = [
@@ -132,22 +136,22 @@ export const CONTESTANT_SEED: Omit<Contestant, "order" | "hue">[] = [
   {
     id: "c11",
     code: "M8C3XE",
-    name: "Magbon Finalist 1",
+    name: "Min. Elizabeth",
     district: "Magbon District",
-    type: "dance",
-    title: "Auditions Saturday",
-    bio: "Magbon District Auditions taking place Saturday.",
-    avatarUrl: null,
+    type: "music",
+    title: "Music Ministry",
+    bio: "Ministering from Magbon District in the Music category.",
+    avatarUrl: "/contestants/min-elizabeth.jpeg",
   },
   {
     id: "c12",
     code: "L1Z8RQ",
-    name: "Magbon Finalist 2",
+    name: "Spirit, Soul & Body Dancers",
     district: "Magbon District",
-    type: "visual_arts",
-    title: "Auditions Saturday",
-    bio: "Magbon District Auditions taking place Saturday.",
-    avatarUrl: null,
+    type: "dance",
+    title: "Choreographed Dance Ministry",
+    bio: "Ministering from Magbon District in the Dance category.",
+    avatarUrl: "/contestants/spirit-soul-body-dancers.jpeg",
   },
   {
     id: "c13",
@@ -340,7 +344,7 @@ export function buildDurations(contestants: Contestant[]): Record<string, Durati
     c03: 226,
     c05: 244,
     c13: 239,
-    c12: 571,
+    c12: 245,
     c16: 605,
   };
   for (const c of contestants) {

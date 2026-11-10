@@ -85,6 +85,28 @@ describe("Contestant Direct Profile Resolution & Link Loading", () => {
       expect(contestant?.title).toBe("Dance Ministry");
     });
 
+    it("resolves M8C3XE directly to Min. Elizabeth (Magbon District) with accurate attributes", async () => {
+      const contestant = await adapter.getContestantByCode("M8C3XE");
+      expect(contestant).not.toBeNull();
+      expect(contestant?.id).toBe("c11");
+      expect(contestant?.code).toBe("M8C3XE");
+      expect(contestant?.name).toBe("Min. Elizabeth");
+      expect(contestant?.district).toBe("Magbon District");
+      expect(contestant?.type).toBe("music");
+      expect(contestant?.avatarUrl).toBe("/contestants/min-elizabeth.jpeg");
+    });
+
+    it("resolves L1Z8RQ directly to Spirit, Soul & Body Dancers (Magbon District) with accurate attributes", async () => {
+      const contestant = await adapter.getContestantByCode("L1Z8RQ");
+      expect(contestant).not.toBeNull();
+      expect(contestant?.id).toBe("c12");
+      expect(contestant?.code).toBe("L1Z8RQ");
+      expect(contestant?.name).toBe("Spirit, Soul & Body Dancers");
+      expect(contestant?.district).toBe("Magbon District");
+      expect(contestant?.type).toBe("dance");
+      expect(contestant?.avatarUrl).toBe("/contestants/spirit-soul-body-dancers.jpeg");
+    });
+
     it("resolves codes in a case-insensitive manner (e.g. sb7k2m and b6f4pt)", async () => {
       const lowerSB = await adapter.getContestantByCode("sb7k2m");
       expect(lowerSB).not.toBeNull();
