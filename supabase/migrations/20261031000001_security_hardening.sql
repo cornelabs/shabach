@@ -653,3 +653,48 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION reopen_judge_scorecard(UUID, TEXT, UUID, TEXT) TO authenticated;
+
+-- -----------------------------------------------------------------------------
+-- 16. TRUSTED SECURITY DEFINER RPC: CHECK VOTER STATUS
+-- -----------------------------------------------------------------------------
+-- Enables an audience member's browser to check if their verified token has already voted.
+CREATE OR REPLACE FUNCTION check_voter_status(
+    p_event_id UUID,
+    p_voter_token TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_voter_id UUID;
+    v_contestant_id UUID;
+BEGIN
+    IF p_voter_token IS NULL OR trim(p_voter_token) = '' THEN
+        RETURN jsonb_build_object('has_voted', false);
+    END IF;
+
+    SELECT id INTO v_voter_id
+    FROM verified_voters
+    WHERE event_id = p_event_id
+      AND voter_token_hash = p_voter_token;
+
+    IF v_voter_id IS NULL THEN
+        RETURN jsonb_build_object('has_voted', false);
+    END IF;
+
+    SELECT contestant_id INTO v_contestant_id
+    FROM votes
+    WHERE event_id = p_event_id
+      AND voter_id = v_voter_id;
+
+    IF v_contestant_id IS NOT NULL THEN
+        RETURN jsonb_build_object('has_voted', true, 'contestant_id', v_contestant_id);
+    END IF;
+
+    RETURN jsonb_build_object('has_voted', false);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION check_voter_status(UUID, TEXT) TO anon, authenticated;

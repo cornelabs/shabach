@@ -370,19 +370,71 @@ export class LiveSupabaseAdapter implements IDataAdapter {
         p_voter_hash: voterId,
       });
 
-      if (!error && data && typeof data === "object" && (data as { ok?: boolean }).ok) {
-        // Also reflect locally
-        new DemoDataAdapter().castVote(voterId, contestantId);
-        void refreshFromSupabase();
-        const resVoteId = (data as { vote_id?: string }).vote_id;
-        return {
-          success: true,
-          message: "Vote cast successfully and verified on Supabase ledger.",
-          ...(resVoteId ? { voteId: resVoteId } : {}),
-        };
+      if (error) {
+        console.warn("Supabase cast_audience_vote error:", error.message);
+        const msg = error.message.toLowerCase();
+        if (msg.includes("already_voted") || msg.includes("unique")) {
+          return {
+            success: false,
+            message: "You have already voted. Each voter receives only one final vote across the Grand Finale.",
+          };
+        }
+        if (msg.includes("not_open")) {
+          return { success: false, message: "Voting has not opened yet." };
+        }
+        if (msg.includes("closed")) {
+          return { success: false, message: "Voting window is currently closed." };
+        }
+        if (msg.includes("unverified")) {
+          return {
+            success: false,
+            message: "Voter verification required: please verify your email OTP before casting your vote.",
+          };
+        }
       }
-    } catch {
-      // Fall through to local fallback
+
+      if (data && typeof data === "object") {
+        const payload = data as { ok?: boolean; reason?: string; vote_id?: string };
+        if (payload.ok) {
+          // Reflect locally in demo store
+          new DemoDataAdapter().castVote(voterId, contestantId);
+          void refreshFromSupabase();
+          return {
+            success: true,
+            message: "Vote cast successfully and verified on Supabase ledger.",
+            ...(payload.vote_id ? { voteId: payload.vote_id } : {}),
+          };
+        } else {
+          const reason = payload.reason;
+          if (reason === "already_voted") {
+            return {
+              success: false,
+              message: "You have already voted. Each voter receives only one final vote across the Grand Finale.",
+            };
+          }
+          if (reason === "not_open") {
+            return { success: false, message: "Voting has not opened yet." };
+          }
+          if (reason === "closed") {
+            return { success: false, message: "Voting window is currently closed." };
+          }
+          if (reason === "unverified_voter") {
+            return {
+              success: false,
+              message: "Voter verification required: please verify your email OTP before casting your vote.",
+            };
+          }
+          if (reason === "contestant_not_found") {
+            return { success: false, message: "Contestant not found for this event." };
+          }
+          return {
+            success: false,
+            message: `Vote rejected: ${reason || "ineligible"}.`,
+          };
+        }
+      }
+    } catch (err: unknown) {
+      console.warn("Exception during Supabase castVote:", err);
     }
 
     return new DemoDataAdapter().castVote(voterId, contestantId);
@@ -642,6 +694,85 @@ export class LiveSupabaseAdapter implements IDataAdapter {
 
   async getMasterCollation(): Promise<ResultRow[]> {
     return new DemoDataAdapter().getMasterCollation();
+  }
+
+  async setVotingStatus(status: "not_open" | "open" | "closed"): Promise<void> {
+    try {
+      await this.client
+        .from("events")
+        .update({
+          voting_status: status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", DEFAULT_EVENT_ID);
+
+      await this.client
+        .from("event_settings")
+        .update({
+          updated_at: new Date().toISOString(),
+        })
+        .eq("event_id", DEFAULT_EVENT_ID);
+    } catch (err) {
+      console.warn("Supabase setVotingStatus warning:", err);
+    }
+  }
+
+  async getStaffRoles(): Promise<
+    Array<{
+      id: string;
+      roleType: string;
+      fullName: string;
+      email: string;
+      userId: string | null;
+      active: boolean;
+    }>
+  > {
+    try {
+      const { data, error } = await this.client
+        .from("staff_roles")
+        .select("id, role_type, full_name, email, user_id, active")
+        .eq("event_id", DEFAULT_EVENT_ID);
+
+      if (!error && data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return data.map((r: any) => ({
+          id: r.id,
+          roleType: r.role_type,
+          fullName: r.full_name,
+          email: r.email,
+          userId: r.user_id,
+          active: Boolean(r.active),
+        }));
+      }
+    } catch (err) {
+      console.warn("Supabase getStaffRoles warning:", err);
+    }
+    return [];
+  }
+
+  async upsertStaffRole(role: {
+    roleType: string;
+    fullName: string;
+    email: string;
+    userId?: string | null;
+    active?: boolean;
+  }): Promise<void> {
+    try {
+      await this.client.from("staff_roles").upsert(
+        {
+          event_id: DEFAULT_EVENT_ID,
+          role_type: role.roleType,
+          full_name: role.fullName,
+          email: role.email.toLowerCase().trim(),
+          user_id: role.userId ?? null,
+          active: role.active ?? true,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "event_id,role_type,email" },
+      );
+    } catch (err) {
+      console.warn("Supabase upsertStaffRole warning:", err);
+    }
   }
 }
 

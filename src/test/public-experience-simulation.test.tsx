@@ -9,6 +9,7 @@ import { Route as ContestantsRoute } from "@/routes/contestants.index";
 import { PublicTopThree, Route as ResultsRoute } from "@/routes/results";
 import { Route as ContestantRoute } from "@/routes/contestants.$code";
 import { getDataAdapter } from "@/lib/db/adapter";
+import { getLastDispatchedOtp } from "@/lib/auth/voter-verification";
 import { buildContestants } from "@/lib/demo/seed";
 import {
   castVote,
@@ -68,70 +69,25 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
       expect(screen.getByText("3. Judges")).toBeInTheDocument();
       expect(screen.getByText("4. Admin")).toBeInTheDocument();
       expect(screen.getByText("5. Program")).toBeInTheDocument();
+      expect(screen.getByText("6. Meet the Judges")).toBeInTheDocument();
     });
 
-    it("interactively filters by contestant name (case-insensitive)", () => {
+    it("displays the 16 finalists directly without search bar or category tabs", () => {
       const ContestantsComp = ContestantsRoute.options.component!;
       render(<ContestantsComp />);
 
-      const searchInput = screen.getByPlaceholderText(/Search contestants by name or code/i);
+      // Search bar and category chips are cleanly removed
+      expect(screen.queryByPlaceholderText(/Search contestants/i)).not.toBeInTheDocument();
+      expect(screen.queryByText("All Acts")).not.toBeInTheDocument();
 
-      // Search by partial lower-case name
-      fireEvent.change(searchInput, { target: { value: "hopendhouse" } });
-      expect(screen.getByText("HOPENDHOUSE DANCE")).toBeInTheDocument();
-      expect(screen.getByText("Showing 1 of 16 contestants")).toBeInTheDocument();
+      // Clean header
+      expect(screen.getByText("Meet the 16 Finalists")).toBeInTheDocument();
 
-      // Clear search
-      fireEvent.click(screen.getByLabelText("Clear search"));
-      expect(screen.getByText("All 16 finalists in running order")).toBeInTheDocument();
-    });
-
-    it("interactively filters by 6-character code with whitespace tolerance", () => {
-      const ContestantsComp = ContestantsRoute.options.component!;
-      render(<ContestantsComp />);
-
-      const searchInput = screen.getByPlaceholderText(/Search contestants by name or code/i);
-
-      // Search with leading/trailing spaces and lower case
-      fireEvent.change(searchInput, { target: { value: "   b6f4pt   " } });
-      expect(screen.getByText("HOPENDHOUSE DANCE")).toBeInTheDocument();
-      expect(screen.getByText("Showing 1 of 16 contestants")).toBeInTheDocument();
-
-      fireEvent.change(searchInput, { target: { value: "SB7K2M" } });
+      // Finalists are rendered directly
       expect(screen.getByText("Min. Lizzy")).toBeInTheDocument();
-      expect(screen.getByText("Showing 1 of 16 contestants")).toBeInTheDocument();
-    });
-
-    it("interactively filters by district name across contestants", () => {
-      const ContestantsComp = ContestantsRoute.options.component!;
-      render(<ContestantsComp />);
-
-      const searchInput = screen.getByPlaceholderText(/Search contestants by name or code/i);
-
-      // Search by district: "Morogbo" (has 2 acts: HOPENDHOUSE DANCE and The Gideonite Speaks)
-      fireEvent.change(searchInput, { target: { value: "Morogbo" } });
       expect(screen.getByText("HOPENDHOUSE DANCE")).toBeInTheDocument();
       expect(screen.getByText("The Gideonite Speaks")).toBeInTheDocument();
-      expect(screen.getByText("Showing 2 of 16 contestants")).toBeInTheDocument();
-    });
-
-    it("renders clean friendly empty state when no query matches and allows quick reset", () => {
-      const ContestantsComp = ContestantsRoute.options.component!;
-      render(<ContestantsComp />);
-
-      const searchInput = screen.getByPlaceholderText(/Search contestants by name or code/i);
-      fireEvent.change(searchInput, { target: { value: "NoMatchQuery99" } });
-
-      expect(screen.getByText("No contestants match “NoMatchQuery99”")).toBeInTheDocument();
-      expect(
-        screen.getByText(/We couldn't find any finalists matching your search/i),
-      ).toBeInTheDocument();
-
-      const clearBtns = screen.getAllByRole("button", { name: "Clear search" });
-      fireEvent.click(clearBtns[0]!);
-
-      expect(screen.getByText("All 16 finalists in running order")).toBeInTheDocument();
-      expect(screen.getByText("Min. Lizzy")).toBeInTheDocument();
+      expect(screen.getByText("The Painters")).toBeInTheDocument();
     });
   });
 
@@ -261,9 +217,10 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
         expect(screen.getByPlaceholderText("123456")).toBeInTheDocument();
       });
 
-      // Quick-fill demo code
-      const demoCodeBtn = screen.getByText(/Use demo code/i);
-      fireEvent.click(demoCodeBtn);
+      // Fill verified code
+      const otpInput = screen.getByPlaceholderText("123456");
+      const code = getLastDispatchedOtp("fellowship.voter@shabach.org") || "123456";
+      fireEvent.change(otpInput, { target: { value: code } });
 
       // Verify code
       const verifyBtn = screen.getByText("Verify Code");

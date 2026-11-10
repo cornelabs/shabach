@@ -1,16 +1,20 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Lock, ScrollText } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, Lock, RotateCcw, ScrollText, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
+import { ContestantAvatar } from "@/components/contestant-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { JudgeAccessGate } from "@/components/judge/judge-access-gate";
 import { JudgeSessionBadge } from "@/components/judge/judge-session-badge";
 import { ScorecardEditor } from "@/components/judge/scorecard-editor";
 import { useDemoState } from "@/hooks/use-demo";
 import { isJudgeUnlocked, lockJudgeAccess } from "@/lib/auth/judge-access";
 import { SCORECARD_STATUS_LABEL, typeLabel } from "@/lib/demo/labels";
+import { rubricFor } from "@/lib/demo/rubrics";
+import { judgeSubtotal } from "@/lib/demo/scoring";
 import { getCard, setActiveJudge } from "@/lib/demo/store";
 import { JUDGES, type JudgeId } from "@/lib/demo/types";
 import { cn } from "@/lib/utils";
@@ -68,22 +72,50 @@ function JudgeWorkspace() {
 
   const ordered = [...state.contestants].sort((a, b) => a.order - b.order);
   const selected = selectedId ? (state.contestants.find((c) => c.id === selectedId) ?? null) : null;
+  const submittedCount = ordered.filter(
+    (c) => getCard(state, activeJudgeId, c.id).status === "submitted",
+  ).length;
 
-  function statusBadge(contestantId: string) {
+  function statusBadge(contestantId: string, subtotal: number) {
     const card = getCard(state, activeJudgeId, contestantId);
     if (card.conflictDeclared && !card.conflictResolved) {
-      return <Badge variant="destructive">Conflict declared</Badge>;
+      return (
+        <Badge variant="destructive" className="text-[11px] gap-1">
+          <ShieldAlert className="h-3 w-3" /> Conflict declared
+        </Badge>
+      );
     }
     if (card.status === "submitted" && card.reopened) {
-      return <Badge className="bg-gold text-forest-deep hover:bg-gold">Reopened</Badge>;
+      return (
+        <Badge className="bg-gold text-forest-deep hover:bg-gold text-[11px] gap-1">
+          <RotateCcw className="h-3 w-3" /> Reopened ({subtotal}/95)
+        </Badge>
+      );
     }
-    if (card.status === "submitted") return <Badge variant="default">Submitted</Badge>;
-    if (card.status === "draft") return <Badge variant="secondary">Draft</Badge>;
-    return <Badge variant="outline">Not started</Badge>;
+    if (card.status === "submitted") {
+      return (
+        <Badge variant="default" className="text-[11px] gap-1 bg-forest text-ivory">
+          <CheckCircle2 className="h-3 w-3 text-gold" /> Submitted ({subtotal}/95)
+        </Badge>
+      );
+    }
+    if (card.status === "draft") {
+      return (
+        <Badge variant="secondary" className="text-[11px]">
+          Draft ({subtotal}/95)
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-[11px] text-charcoal-muted">
+        Not started
+      </Badge>
+    );
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
+    <main className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
+      {/* Top Navigation Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           to="/judges"
@@ -108,18 +140,24 @@ function JudgeWorkspace() {
         </div>
       </div>
 
+      {/* Header and Progress Indicator */}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl text-forest">{currentJudge.name}'s scorecards</h1>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-forest/90 text-gold border border-gold/30 text-xs font-semibold">
+              {currentJudge.seatTitle}
+            </Badge>
+          </div>
+          <h1 className="mt-1 font-display text-2xl sm:text-3xl text-forest">
+            {currentJudge.name}'s scorecards
+          </h1>
           <p className="text-sm text-charcoal-muted">
-            {currentJudge.label} · {ordered.length} contestants · scores stay private until
-            submitted
+            {currentJudge.label} · {ordered.length} contestants · scores stay private until submitted
           </p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-full border border-cream-line bg-card px-3.5 py-1.5 text-xs font-semibold text-charcoal shadow-sm">
           <ScrollText className="h-3.5 w-3.5 text-gold" /> {SCORECARD_STATUS_LABEL.submitted}:{" "}
-          {ordered.filter((c) => getCard(state, activeJudgeId, c.id).status === "submitted").length}
-          /{ordered.length}
+          {submittedCount}/{ordered.length}
         </span>
       </div>
 
@@ -132,54 +170,141 @@ function JudgeWorkspace() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[300px_1fr]">
-        <aside className="rounded-2xl border border-cream-line bg-card p-2 shadow-card lg:max-h-[70vh] lg:overflow-y-auto">
-          {ordered.map((contestant) => (
+      {/* Direct Guidance Instructions */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cream-line bg-ivory/80 px-4 py-3 text-xs text-charcoal-muted">
+        <p>
+          Choose a contestant from the list to open their scorecard. Each act is scored on its own
+          category rubric out of 95 raw points.
+        </p>
+        <div className="flex items-center gap-2 font-medium">
+          <span className="inline-flex items-center gap-1 text-forest">
+            <CheckCircle2 className="h-3.5 w-3.5 text-forest" /> {submittedCount} Submitted
+          </span>
+          <span>•</span>
+          <span className="text-charcoal-muted">
+            {ordered.length - submittedCount} Pending
+          </span>
+        </div>
+      </div>
+
+      {/* 16 Contestants Visual Grid */}
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {ordered.map((contestant) => {
+          const card = getCard(state, activeJudgeId, contestant.id);
+          const subtotal = judgeSubtotal(card.scores);
+          const isSubmitted = card.status === "submitted" && !card.reopened;
+          const isDraft = card.status === "draft";
+          const rubric = rubricFor(contestant.type);
+          const allocatedMinutes = Math.round(rubric.timeLimitSec / 60);
+
+          return (
             <button
               key={contestant.id}
               onClick={() => setSelectedId(contestant.id)}
+              type="button"
               className={cn(
-                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
-                selectedId === contestant.id ? "bg-forest text-ivory" : "hover:bg-parchment",
+                "group relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-card p-4 text-left shadow-card transition-all hover:-translate-y-1 hover:shadow-lift cursor-pointer",
+                isSubmitted
+                  ? "border-forest/40 bg-forest/[0.02]"
+                  : isDraft
+                    ? "border-gold/40 bg-gold-wash/20"
+                    : "border-cream-line hover:border-gold/50",
               )}
             >
-              <span
-                className={cn(
-                  "font-mono text-xs",
-                  selectedId === contestant.id ? "text-gold-soft" : "text-charcoal-muted",
-                )}
-              >
-                № {contestant.order}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">{contestant.name}</span>
+              <div>
+                {/* Header row: Order number & Status badge */}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="inline-flex items-center rounded-md bg-forest/10 px-2 py-0.5 font-mono text-xs font-bold text-forest">
+                    № {contestant.order}
+                  </span>
+                  <div>{statusBadge(contestant.id, subtotal)}</div>
+                </div>
+
+                {/* Contestant Photo */}
+                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-parchment/60 border border-cream-line/80 mb-3">
+                  {contestant.avatarUrl ? (
+                    <img
+                      src={contestant.avatarUrl}
+                      alt={contestant.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <ContestantAvatar
+                      name={contestant.name}
+                      avatarUrl={null}
+                      hue={contestant.hue}
+                      size="lg"
+                      className="h-full w-full rounded-none"
+                    />
+                  )}
+                </div>
+
+                {/* Contestant Name & Act Details */}
+                <h3 className="truncate font-display text-lg text-forest group-hover:text-gold-deep transition-colors">
+                  {contestant.name}
+                </h3>
+                <p className="mt-0.5 truncate text-xs text-charcoal-muted">
+                  {contestant.code} · {contestant.district}
+                </p>
+
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                  <Badge variant="secondary" className="text-[10px] font-medium">
+                    {typeLabel(contestant.type)}
+                  </Badge>
+                  <span className="text-[11px] font-semibold text-forest flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-gold" /> {allocatedMinutes} min limit
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Bar */}
+              <div className="mt-4 pt-3 border-t border-cream-line/60 flex items-center justify-between text-xs">
                 <span
                   className={cn(
-                    "block text-xs",
-                    selectedId === contestant.id ? "text-ivory/70" : "text-charcoal-muted",
+                    "font-semibold",
+                    isSubmitted ? "text-forest" : isDraft ? "text-gold-deep" : "text-charcoal-muted",
                   )}
                 >
-                  {typeLabel(contestant.type)}
+                  {isSubmitted
+                    ? `Score: ${subtotal}/95`
+                    : isDraft
+                      ? `Draft: ${subtotal}/95`
+                      : "Tap to score"}
                 </span>
-              </span>
-              {statusBadge(contestant.id)}
+                <span className="inline-flex items-center gap-1 text-gold group-hover:translate-x-0.5 transition-transform font-medium">
+                  Score <ArrowRight className="h-3.5 w-3.5" />
+                </span>
+              </div>
             </button>
-          ))}
-        </aside>
-
-        <div>
-          {selected ? (
-            <ScorecardEditor key={selected.id} judgeId={activeJudgeId} contestantId={selected.id} />
-          ) : (
-            <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-cream-line bg-card p-8 text-center">
-              <p className="max-w-sm text-sm text-charcoal-muted">
-                Choose a contestant from the list to open their scorecard. Each act is scored on its
-                own category rubric out of 95 raw points.
-              </p>
-            </div>
-          )}
-        </div>
+          );
+        })}
       </div>
+
+      {/* Direct Scorecard Editor Dialog (Single-click from grid) */}
+      <Dialog
+        open={selectedId !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedId(null);
+        }}
+      >
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[92vh] overflow-y-auto rounded-2xl bg-card p-2 sm:p-6 border-cream-line">
+          {selected && (
+            <ScorecardEditor
+              key={selected.id}
+              judgeId={activeJudgeId}
+              contestantId={selected.id}
+              onSubmitted={() => {
+                setSelectedId(null);
+              }}
+              onCancel={() => setSelectedId(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

@@ -47,7 +47,7 @@ export function useActiveJudgeSession() {
         // Query staff_roles for user
         const { data: roleData } = await client
           .from("staff_roles")
-          .select("id, role_type, full_name, display_name, email, active")
+          .select("id, role_type, full_name, email, active")
           .eq("user_id", user.id)
           .eq("active", true)
           .maybeSingle();
@@ -58,7 +58,7 @@ export function useActiveJudgeSession() {
             userId: user.id,
             email: roleData.email || user.email || "",
             fullName: roleData.full_name || "Staff Member",
-            displayName: roleData.display_name || undefined,
+            displayName: roleData.full_name || undefined,
             roleType: roleData.role_type,
             assignedSeat,
           });

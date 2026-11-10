@@ -1,9 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import * as React from "react";
 import { toast } from "sonner";
 import { ArrowLeft, BadgeCheck, Check, Copy, QrCode, Share2, Vote } from "lucide-react";
 
-import { ContestantAvatar } from "@/components/contestant-avatar";
+import { Monogram } from "@/components/monogram";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,8 @@ import { typeLabel, formatSeconds } from "@/lib/demo/labels";
 import { buildContestants } from "@/lib/demo/seed";
 import { rubricFor } from "@/lib/demo/rubrics";
 import type { Contestant } from "@/lib/demo/types";
+
+type Rubric = ReturnType<typeof rubricFor>;
 
 async function resolveContestant(code: string): Promise<Contestant | null> {
   const cleanCode = code.trim().toUpperCase();
@@ -41,7 +44,7 @@ export const Route = createFileRoute("/contestants/$code")({
     }
     return { code, contestant };
   },
-  head: ({ loaderData, params }) => {
+  head: ({ loaderData }) => {
     const contestant = loaderData?.contestant;
     return {
       meta: [
@@ -88,46 +91,132 @@ function useQrDataUrl(url: string | null) {
   return dataUrl;
 }
 
+function ContestantHero({ contestant, rubric }: { contestant: Contestant; rubric: Rubric }) {
+  const [imgError, setImgError] = React.useState(false);
+
+  return (
+    <div className="rounded-2xl border border-cream-line bg-card p-5 sm:p-6 shadow-card">
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6">
+        {/* Prominent Portrait Hero Image */}
+        <div className="relative aspect-[4/5] w-full max-w-[240px] sm:w-56 sm:max-w-none shrink-0 overflow-hidden rounded-2xl border-2 border-gold/40 bg-forest-deep shadow-md">
+          {contestant.avatarUrl && !imgError ? (
+            <img
+              src={contestant.avatarUrl}
+              alt={`${contestant.name} contestant portrait`}
+              className="h-full w-full object-cover object-top"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center p-4 text-center text-ivory">
+              <Monogram name={contestant.name} hue={contestant.hue} size="xl" className="h-28 w-28 text-3xl" />
+              <p className="mt-3 font-display text-lg text-gold-soft">{contestant.code}</p>
+            </div>
+          )}
+          <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+            <Badge className="bg-forest-deep/90 text-ivory text-[10px] font-mono border border-cream-line/20 backdrop-blur-xs">
+              № {contestant.order}
+            </Badge>
+            <Badge className="bg-gold text-forest-deep text-[10px] font-bold shadow-xs">
+              {contestant.code}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Hero Details */}
+        <div className="flex-1 text-center sm:text-left">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gold-deep">
+            Running order № {contestant.order} · {contestant.code}
+          </p>
+          <h1 className="mt-1 font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-forest">
+            {contestant.name}
+          </h1>
+          <p className="mt-2 text-sm text-charcoal font-medium">
+            "{contestant.title || `${typeLabel(contestant.type)} Performance`}"
+          </p>
+
+          <div className="mt-4 flex flex-wrap justify-center sm:justify-start gap-2">
+            <Badge className="bg-forest text-ivory text-xs font-semibold">
+              {typeLabel(contestant.type)}
+            </Badge>
+            <Badge variant="outline" className="text-xs font-medium border-forest/30 text-forest">
+              {contestant.district}
+            </Badge>
+            <Badge variant="secondary" className="text-xs font-mono">
+              Time limit: {formatSeconds(rubric.timeLimitSec)}
+            </Badge>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VotePanel({ contestant }: { contestant: Contestant }) {
   const [voteDialogOpen, setVoteDialogOpen] = useState(false);
   const state = useDemoState();
   const myVote = state.browserVote?.contestantId ?? null;
   const votedForThis = myVote === contestant.id || myVote === contestant.code;
+  const hasVoted = Boolean(myVote);
 
   return (
     <>
-      <div className="rounded-2xl border border-cream-line bg-card p-6 shadow-card">
-        <h2 className="font-display text-xl text-forest">Public vote</h2>
-        {state.votingStatus === "open" ? (
-          votedForThis ? (
-            <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-forest-soft">
-              <BadgeCheck className="h-5 w-5" />
-              Your vote for {contestant.name} is recorded.
-            </p>
-          ) : myVote ? (
-            <p className="mt-3 text-sm text-charcoal-muted">
-              You've already voted for another contestant in this browser — one vote per person, and
-              it can't be changed.
-            </p>
+      <div className="rounded-2xl border-2 border-gold/40 bg-card p-5 sm:p-6 shadow-card">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-xl sm:text-2xl text-forest font-bold">Public vote</h2>
+          {hasVoted ? (
+            <Badge className="bg-forest-soft text-ivory text-xs font-semibold gap-1">
+              <BadgeCheck className="h-3.5 w-3.5" />
+              {votedForThis ? "Verified Vote Recorded" : "Vote Recorded"}
+            </Badge>
           ) : (
-            <>
-              <p className="mt-3 text-sm text-charcoal-muted">
-                One vote per person. Your vote contributes to the official audience score.
+            <Badge variant="outline" className="border-gold/60 text-gold-deep text-xs font-medium">
+              1 Vote Per Person
+            </Badge>
+          )}
+        </div>
+
+        {state.votingStatus === "open" ? (
+          hasVoted ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs sm:text-sm font-medium text-charcoal">
+                {votedForThis
+                  ? `Your official verified vote for ${contestant.name} has been recorded.`
+                  : "You have already cast your single vote across the competition in this browser."}
               </p>
               <Button
-                className="mt-4 w-full bg-forest text-ivory hover:bg-forest-deep"
+                disabled
+                className="w-full bg-forest/40 text-ivory/70 cursor-not-allowed font-medium text-sm gap-2"
+              >
+                <Check className="h-4 w-4" /> You voted already
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs sm:text-sm text-charcoal-muted leading-relaxed">
+                Cast your vote for {contestant.name}. Each voter receives exactly one verified vote
+                across the entire Grand Finale.
+              </p>
+              <Button
+                className="w-full bg-forest text-ivory hover:bg-forest-deep shadow-sm text-sm font-semibold gap-2 py-2.5"
                 onClick={() => setVoteDialogOpen(true)}
               >
-                <Vote className="h-4 w-4 mr-2" /> Vote for {contestant.name}
+                <Vote className="h-4 w-4 text-gold" /> Vote for {contestant.name}
               </Button>
-            </>
+            </div>
           )
         ) : (
-          <p className="mt-3 text-sm text-charcoal-muted">
-            {state.votingStatus === "closed"
-              ? "Voting is closed. Follow the verified results on the results page."
-              : "Voting opens at the Grand Finale."}
-          </p>
+          <div className="mt-4 space-y-3">
+            <p className="text-xs sm:text-sm text-charcoal-muted">
+              {state.votingStatus === "closed"
+                ? "Public voting is closed. Follow the verified results on the results page."
+                : "Public voting opens officially during the Grand Finale live broadcast."}
+            </p>
+            {hasVoted && (
+              <Button disabled className="w-full bg-forest/40 text-ivory/70 cursor-not-allowed text-sm">
+                You voted already
+              </Button>
+            )}
+          </div>
         )}
       </div>
 
@@ -206,11 +295,11 @@ function SharePanel({ code }: { code: string }) {
   }
 
   return (
-    <div className="rounded-2xl border border-cream-line bg-card p-6 shadow-card">
-      <h2 className="flex items-center gap-2 font-display text-xl text-forest">
+    <div className="rounded-2xl border border-cream-line bg-card p-5 sm:p-6 shadow-card">
+      <h2 className="flex items-center gap-2 font-display text-xl text-forest font-bold">
         <QrCode className="h-5 w-5 text-gold" /> Share this profile
       </h2>
-      <p className="mt-2 text-sm text-charcoal-muted">
+      <p className="mt-2 text-xs sm:text-sm text-charcoal-muted">
         Share code <span className="font-mono font-semibold text-charcoal">{code}</span> — scan or
         send the link so others can read the profile and vote.
       </p>
@@ -239,10 +328,10 @@ function SharePanel({ code }: { code: string }) {
           <img
             src={qr}
             alt={`QR code linking to contestant profile ${code}`}
-            className="h-[220px] w-[220px]"
+            className="h-[200px] w-[200px]"
           />
         ) : (
-          <div className="h-[220px] w-[220px] animate-pulse rounded bg-parchment" aria-hidden />
+          <div className="h-[200px] w-[200px] animate-pulse rounded bg-parchment" aria-hidden />
         )}
       </div>
     </div>
@@ -298,80 +387,102 @@ function ContestantNotFound() {
 }
 
 function ContestantProfile() {
-  const loaderData = Route.useLoaderData();
-  const code = loaderData?.code || "";
-  const loaderContestant = loaderData?.contestant;
+  let code = "";
+  let loaderContestant: Contestant | undefined;
+  try {
+    const params = Route.useParams();
+    if (params?.code) code = params.code;
+  } catch {
+    // Outside router context
+  }
+  if (!code) {
+    try {
+      const loaderData = Route.useLoaderData();
+      code = loaderData?.code || "";
+      loaderContestant = loaderData?.contestant;
+    } catch {
+      // Outside router context
+    }
+  }
   const state = useDemoState();
   const contestant =
-    state.contestants.find((c) => c.code.toUpperCase() === code.toUpperCase()) ?? loaderContestant;
+    (code ? state.contestants.find((c) => c.code.toUpperCase() === code.toUpperCase()) : null) ??
+    loaderContestant ??
+    state.contestants[0];
   if (!contestant) return <ContestantNotFound />;
-  const rubric = rubricFor(contestant.type);
+  const rubric = rubricFor(contestant.type as any) ?? rubricFor("music");
 
   return (
     <div className="min-h-screen bg-ivory">
       <SiteHeader />
-      <main className="mx-auto max-w-6xl px-4 py-10">
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
         <Link
           to="/contestants"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-charcoal-muted hover:text-forest"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-charcoal-muted hover:text-forest transition-colors"
         >
           <ArrowLeft className="h-4 w-4" /> All contestants
         </Link>
 
-        <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_360px]">
-          <div>
-            <div className="flex items-center gap-4">
-              <ContestantAvatar
-                name={contestant.name}
-                avatarUrl={contestant.avatarUrl}
-                hue={contestant.hue}
-                size="xl"
-              />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-gold">
-                  Running order № {contestant.order} · {contestant.code}
-                </p>
-                <h1 className="mt-1 font-display text-4xl text-forest">{contestant.name}</h1>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  <Badge variant="secondary">{typeLabel(contestant.type)}</Badge>
-                  <Badge variant="outline">{contestant.district}</Badge>
-                  <Badge variant="outline">Time limit {formatSeconds(rubric.timeLimitSec)}</Badge>
-                </div>
-              </div>
-            </div>
+        {/* Responsive Grid: Single column on mobile with Vote card right after Hero, 2-column with sidebar on desktop */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 lg:gap-8 items-start">
+          {/* 1. Hero Presentation */}
+          <div className="lg:col-start-1 lg:row-start-1">
+            <ContestantHero contestant={contestant} rubric={rubric} />
+          </div>
 
-            <div className="mt-8 rounded-2xl border border-cream-line bg-card p-6 shadow-card">
-              <h2 className="font-display text-xl text-forest">Contestant Profile</h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 text-sm">
+          {/* 2. Public Vote Panel — Directly after Hero on mobile, Top of sidebar on desktop */}
+          <div className="lg:col-start-2 lg:row-start-1">
+            <VotePanel contestant={contestant} />
+          </div>
+
+          {/* 3. Contestant Profile Card — Below Vote on mobile, Below Hero on desktop */}
+          <div className="lg:col-start-1 lg:row-start-2">
+            <div className="rounded-2xl border border-cream-line bg-card p-5 sm:p-6 shadow-card">
+              <h2 className="font-display text-xl sm:text-2xl text-forest font-bold">
+                Contestant Profile
+              </h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 text-sm">
                 <div className="rounded-xl border border-cream-line bg-ivory p-3.5">
                   <span className="text-xs font-semibold uppercase tracking-wider text-charcoal-muted">
                     District Representation
                   </span>
-                  <p className="mt-1 font-display text-lg text-forest">{contestant.district}</p>
+                  <p className="mt-1 font-display text-lg text-forest font-bold">{contestant.district}</p>
                 </div>
                 <div className="rounded-xl border border-cream-line bg-ivory p-3.5">
                   <span className="text-xs font-semibold uppercase tracking-wider text-charcoal-muted">
                     Competition Category
                   </span>
-                  <p className="mt-1 font-display text-lg text-forest">{typeLabel(contestant.type)}</p>
+                  <p className="mt-1 font-display text-lg text-forest font-bold">{typeLabel(contestant.type)}</p>
                 </div>
               </div>
-              <p className="mt-4 text-sm text-charcoal-muted leading-relaxed">
-                Official finalist representing {contestant.district} in the {typeLabel(contestant.type)} category at the SHABACH 2026 Grand Finale. Adjudicated live by the panel of 4 judges and public audience vote.
+              <p className="mt-4 text-xs sm:text-sm text-charcoal-muted leading-relaxed">
+                {contestant.bio ||
+                  `Official finalist representing ${contestant.district} in the ${typeLabel(contestant.type)} category at the SHABACH 2026 Grand Finale. Adjudicated live by the panel of 4 judges and public audience vote.`}
               </p>
             </div>
+          </div>
 
-            <div className="mt-4 rounded-2xl border border-cream-line bg-card p-6 shadow-card">
-              <h2 className="font-display text-xl text-forest">
+          {/* 4. Share Panel — Below Vote Panel on desktop */}
+          <div className="lg:col-start-2 lg:row-start-2">
+            <SharePanel code={contestant.code} />
+          </div>
+
+          {/* 5. How Contestant will be scored (Rubrics) */}
+          <div className="lg:col-start-1 lg:row-start-3">
+            <div className="rounded-2xl border border-cream-line bg-card p-5 sm:p-6 shadow-card">
+              <h2 className="font-display text-xl sm:text-2xl text-forest font-bold">
                 How {contestant.name} will be scored
               </h2>
-              <p className="mt-2 text-sm text-charcoal-muted">
+              <p className="mt-2 text-xs sm:text-sm text-charcoal-muted">
                 {typeLabel(contestant.type)} rubric — five criteria, 95 raw points, plus up to 5
                 points from the public vote.
               </p>
               <ul className="mt-4 space-y-3">
                 {rubric.criteria.map((criterion) => (
-                  <li key={criterion.key} className="flex items-start justify-between gap-4">
+                  <li
+                    key={criterion.key}
+                    className="flex items-start justify-between gap-4 border-b border-cream-line/50 pb-2.5 last:border-0 last:pb-0"
+                  >
                     <div>
                       <p className="text-sm font-semibold text-charcoal">{criterion.name}</p>
                       <p className="text-xs text-charcoal-muted">{criterion.guidance}</p>
@@ -383,11 +494,6 @@ function ContestantProfile() {
                 ))}
               </ul>
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <VotePanel contestant={contestant} />
-            <SharePanel code={contestant.code} />
           </div>
         </div>
       </main>

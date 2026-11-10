@@ -5,6 +5,7 @@ const ACCESS_STORAGE_KEY = "shabach_judge_access_state";
 export interface JudgeAccessState {
   unlocked: boolean;
   seatId: JudgeId | "all";
+  unlockedSeats?: JudgeId[];
   unlockedAt: number;
 }
 
@@ -13,6 +14,16 @@ export const JUDGE_SEAT_PINS: Record<JudgeId, string> = {
   judge2: "7102",
   judge3: "7103",
   judge4: "7104",
+};
+
+/**
+ * Named passcodes for specific judge seats.
+ */
+export const JUDGE_SEAT_CODES: Record<JudgeId, string[]> = {
+  judge1: ["7101", "JUDGE1", "JUDGE1-SECURE", "SECURE", "JUDGE1-PIN"],
+  judge2: ["7102", "JUDGE2", "JUDGE2-EXCELLENCE", "EXCELLENCE", "JUDGE2-PIN"],
+  judge3: ["7103", "JUDGE3", "JUDGE3-INTEGRITY", "INTEGRITY", "JUDGE3-PIN"],
+  judge4: ["7104", "JUDGE4", "JUDGE4-WISDOM", "WISDOM", "JUDGE4-PIN"],
 };
 
 export const DEFAULT_PANEL_CODE = "JUDGE2026";
@@ -35,13 +46,19 @@ export function verifyJudgeCode(input: string): {
     typeof import.meta !== "undefined" ? import.meta.env?.["VITE_JUDGE_ACCESS_CODE"] : ""
   )?.toUpperCase();
 
-  if (clean === DEFAULT_PANEL_CODE || clean === "SHABACH2026" || (envCode && clean === envCode)) {
+  if (
+    clean === DEFAULT_PANEL_CODE ||
+    clean === "SHABACH2026" ||
+    clean === "PANEL-SECURE" ||
+    (envCode && clean === envCode)
+  ) {
     return { valid: true, seatId: "all" };
   }
 
-  // 2. Check Per-Seat PINs (4-digit numeric)
+  // 2. Check Per-Seat PINs and seat codes
   for (const [seatId, pin] of Object.entries(JUDGE_SEAT_PINS) as [JudgeId, string][]) {
-    if (clean === pin || clean === seatId.toUpperCase()) {
+    const seatCodes = JUDGE_SEAT_CODES[seatId] ?? [];
+    if (clean === pin || clean === seatId.toUpperCase() || seatCodes.includes(clean)) {
       return { valid: true, seatId };
     }
   }
@@ -90,7 +107,15 @@ export function isJudgeUnlocked(requiredSeatId?: JudgeId): boolean {
       return true;
     }
 
-    return parsed.seatId === requiredSeatId;
+    if (parsed.seatId === requiredSeatId) {
+      return true;
+    }
+
+    if (parsed.unlockedSeats && parsed.unlockedSeats.includes(requiredSeatId)) {
+      return true;
+    }
+
+    return false;
   } catch {
     return false;
   }
@@ -101,9 +126,30 @@ export function isJudgeUnlocked(requiredSeatId?: JudgeId): boolean {
  */
 export function grantJudgeAccess(seatId: JudgeId | "all"): void {
   if (typeof window === "undefined" || !window.sessionStorage) return;
+
+  let existingUnlockedSeats: JudgeId[] = [];
+  try {
+    const raw = window.sessionStorage.getItem(ACCESS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as JudgeAccessState;
+      if (parsed && Array.isArray(parsed.unlockedSeats)) {
+        existingUnlockedSeats = [...parsed.unlockedSeats];
+      } else if (parsed && parsed.seatId && parsed.seatId !== "all") {
+        existingUnlockedSeats = [parsed.seatId as JudgeId];
+      }
+    }
+  } catch {
+    // ignore parse error
+  }
+
+  if (seatId !== "all" && !existingUnlockedSeats.includes(seatId)) {
+    existingUnlockedSeats.push(seatId);
+  }
+
   const state: JudgeAccessState = {
     unlocked: true,
     seatId,
+    unlockedSeats: existingUnlockedSeats,
     unlockedAt: Date.now(),
   };
   window.sessionStorage.setItem(ACCESS_STORAGE_KEY, JSON.stringify(state));

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { VoteConfirmationDialog } from "@/components/vote-confirmation-dialog";
+import { getLastDispatchedOtp } from "@/lib/auth/voter-verification";
 import { castVote, resetDemo, setVotingStatus } from "@/lib/demo/store";
 
 describe("Public Voting Flow & Confirmation", () => {
@@ -68,10 +69,9 @@ describe("Public Voting Flow & Confirmation", () => {
       expect(screen.getByPlaceholderText("123456")).toBeInTheDocument();
     });
 
-    // In demo mode, a button with demo code is shown
-    const useCodeButton = screen.getByText(/Use demo code/i);
-    expect(useCodeButton).toBeInTheDocument();
-    fireEvent.click(useCodeButton);
+    const otpInput = screen.getByPlaceholderText("123456");
+    const code = getLastDispatchedOtp("voter1@test.com") || "123456";
+    fireEvent.change(otpInput, { target: { value: code } });
 
     const verifyButton = screen.getByText("Verify Code");
     fireEvent.click(verifyButton);

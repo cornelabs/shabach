@@ -54,6 +54,14 @@ const MAX_VERIFY_ATTEMPTS = 5;
 // In-memory store for Demo OTP and rate limits
 const otpStore = new Map<string, StoredOtpRecord>();
 const rateLimitStore = new Map<string, RateLimitRecord>();
+const lastOtpByEmail = new Map<string, string>();
+
+/**
+ * Returns the last dispatched OTP code for an email (used by tests and demo verification).
+ */
+export function getLastDispatchedOtp(email: string): string | undefined {
+  return lastOtpByEmail.get(email.toLowerCase().trim());
+}
 
 /**
  * Cryptographic SHA-256 hash calculation for browser and node/bun runtimes.
@@ -170,14 +178,37 @@ export async function requestVoterOtp(
       const code = generate6DigitCode();
       const emailHash = await hashVoterIdentifier(cleanEmail);
       const codeHash = await hashVoterIdentifier(code, cleanEmail);
+      lastOtpByEmail.set(cleanEmail, code);
 
       // Record OTP request in PostgreSQL voter_verification_requests table
-      const { error: rpcError } = await client.rpc("request_voter_otp", {
+      const { data: rpcData, error: rpcError } = await client.rpc("request_voter_otp", {
         p_event_id: DEFAULT_EVENT_ID,
         p_email_or_phone_hash: emailHash,
         p_otp_hash: codeHash,
         p_ttl_sec: Math.floor(OTP_TTL_MS / 1000),
       });
+
+      if (!rpcError && rpcData && typeof rpcData === "object" && !(rpcData as { ok?: boolean }).ok) {
+        const reason = (rpcData as { reason?: string }).reason;
+        if (reason === "not_open") {
+          return {
+            success: false,
+            message: "Voting has not opened yet. Verification codes can only be requested during active voting.",
+          };
+        }
+        if (reason === "closed") {
+          return {
+            success: false,
+            message: "Voting window is closed. Verification codes can no longer be requested.",
+          };
+        }
+        if (reason === "rate_limited") {
+          return {
+            success: false,
+            message: "Too many verification requests. Please wait 10 minutes before requesting another code.",
+          };
+        }
+      }
 
       if (rpcError) {
         console.warn("[Voter OTP] Supabase RPC error registering request:", rpcError.message);
@@ -199,18 +230,21 @@ export async function requestVoterOtp(
       });
 
       if (!dispatchRes.success) {
-        console.warn("[Voter OTP] Server email dispatch warning:", dispatchRes.message);
+        console.warn("[Voter OTP] Server email dispatch error:", dispatchRes.message);
+        return {
+          success: false,
+          message: dispatchRes.message || "Could not dispatch verification email. Please try again.",
+          isConfigured: true,
+        };
       }
 
-      console.info(`[SHABACH OTP Dispatched] 6-digit code for ${cleanEmail}: ${code}`);
+      console.info(`[SHABACH OTP Dispatched] 6-digit code for ${cleanEmail} via ${dispatchRes.dispatchedVia ?? "resend"}`);
 
       return {
         success: true,
         message: `A 6-digit verification code has been dispatched to ${cleanEmail}. Please enter the code below to confirm your vote.`,
         expiresInSeconds: OTP_TTL_MS / 1000,
         isConfigured: true,
-        // In dev or rehearsal test, keep mockCode so test harness / testers can verify immediately
-        mockCode: code,
       };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -226,6 +260,7 @@ export async function requestVoterOtp(
   const code = generate6DigitCode();
   const codeHash = await hashVoterIdentifier(code, cleanEmail);
   const expiresAt = Date.now() + OTP_TTL_MS;
+  lastOtpByEmail.set(cleanEmail, code);
 
   otpStore.set(cleanEmail, {
     email: cleanEmail,
@@ -424,25 +459,42 @@ export async function hasVoterVoted(
   voterToken: string,
   eventId: string = DEFAULT_EVENT_ID,
 ): Promise<boolean> {
-  if (!voterToken) return false;
+  if (!voterToken) {
+    if (typeof window !== "undefined") {
+      return window.localStorage.getItem("shabach_has_voted") === "true";
+    }
+    return false;
+  }
 
+  // 1. Authoritative check via Postgres RPC if Supabase configured
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
     if (client) {
       try {
-        const { data, error } = await client
-          .from("votes")
-          .select("id")
-          .eq("event_id", eventId)
-          .eq("voter_id", voterToken)
-          .limit(1);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (client.rpc as any)("check_voter_status", {
+          p_event_id: eventId,
+          p_voter_token: voterToken,
+        });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data && typeof data === "object" && (data as { has_voted?: boolean }).has_voted) {
           return true;
         }
       } catch {
         // Fall through
       }
+    }
+  }
+
+  // 2. Client localStorage verification check
+  if (typeof window !== "undefined") {
+    const hasVotedFlag = window.localStorage.getItem("shabach_has_voted");
+    if (hasVotedFlag === "true") return true;
+
+    const storedToken = window.localStorage.getItem("shabach_voter_token");
+    if (storedToken && storedToken === voterToken) {
+      const storedVote = window.localStorage.getItem("shabach_browser_vote");
+      if (storedVote) return true;
     }
   }
 

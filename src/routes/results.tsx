@@ -97,7 +97,9 @@ function TopThreeCard({ row, position }: { row: ResultRow; position: number }) {
             <h3 className="font-display text-2xl text-forest truncate">{row.contestant.name}</h3>
             <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-forest">
               <Clock className="h-3.5 w-3.5 text-gold shrink-0" />
-              <span>Time: {Math.round(rubricFor(row.contestant.type).timeLimitSec / 60)} mins allocated</span>
+              <span>
+                Time: {Math.round((rubricFor(row.contestant.type as any)?.timeLimitSec ?? 240) / 60)} mins allocated
+              </span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Badge variant="secondary" className="text-xs">

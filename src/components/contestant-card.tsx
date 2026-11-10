@@ -64,7 +64,7 @@ export function ContestantCard({ contestant, votingStatus, myVote }: Props) {
             <span className="text-sm font-semibold text-forest-soft">✓ Your vote is here</span>
           ) : (
             <Button size="sm" disabled={votingDisabled} onClick={() => setVoteDialogOpen(true)}>
-              Vote
+              {myVote ? "You voted already" : "Vote"}
             </Button>
           )}
           <Link

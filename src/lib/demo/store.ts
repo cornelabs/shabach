@@ -119,6 +119,21 @@ export function hydrateDemoStore() {
   } catch {
     persist();
   }
+
+  // Restore browserVote from dedicated key if available
+  if (typeof window !== "undefined" && !state.browserVote) {
+    try {
+      const savedBrowserVote = window.localStorage.getItem("shabach_browser_vote");
+      if (savedBrowserVote) {
+        const parsedVote = JSON.parse(savedBrowserVote);
+        if (parsedVote && parsedVote.contestantId) {
+          state = { ...state, browserVote: parsedVote };
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
   if (!storageWired) {
     storageWired = true;
     window.addEventListener("storage", (e) => {
@@ -523,6 +538,16 @@ function syncMutationToSupabase(action: string, payload: any) {
         .then(({ error }) => {
           if (error) console.warn("Supabase voting status sync error:", error.message);
         });
+
+      void client
+        .from("event_settings")
+        .update({
+          updated_at: new Date().toISOString(),
+        })
+        .eq("event_id", DEFAULT_EVENT_ID)
+        .then(({ error }) => {
+          if (error) console.warn("Supabase event settings sync error:", error.message);
+        });
     } else if (action === "results_snapshot") {
       void client
         .from("results_snapshots")
@@ -623,9 +648,21 @@ function commitLocalVote(contestantId: string, voterId?: string) {
         createdAt: nowIso,
       });
     }
+    const browserVote = cur.browserVote ?? { contestantId: resolvedId, at: nowIso };
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem("shabach_has_voted", "true");
+        window.localStorage.setItem("shabach_browser_vote", JSON.stringify(browserVote));
+        if (voterId) {
+          window.localStorage.setItem("shabach_voter_token", voterId);
+        }
+      } catch {
+        /* storage may be unavailable */
+      }
+    }
     return {
       ...cur,
-      browserVote: cur.browserVote ?? { contestantId: resolvedId, at: nowIso },
+      browserVote,
       demoVotes: newDemoVotes,
       votes: newVotes,
     };
@@ -1241,6 +1278,15 @@ export function loadSampleScores() {
 }
 
 export function resetDemo() {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      window.localStorage.removeItem("shabach_has_voted");
+      window.localStorage.removeItem("shabach_voter_token");
+      window.localStorage.removeItem("shabach_voter_email");
+    } catch {
+      // ignore
+    }
+  }
   update(() => {
     const fresh = createSeedState();
     fresh.isSimulatedDemo = true;

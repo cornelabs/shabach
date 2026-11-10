@@ -25,6 +25,7 @@ import { Route as ContestantsIndexRouteImport } from './routes/contestants.index
 import { Route as ContestantsCodeRouteImport } from './routes/contestants.$code'
 import { Route as JudgesIndexRouteImport } from './routes/judges.index'
 import { Route as JudgesJudgeIdRouteImport } from './routes/judges.$judgeId'
+import { Route as JudgesMeetRouteImport } from './routes/judges.meet'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -106,6 +107,11 @@ const JudgesJudgeIdRoute = JudgesJudgeIdRouteImport.update({
   path: '/$judgeId',
   getParentRoute: () => JudgesRoute,
 } as any)
+const JudgesMeetRoute = JudgesMeetRouteImport.update({
+  id: '/meet',
+  path: '/meet',
+  getParentRoute: () => JudgesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
   '/judges/$judgeId': typeof JudgesJudgeIdRoute
+  '/judges/meet': typeof JudgesMeetRoute
   '/contestants/': typeof ContestantsIndexRoute
   '/judges/': typeof JudgesIndexRoute
 }
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
   '/judges/$judgeId': typeof JudgesJudgeIdRoute
+  '/judges/meet': typeof JudgesMeetRoute
   '/contestants': typeof ContestantsIndexRoute
   '/judges': typeof JudgesIndexRoute
 }
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/results': typeof ResultsRoute
   '/contestants/$code': typeof ContestantsCodeRoute
   '/judges/$judgeId': typeof JudgesJudgeIdRoute
+  '/judges/meet': typeof JudgesMeetRoute
   '/contestants/': typeof ContestantsIndexRoute
   '/judges/': typeof JudgesIndexRoute
 }
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/contestants/$code'
     | '/judges/$judgeId'
+    | '/judges/meet'
     | '/contestants/'
     | '/judges/'
   fileRoutesByTo: FileRoutesByTo
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/contestants/$code'
     | '/judges/$judgeId'
+    | '/judges/meet'
     | '/contestants'
     | '/judges'
   id:
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/contestants/$code'
     | '/judges/$judgeId'
+    | '/judges/meet'
     | '/contestants/'
     | '/judges/'
   fileRoutesById: FileRoutesById
@@ -348,16 +360,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JudgesJudgeIdRouteImport
       parentRoute: typeof JudgesRoute
     }
+    '/judges/meet': {
+      id: '/judges/meet'
+      path: '/meet'
+      fullPath: '/judges/meet'
+      preLoaderRoute: typeof JudgesMeetRouteImport
+      parentRoute: typeof JudgesRoute
+    }
   }
 }
 
 interface JudgesRouteChildren {
   JudgesJudgeIdRoute: typeof JudgesJudgeIdRoute
+  JudgesMeetRoute: typeof JudgesMeetRoute
   JudgesIndexRoute: typeof JudgesIndexRoute
 }
 
 const JudgesRouteChildren: JudgesRouteChildren = {
   JudgesJudgeIdRoute: JudgesJudgeIdRoute,
+  JudgesMeetRoute: JudgesMeetRoute,
   JudgesIndexRoute: JudgesIndexRoute,
 }
 

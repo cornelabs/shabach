@@ -15,11 +15,53 @@ export const PERFORMANCE_TYPES: PerformanceType[] = [
 
 export type JudgeId = "judge1" | "judge2" | "judge3" | "judge4";
 
-export const JUDGES: { id: JudgeId; name: string; label: string }[] = [
-  { id: "judge1", name: "Judge 1", label: "Sample judge (demo)" },
-  { id: "judge2", name: "Judge 2", label: "Sample judge (demo)" },
-  { id: "judge3", name: "Judge 3", label: "Sample judge (demo)" },
-  { id: "judge4", name: "Judge 4", label: "Sample judge (demo)" },
+export interface JudgeProfile {
+  id: JudgeId;
+  name: string;
+  label: string;
+  seatTitle: string;
+  roleTitle: string;
+  bio: string;
+  avatarUrl: string;
+}
+
+export const JUDGES: JudgeProfile[] = [
+  {
+    id: "judge1",
+    name: "David O. Umoru",
+    label: "Digital Media Strategist & State ICT/Media Director",
+    seatTitle: "Judge Seat 1",
+    roleTitle: "Digital Media Strategist | Entrepreneur | Creative Visionary",
+    bio: "Founder of Hebron Media and Convener of Creators Experience. Serves as State ICT/Media Director for Youth Arm of Living Faith Church Worldwide (Winners' Chapel), Ondo State, empowering creatives across Nigeria.",
+    avatarUrl: "/judges/david-umoru.jpeg",
+  },
+  {
+    id: "judge2",
+    name: "Molu Gbenga",
+    label: "Pioneer Creative Director, Youth Alive (Gideonites)",
+    seatTitle: "Judge Seat 2",
+    roleTitle: "Engineer | Entrepreneur | Creative Director | Leadership Strategist",
+    bio: "Pioneer Creative Director of the Youth Alive Creativity Department (Gideonites) and CEO of Alpha Craft Global Resources Ltd. Seasoned leadership strategist and programs coordinator for WYCF.",
+    avatarUrl: "/judges/molu-gbenga.jpeg",
+  },
+  {
+    id: "judge3",
+    name: "Mrs. Priscillia Fayomi",
+    label: "Global Creativity Director, Youth Alive Ministry",
+    seatTitle: "Judge Seat 3",
+    roleTitle: "Global Creativity Director | TV Producer | Filmmaker | Lead Vocalist",
+    bio: "Global Creativity Director for the Youth Alive Ministry of Living Faith Church Worldwide. TV producer, filmmaker, scriptwriter, and celebrated lead vocalist in the Faith Tabernacle Choir, Canaanland.",
+    avatarUrl: "/judges/priscillia-fayomi.jpeg",
+  },
+  {
+    id: "judge4",
+    name: "Sochi Daniel-Onuoha",
+    label: "Principal Architect, SD Universal & Music Evangelist",
+    seatTitle: "Judge Seat 4",
+    roleTitle: "Architect | Entrepreneur | Music Evangelist | Humanitarian",
+    bio: "Principal at SD Universal Limited, lead architect on major sacred monuments, MBA from Covenant University, visionary leader of Radiate Ministries, and secretary of Dan Onuoha Foundation.",
+    avatarUrl: "/judges/sochi-daniel-onuoha.jpeg",
+  },
 ];
 
 export interface Contestant {

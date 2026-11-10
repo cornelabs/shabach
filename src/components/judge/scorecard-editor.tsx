@@ -49,9 +49,13 @@ type SubmitStatus = "idle" | "submitting" | "submitted" | "error";
 export function ScorecardEditor({
   judgeId,
   contestantId,
+  onSubmitted,
+  onCancel,
 }: {
   judgeId: JudgeId;
   contestantId: string;
+  onSubmitted?: () => void;
+  onCancel?: () => void;
 }) {
   const state = useDemoState();
   const card = getCard(state, judgeId, contestantId);
@@ -221,6 +225,7 @@ export function ScorecardEditor({
         toast.success("Scorecard submitted.", {
           description: "Submitted cards are locked until an organiser reopens them.",
         });
+        onSubmitted?.();
       } else {
         setSubmitStatus("error");
         if (result.reason === "incomplete" && result.errors) {
@@ -301,6 +306,17 @@ export function ScorecardEditor({
           </div>
           <div className="flex flex-col items-end gap-1.5 text-right">
             <div className="flex items-center gap-2">
+              {onCancel && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onCancel}
+                  className="h-7 px-2 text-xs text-charcoal-muted hover:text-forest"
+                >
+                  Close
+                </Button>
+              )}
               {/* Status Badge */}
               <Badge
                 variant={

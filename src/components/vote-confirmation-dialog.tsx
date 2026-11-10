@@ -17,7 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getDataAdapter } from "@/lib/db/adapter";
 import { isSupabaseConfigured } from "@/lib/db/supabase";
-import { isValidEmail, requestVoterOtp, verifyVoterOtp } from "@/lib/auth/voter-verification";
+import { hasVoterVoted, isValidEmail, requestVoterOtp, verifyVoterOtp } from "@/lib/auth/voter-verification";
+import { useDemoState } from "@/hooks/use-demo";
 import { typeLabel } from "@/lib/demo/labels";
 import { rubricFor } from "@/lib/demo/rubrics";
 import type { Contestant } from "@/lib/demo/types";
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteCast }: Props) {
+  const state = useDemoState();
   const [submitting, setSubmitting] = React.useState(false);
   const [email, setEmail] = React.useState("");
   const [code, setCode] = React.useState("");
@@ -40,13 +42,35 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
   const [voterToken, setVoterToken] = React.useState<string | null>(null);
   const [mockCode, setMockCode] = React.useState<string | null>(null);
   const [verificationError, setVerificationError] = React.useState<string | null>(null);
+  const [hasVotedToken, setHasVotedToken] = React.useState(false);
 
-  // Reset dialog verification state when opened for a new vote session
+  const myVote = state.browserVote?.contestantId ?? null;
+  const hasAlreadyVoted = Boolean(myVote) || hasVotedToken;
+
+  // Reset dialog verification state and check if voter has already voted when opened
   React.useEffect(() => {
     if (open) {
       setVerificationError(null);
+      if (!myVote) {
+        setHasVotedToken(false);
+      }
+      if (typeof window !== "undefined") {
+        const storedHasVoted = window.localStorage.getItem("shabach_has_voted");
+        const storedToken = window.localStorage.getItem("shabach_voter_token");
+        const storedEmail = window.localStorage.getItem("shabach_voter_email");
+        if (storedHasVoted === "true" && myVote) {
+          setHasVotedToken(true);
+        } else if (storedToken && myVote) {
+          void hasVoterVoted(storedToken).then((voted) => {
+            if (voted) setHasVotedToken(true);
+          });
+        }
+        if (storedEmail && !email) {
+          setEmail(storedEmail);
+        }
+      }
     }
-  }, [open]);
+  }, [open, email, myVote]);
 
   async function handleSendOtp() {
     const cleanEmail = email.trim();
@@ -73,21 +97,6 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
           description: res.message,
         });
       } else {
-        // If live dispatch failed, fall back gracefully to demo code
-        if (isLive) {
-          console.warn("Live OTP dispatch returned error, attempting demo fallback:", res.message);
-          const fallbackRes = await requestVoterOtp(cleanEmail, { isLive: false });
-          if (fallbackRes.success) {
-            setOtpSent(true);
-            if (fallbackRes.mockCode) {
-              setMockCode(fallbackRes.mockCode);
-            }
-            toast.info("Using rehearsal mode", {
-              description: fallbackRes.message,
-            });
-            return;
-          }
-        }
         setVerificationError(res.message);
         toast.error("Could not send code", { description: res.message });
       }
@@ -102,7 +111,7 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
     const cleanEmail = email.trim();
     const cleanCode = code.trim();
 
-    if (!cleanCode) {
+    if (!cleanCode || cleanCode.length !== 6) {
       setVerificationError("Please enter the 6-digit verification code.");
       return;
     }
@@ -110,29 +119,23 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
     setOtpVerifying(true);
     setVerificationError(null);
 
-    const isLive = isSupabaseConfigured() && !mockCode;
+    const isLive = isSupabaseConfigured();
 
     try {
       const res = await verifyVoterOtp(cleanEmail, cleanCode, { isLive });
       if (res.success) {
-        setVerifiedEmail(res.voterEmail || cleanEmail);
-        setVoterToken(res.voterToken || null);
+        const verified = res.voterEmail || cleanEmail;
+        const token = res.voterToken || null;
+        setVerifiedEmail(verified);
+        setVoterToken(token);
+        if (typeof window !== "undefined") {
+          if (token) window.localStorage.setItem("shabach_voter_token", token);
+          window.localStorage.setItem("shabach_voter_email", verified);
+        }
         toast.success("Email verified!", {
           description: "Your identity is verified. You may now cast your official vote.",
         });
       } else {
-        // If live verification failed, try demo fallback if code was issued in demo store
-        if (isLive) {
-          const fallbackRes = await verifyVoterOtp(cleanEmail, cleanCode, { isLive: false });
-          if (fallbackRes.success) {
-            setVerifiedEmail(fallbackRes.voterEmail || cleanEmail);
-            setVoterToken(fallbackRes.voterToken || null);
-            toast.success("Email verified (Demo)!", {
-              description: "Your identity is verified in rehearsal mode.",
-            });
-            return;
-          }
-        }
         setVerificationError(res.message);
         toast.error("Verification failed", { description: res.message });
       }
@@ -144,14 +147,14 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
   }
 
   async function handleConfirm() {
-    if (submitting) return;
+    if (submitting || hasAlreadyVoted) return;
 
     // If voter entered an email and 6-digit code but hasn't verified yet, verify first
     let activeToken = voterToken;
     if (!activeToken && email.trim() && code.trim().length === 6) {
       setSubmitting(true);
       try {
-        const isLive = isSupabaseConfigured() && !mockCode;
+        const isLive = isSupabaseConfigured();
         const verifyRes = await verifyVoterOtp(email.trim(), code.trim(), { isLive });
         if (verifyRes.success) {
           activeToken = verifyRes.voterToken || null;
@@ -204,6 +207,23 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
       ]);
 
       if (res.success) {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("shabach_has_voted", "true");
+          window.localStorage.setItem(
+            "shabach_browser_vote",
+            JSON.stringify({
+              contestantId: contestant.id,
+              at: new Date().toISOString(),
+            }),
+          );
+          if (activeToken) {
+            window.localStorage.setItem("shabach_voter_token", activeToken);
+          }
+          if (verifiedEmail) {
+            window.localStorage.setItem("shabach_voter_email", verifiedEmail);
+          }
+        }
+        setHasVotedToken(true);
         toast.success(`Vote confirmed for ${contestant.name}!`, {
           description: "Your single vote for the SHABACH 2026 Grand Finale has been recorded.",
         });
@@ -212,6 +232,7 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
       } else {
         const msg = res.message.toLowerCase();
         if (msg.includes("already") || msg.includes("single vote")) {
+          setHasVotedToken(true);
           toast.error("You have already voted", {
             description: "Each voter receives only one final vote across the entire competition.",
           });
@@ -291,136 +312,133 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
           </p>
         </div>
 
-        {/* Email OTP Verification Section */}
-        <div className="space-y-3 rounded-xl border border-cream-line bg-ivory/60 p-3.5">
-          <div className="flex items-center justify-between">
-            <Label
-              htmlFor="voter-email"
-              className="text-xs font-semibold text-forest flex items-center gap-1.5"
-            >
-              <Mail className="h-3.5 w-3.5 text-gold" /> Email Verification
-            </Label>
-            {verifiedEmail ? (
-              <Badge
-                variant="secondary"
-                className="bg-forest-soft/10 text-forest text-[11px] font-semibold gap-1"
-              >
-                <CheckCircle2 className="h-3 w-3 text-forest" /> Verified
-              </Badge>
-            ) : (
-              <span className="text-[11px] text-forest font-medium">Required · 1 vote per person</span>
-            )}
+        {/* Has Already Voted Alert */}
+        {hasAlreadyVoted && (
+          <div className="rounded-lg bg-amber-50 border border-amber-200/80 p-3 text-xs leading-relaxed text-amber-900 flex items-start gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-900">You have already voted</p>
+              <p className="text-[11px] text-amber-700 mt-0.5">
+                Each voter receives only one official vote across the entire Grand Finale. Your vote has been recorded.
+              </p>
+            </div>
           </div>
+        )}
 
-          {!verifiedEmail ? (
-            <>
-              <div className="flex gap-2">
-                <Input
-                  id="voter-email"
-                  type="email"
-                  placeholder="Enter email to verify vote..."
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setVerificationError(null);
-                  }}
-                  disabled={submitting || otpSending || otpSent}
-                  className="h-8 text-xs bg-card border-cream-line"
-                />
-                {!otpSent && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled={!email.trim() || otpSending || submitting}
-                    onClick={handleSendOtp}
-                    className="h-8 text-xs shrink-0 border-cream-line hover:bg-parchment"
-                  >
-                    {otpSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send Code"}
-                  </Button>
-                )}
-              </div>
+        {/* Email OTP Verification Section */}
+        {!hasAlreadyVoted && (
+          <div className="space-y-3 rounded-xl border border-cream-line bg-ivory/60 p-3.5">
+            <div className="flex items-center justify-between">
+              <Label
+                htmlFor="voter-email"
+                className="text-xs font-semibold text-forest flex items-center gap-1.5"
+              >
+                <Mail className="h-3.5 w-3.5 text-gold" /> Email Verification
+              </Label>
+              {verifiedEmail ? (
+                <Badge
+                  variant="secondary"
+                  className="bg-forest-soft/10 text-forest text-[11px] font-semibold gap-1"
+                >
+                  <CheckCircle2 className="h-3 w-3 text-forest" /> Verified
+                </Badge>
+              ) : (
+                <span className="text-[11px] text-forest font-medium">Required · 1 vote per person</span>
+              )}
+            </div>
 
-              {otpSent && (
-                <div className="space-y-2 pt-1 border-t border-cream-line">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="voter-otp" className="text-[11px] text-charcoal-muted">
-                      Enter 6-digit code
-                    </Label>
-                    {mockCode ? (
-                      <button
-                        type="button"
-                        onClick={() => setCode(mockCode)}
-                        className="text-[11px] text-gold hover:underline font-mono"
-                      >
-                        Use demo code ({mockCode})
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-charcoal-muted italic">
-                          Check your inbox
-                        </span>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const res = await requestVoterOtp(email.trim(), { isLive: false });
-                            if (res.mockCode) {
-                              setMockCode(res.mockCode);
-                              setCode(res.mockCode);
-                              toast.info("Switched to rehearsal mode", {
-                                description: `Using rehearsal code: ${res.mockCode}`,
-                              });
-                            }
-                          }}
-                          className="text-[10px] text-gold hover:underline font-medium"
-                        >
-                          Use rehearsal code
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      id="voter-otp"
-                      type="text"
-                      maxLength={6}
-                      placeholder="123456"
-                      value={code}
-                      onChange={(e) => {
-                        setCode(e.target.value);
-                        setVerificationError(null);
-                      }}
-                      disabled={submitting || otpVerifying}
-                      className="h-8 text-xs font-mono tracking-widest bg-card border-cream-line"
-                    />
+            {!verifiedEmail ? (
+              <>
+                <div className="flex gap-2">
+                  <Input
+                    id="voter-email"
+                    type="email"
+                    placeholder="Enter email to verify vote..."
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setVerificationError(null);
+                    }}
+                    disabled={submitting || otpSending || otpSent}
+                    className="h-8 text-xs bg-card border-cream-line"
+                  />
+                  {!otpSent && (
                     <Button
                       type="button"
                       size="sm"
-                      disabled={code.trim().length !== 6 || otpVerifying || submitting}
-                      onClick={handleVerifyOtp}
-                      className="h-8 text-xs shrink-0 bg-forest text-ivory hover:bg-forest-deep"
+                      variant="outline"
+                      disabled={!email.trim() || otpSending || submitting}
+                      onClick={handleSendOtp}
+                      className="h-8 text-xs shrink-0 border-cream-line hover:bg-parchment"
                     >
-                      {otpVerifying ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        "Verify Code"
-                      )}
+                      {otpSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send Code"}
                     </Button>
-                  </div>
+                  )}
                 </div>
-              )}
 
-              {verificationError && (
-                <p className="text-[11px] text-destructive font-medium">{verificationError}</p>
-              )}
-            </>
-          ) : (
-            <div className="rounded bg-card p-2 text-xs text-charcoal flex items-center justify-between border border-cream-line">
-              <span className="font-mono text-[11px] text-charcoal truncate">{verifiedEmail}</span>
-              <span className="text-[11px] text-forest font-medium">Ready to confirm</span>
-            </div>
-          )}
-        </div>
+                {otpSent && (
+                  <div className="space-y-2 pt-1 border-t border-cream-line">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="voter-otp" className="text-[11px] text-charcoal-muted">
+                        Enter 6-digit code
+                      </Label>
+                      {mockCode ? (
+                        <button
+                          type="button"
+                          onClick={() => setCode(mockCode)}
+                          className="text-[11px] text-gold hover:underline font-mono"
+                        >
+                          Use demo code ({mockCode})
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-charcoal-muted italic">
+                          Check your inbox
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        id="voter-otp"
+                        type="text"
+                        maxLength={6}
+                        placeholder="123456"
+                        value={code}
+                        onChange={(e) => {
+                          setCode(e.target.value);
+                          setVerificationError(null);
+                        }}
+                        disabled={submitting || otpVerifying}
+                        className="h-8 text-xs font-mono tracking-widest bg-card border-cream-line"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={code.trim().length !== 6 || otpVerifying || submitting}
+                        onClick={handleVerifyOtp}
+                        className="h-8 text-xs shrink-0 bg-forest text-ivory hover:bg-forest-deep"
+                      >
+                        {otpVerifying ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          "Verify Code"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {verificationError && (
+                  <p className="text-[11px] text-destructive font-medium">{verificationError}</p>
+                )}
+              </>
+            ) : (
+              <div className="rounded bg-card p-2 text-xs text-charcoal flex items-center justify-between border border-cream-line">
+                <span className="font-mono text-[11px] text-charcoal truncate">{verifiedEmail}</span>
+                <span className="text-[11px] text-forest font-medium">Ready to confirm</span>
+              </div>
+            )}
+          </div>
+        )}
 
         <AlertDialogFooter className="gap-2 sm:gap-0">
           <AlertDialogCancel disabled={submitting} className="border-cream-line">
@@ -428,10 +446,12 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
           </AlertDialogCancel>
           <Button
             onClick={handleConfirm}
-            disabled={submitting}
-            className="bg-forest text-ivory hover:bg-forest-deep"
+            disabled={submitting || hasAlreadyVoted}
+            className="bg-forest text-ivory hover:bg-forest-deep disabled:opacity-50"
           >
-            {submitting ? (
+            {hasAlreadyVoted ? (
+              "You voted already"
+            ) : submitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Recording vote...
               </>

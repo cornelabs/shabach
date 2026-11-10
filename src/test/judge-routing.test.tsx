@@ -117,8 +117,8 @@ describe("Judge Routing & Workspace Navigation", () => {
       // All 4 judge cards must be rendered
       for (const judge of JUDGES) {
         expect(screen.getByText(judge.name)).toBeInTheDocument();
+        expect(screen.getByText(judge.label)).toBeInTheDocument();
       }
-      expect(screen.getAllByText("Sample judge (demo)")).toHaveLength(4);
 
       // Security and integrity indicators
       expect(screen.getAllByText("Independent scoring")).toHaveLength(4);
@@ -126,6 +126,7 @@ describe("Judge Routing & Workspace Navigation", () => {
     });
 
     it("renders the /judges/$judgeId workspace with contestant list and scorecard editor", () => {
+      const judge1 = JUDGES[0]!;
       // Mock useParams to return judge1
       const spyUseParams = vi.spyOn(JudgeDetailRoute, "useParams").mockReturnValue({
         judgeId: "judge1",
@@ -135,27 +136,27 @@ describe("Judge Routing & Workspace Navigation", () => {
       render(<WorkspaceComponent />);
 
       // Header matches current judge
-      expect(screen.getByRole("heading", { name: "Judge 1's scorecards" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: `${judge1.name}'s scorecards` })).toBeInTheDocument();
       expect(
         screen.getByText(
-          /Sample judge \(demo\) · 16 contestants · scores stay private until submitted/,
+          new RegExp(`${judge1.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} · 16 contestants · scores stay private until submitted`),
         ),
       ).toBeInTheDocument();
 
       // Back navigation link to judge seats
       expect(screen.getByText("← Judge seats")).toBeInTheDocument();
 
-      // Sidebar contains 16 contestants
+      // Grid contains 16 contestants
       expect(screen.getByText("№ 1")).toBeInTheDocument();
       expect(screen.getByText("Min. Lizzy")).toBeInTheDocument();
       expect(screen.getByText("The Painters")).toBeInTheDocument();
 
-      // Initially shows guidance placeholder to pick a contestant
+      // Shows guidance placeholder / helper text to pick a contestant
       expect(
         screen.getByText(/Choose a contestant from the list to open their scorecard/i),
       ).toBeInTheDocument();
 
-      // Clicking a contestant in the sidebar opens their scorecard editor
+      // Clicking a contestant in the grid opens their scorecard editor
       const contestantButton = screen.getByText("Min. Lizzy").closest("button");
       expect(contestantButton).not.toBeNull();
       fireEvent.click(contestantButton!);
@@ -169,6 +170,7 @@ describe("Judge Routing & Workspace Navigation", () => {
     });
 
     it("renders judge2 workspace properly with distinct identity", () => {
+      const judge2 = JUDGES[1]!;
       const spyUseParams = vi.spyOn(JudgeDetailRoute, "useParams").mockReturnValue({
         judgeId: "judge2",
       });
@@ -176,10 +178,10 @@ describe("Judge Routing & Workspace Navigation", () => {
       const WorkspaceComponent = JudgeDetailRoute.options.component!;
       render(<WorkspaceComponent />);
 
-      expect(screen.getByRole("heading", { name: "Judge 2's scorecards" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: `${judge2.name}'s scorecards` })).toBeInTheDocument();
       expect(
         screen.getByText(
-          /Sample judge \(demo\) · 16 contestants · scores stay private until submitted/,
+          new RegExp(`${judge2.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} · 16 contestants · scores stay private until submitted`),
         ),
       ).toBeInTheDocument();
 
