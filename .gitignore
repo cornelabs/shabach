@@ -24,6 +24,10 @@ dist-ssr
 .vercel/
 supabase/.temp/
 
+# Video intermediates
+public/videos/raw/
+public/videos/audio/
+
 .vscode/*
 !.vscode/extensions.json
 .idea
