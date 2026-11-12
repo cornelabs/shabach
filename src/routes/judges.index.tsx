@@ -30,7 +30,6 @@ import { useDemoState } from "@/hooks/use-demo";
 import {
   grantJudgeAccess,
   isJudgeUnlocked,
-  lockJudgeAccess,
   verifyJudgeCode,
 } from "@/lib/auth/judge-access";
 import { getCard, setActiveJudge } from "@/lib/demo/store";
@@ -138,21 +137,7 @@ function JudgesHome() {
       {/* Top Header & Actions */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="font-display text-3xl text-forest sm:text-4xl">Judges' workspace</h1>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                lockJudgeAccess();
-                setAccessNonce((n) => n + 1);
-                toast.info("All judge desks locked.");
-              }}
-              className="h-8 border-cream-line text-xs gap-1.5 text-charcoal-muted hover:text-forest"
-            >
-              <Lock className="h-3.5 w-3.5 text-gold" /> Lock Desks
-            </Button>
-          </div>
+          <h1 className="font-display text-3xl text-forest sm:text-4xl">Judges' workspace</h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-charcoal-muted">
             Each judge scores independently — nobody sees another judge's scores. Pick your seat to
             open your scorecards. Select your official profile below to authenticate and enter your

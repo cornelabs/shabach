@@ -188,7 +188,7 @@ function OrganiserDashboard() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-forest text-gold">
                 <ShieldCheck className="h-4 w-4" />
               </span>
-              <h1 className="font-display text-2xl text-forest">Organiser Dashboard</h1>
+              <h1 className="font-display text-2xl text-forest">Admin Space</h1>
               <Badge variant="outline" className="border-gold/50 bg-gold-wash text-forest text-xs">
                 Score Desk
               </Badge>

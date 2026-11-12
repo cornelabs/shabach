@@ -143,8 +143,8 @@ describe("Judge Routing & Workspace Navigation", () => {
         ),
       ).toBeInTheDocument();
 
-      // Back navigation link to judge seats
-      expect(screen.getByText("← Judge seats")).toBeInTheDocument();
+      // Back navigation link to judge seats removed for seat isolation
+      expect(screen.queryByText("← Judge seats")).not.toBeInTheDocument();
 
       // Grid contains 16 contestants
       expect(screen.getByText("№ 1")).toBeInTheDocument();

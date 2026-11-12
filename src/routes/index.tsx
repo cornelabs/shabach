@@ -7,7 +7,6 @@ import {
   ShieldCheck,
   Sparkles,
   Trophy,
-  Users,
   Vote,
 } from "lucide-react";
 
@@ -24,7 +23,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Official Grand Finale portal for SHABACH 2026: Vote your contestant, view live results, meet the 4 judges, access the judges panel, admin desk, and program guidelines.",
+          "Official Grand Finale portal for SHABACH 2026: Vote your contestant, view live results, access the judges panel, admin desk, and program guidelines.",
       },
       {
         property: "og:title",
@@ -33,7 +32,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Official Grand Finale portal for SHABACH 2026. Vote contestants, explore verified results, meet judges, and check competition rubrics.",
+          "Official Grand Finale portal for SHABACH 2026. Vote contestants, explore verified results, access judges panel, and check competition rubrics.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -49,7 +48,7 @@ function Index() {
     <div className="flex min-h-[100dvh] flex-col justify-between overflow-y-auto lg:overflow-hidden bg-forest-deep text-ivory selection:bg-gold selection:text-forest-deep">
       {/* 1. Compact Site Header */}
       <header className="border-b border-forest/60 bg-forest/40 px-4 py-2.5 backdrop-blur-md shrink-0">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
           <Link to="/" className="flex items-baseline gap-2 group">
             <span className="font-display text-lg sm:text-xl font-bold tracking-tight text-ivory group-hover:text-gold transition-colors">
               SHABACH <span className="text-gold">2026</span>
@@ -77,7 +76,7 @@ function Index() {
       </header>
 
       {/* 2. Main Viewport Content — Centered & Scaled to Fit at a Glance */}
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-3.5 sm:px-6 py-3 sm:py-6">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-3.5 sm:px-6 py-3 sm:py-6">
         {/* Concise Hero Title */}
         <div className="text-center shrink-0 mb-3 sm:mb-5">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-gold/30 bg-forest/80 px-3 py-1 text-[11px] font-semibold text-gold-soft shadow-sm">
@@ -92,9 +91,9 @@ function Index() {
           </p>
         </div>
 
-        {/* The 6 Navigation Cards — Balanced 2-column on mobile, 3-column on desktop */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3.5 w-full">
-          {/* Card 1: Vote Your Contestant */}
+        {/* The 5 Navigation Cards — Responsive 2-col on mobile, 3-col on tablet, 5-col on desktop */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3.5 w-full">
+          {/* Card 1: Vote Contestant */}
           <Link
             to="/contestants"
             className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border-2 border-gold/80 bg-gradient-to-br from-forest to-forest-deep p-3 sm:p-4 text-left shadow-lg transition-all hover:-translate-y-0.5 hover:border-gold hover:shadow-gold/25 focus:outline-none focus:ring-2 focus:ring-gold"
@@ -118,7 +117,7 @@ function Index() {
             </div>
           </Link>
 
-          {/* Card 2: Voting Result */}
+          {/* Card 2: Results */}
           <Link
             to="/results"
             className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border border-cream-line/25 bg-forest/70 p-3 sm:p-4 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:bg-forest/90 focus:outline-none focus:ring-2 focus:ring-gold"
@@ -166,31 +165,7 @@ function Index() {
             </div>
           </Link>
 
-          {/* Card 4: Meet the Judges */}
-          <Link
-            to="/judges/meet"
-            className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border border-cream-line/25 bg-forest/70 p-3 sm:p-4 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:bg-forest/90 focus:outline-none focus:ring-2 focus:ring-gold"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-gold/20 text-gold shadow-sm">
-                <Users className="h-4 w-4" />
-              </div>
-              <Badge variant="outline" className="border-gold/40 text-gold-soft text-[10px] px-1.5 py-0">
-                Panel
-              </Badge>
-            </div>
-            <div className="mt-2 sm:mt-3">
-              <h2 className="font-display text-sm sm:text-base font-bold text-ivory group-hover:text-gold transition-colors flex items-center justify-between">
-                <span>4. Meet the Judges</span>
-                <ArrowRight className="h-3.5 w-3.5 text-gold-soft group-hover:translate-x-1 transition-transform" />
-              </h2>
-              <p className="mt-0.5 text-[10px] sm:text-[11px] leading-snug text-ivory/75 line-clamp-2">
-                Meet the 4 Grand Finale adjudicators, their profiles & backgrounds.
-              </p>
-            </div>
-          </Link>
-
-          {/* Card 5: Program details */}
+          {/* Card 4: Program details */}
           <Link
             to="/program"
             className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border border-cream-line/25 bg-forest/70 p-3 sm:p-4 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:bg-forest/90 focus:outline-none focus:ring-2 focus:ring-gold"
@@ -205,7 +180,7 @@ function Index() {
             </div>
             <div className="mt-2 sm:mt-3">
               <h2 className="font-display text-sm sm:text-base font-bold text-ivory group-hover:text-gold transition-colors flex items-center justify-between">
-                <span>5. Program details</span>
+                <span>4. Program details</span>
                 <ArrowRight className="h-3.5 w-3.5 text-gold-soft group-hover:translate-x-1 transition-transform" />
               </h2>
               <p className="mt-0.5 text-[10px] sm:text-[11px] leading-snug text-ivory/75 line-clamp-2">
@@ -214,10 +189,10 @@ function Index() {
             </div>
           </Link>
 
-          {/* Card 6: Admin (Last card) */}
+          {/* Card 5: Admin Space */}
           <Link
             to="/organiser"
-            className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border border-cream-line/25 bg-forest/70 p-3 sm:p-4 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:bg-forest/90 focus:outline-none focus:ring-2 focus:ring-gold"
+            className="group relative flex flex-col justify-between rounded-xl sm:rounded-2xl border border-cream-line/25 bg-forest/70 p-3 sm:p-4 text-left backdrop-blur transition-all hover:-translate-y-0.5 hover:border-gold/60 hover:bg-forest/90 focus:outline-none focus:ring-2 focus:ring-gold col-span-2 md:col-span-1"
           >
             <div className="flex items-center justify-between">
               <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-destructive/30 text-destructive-foreground shadow-sm">
@@ -229,7 +204,7 @@ function Index() {
             </div>
             <div className="mt-2 sm:mt-3">
               <h2 className="font-display text-sm sm:text-base font-bold text-ivory group-hover:text-gold transition-colors flex items-center justify-between">
-                <span>6. Admin</span>
+                <span>5. Admin Space</span>
                 <ArrowRight className="h-3.5 w-3.5 text-gold-soft group-hover:translate-x-1 transition-transform" />
               </h2>
               <p className="mt-0.5 text-[10px] sm:text-[11px] leading-snug text-ivory/75 line-clamp-2">

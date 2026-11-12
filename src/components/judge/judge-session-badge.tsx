@@ -12,7 +12,7 @@ interface JudgeSessionBadgeProps {
 
 export function JudgeSessionBadge({
   currentSeatId,
-  showSwitchAction = true,
+  showSwitchAction = false,
 }: JudgeSessionBadgeProps) {
   const { staffSession, activeJudge } = useActiveJudgeSession();
 

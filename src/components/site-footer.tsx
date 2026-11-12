@@ -36,7 +36,7 @@ export function SiteFooter() {
             </li>
             <li>
               <Link to="/organiser" className="hover:text-gold">
-                Organiser dashboard
+                Admin Space
               </Link>
             </li>
             <li>

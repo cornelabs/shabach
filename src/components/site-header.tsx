@@ -12,7 +12,7 @@ const NAV = [
   { to: "/results" as const, label: "Results" },
   { to: "/judges/meet" as const, label: "Meet Judges" },
   { to: "/judges" as const, label: "Judges Panel" },
-  { to: "/organiser" as const, label: "Organiser" },
+  { to: "/organiser" as const, label: "Admin Space" },
   { to: "/program" as const, label: "Program" },
 ];
 
@@ -22,7 +22,7 @@ const MOBILE_NAV = [
   { to: "/results" as const, label: "Results" },
   { to: "/judges/meet" as const, label: "Meet the Judges" },
   { to: "/judges" as const, label: "Judges Panel" },
-  { to: "/organiser" as const, label: "Organiser" },
+  { to: "/organiser" as const, label: "Admin Space" },
   { to: "/program" as const, label: "Program" },
 ];
 

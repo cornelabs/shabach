@@ -245,7 +245,7 @@ function DemoLauncherPage() {
                 </span>
                 <Badge className="bg-forest text-ivory text-xs">Admin / Score Desk</Badge>
               </div>
-              <h3 className="mt-4 font-display text-xl text-forest">Score Desk Organiser</h3>
+              <h3 className="mt-4 font-display text-xl text-forest">Admin Space</h3>
               <p className="mt-2 text-xs leading-relaxed text-charcoal-muted">
                 Admin dashboard across 4 sections: manage contestants, oversee all 48 scorecards,
                 verify stopwatch durations, resolve ties, freeze snapshots, and export CSV.
@@ -255,7 +255,7 @@ function DemoLauncherPage() {
             <div className="mt-6 border-t border-cream-line pt-4">
               <Link to="/organiser">
                 <Button className="w-full bg-forest text-ivory hover:bg-forest-deep text-xs font-semibold">
-                  Open Organiser Dashboard <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                  Admin Space <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                 </Button>
               </Link>
             </div>

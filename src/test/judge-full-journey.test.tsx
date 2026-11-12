@@ -87,8 +87,8 @@ describe("Phase 7: Full-Platform Judge Journey & Scoring Verification", () => {
         // Active session badge reflects this judge seat
         expect(screen.getByText(`Active Seat: ${judgeConfig.name}`)).toBeInTheDocument();
 
-        // Back link to seats is present
-        expect(screen.getByText("← Judge seats")).toBeInTheDocument();
+        // Back link to seats is removed for strict seat isolation
+        expect(screen.queryByText("← Judge seats")).not.toBeInTheDocument();
 
         // Contestant list is populated
         expect(screen.getByText("Min. Lizzy")).toBeInTheDocument();

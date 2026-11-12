@@ -143,19 +143,15 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
   });
 
   describe("2. Home Page & Contestants List Page", () => {
-    it("renders Home page with 6 navigation cards including Meet the Judges", () => {
+    it("renders Home page with 5 navigation cards including judging panel and admin space", () => {
       const IndexComp = IndexRoute.options.component!;
       render(<IndexComp />);
 
       expect(screen.getByText("1. Vote Contestant")).toBeInTheDocument();
       expect(screen.getByText("2. Results")).toBeInTheDocument();
       expect(screen.getByText("3. Judging Panel")).toBeInTheDocument();
-      expect(screen.getByText("4. Meet the Judges")).toBeInTheDocument();
-      expect(screen.getByText("5. Program details")).toBeInTheDocument();
-      expect(screen.getByText("6. Admin")).toBeInTheDocument();
-      expect(
-        screen.getByText("Meet the 4 Grand Finale adjudicators, their profiles & backgrounds."),
-      ).toBeInTheDocument();
+      expect(screen.getByText("4. Program details")).toBeInTheDocument();
+      expect(screen.getByText("5. Admin Space")).toBeInTheDocument();
     });
 
     it("renders Contestants page directly displaying all 16 finalists cleanly without search bar or category tabs", () => {

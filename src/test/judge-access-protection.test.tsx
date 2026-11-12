@@ -54,6 +54,25 @@ describe("Judge Access Protection & PIN Verification", () => {
       expect(verifyJudgeCode(JUDGE_SEAT_PINS.judge4)).toEqual({ valid: true, seatId: "judge4" });
     });
 
+    it("accepts 6-character alphanumeric passcodes directly (case-insensitive)", () => {
+      expect(verifyJudgeCode("P7X2M9")).toEqual({ valid: true, seatId: "judge1" });
+      expect(verifyJudgeCode("p7x2m9")).toEqual({ valid: true, seatId: "judge1" });
+      expect(verifyJudgeCode("G4K8V3")).toEqual({ valid: true, seatId: "judge2" });
+      expect(verifyJudgeCode("D9W5T2")).toEqual({ valid: true, seatId: "judge3" });
+      expect(verifyJudgeCode("S3R7B6")).toEqual({ valid: true, seatId: "judge4" });
+    });
+
+    it("preserves backward compatibility with legacy aliases", () => {
+      expect(verifyJudgeCode("7103")).toEqual({ valid: true, seatId: "judge1" });
+      expect(verifyJudgeCode("7102")).toEqual({ valid: true, seatId: "judge2" });
+      expect(verifyJudgeCode("7101", "judge3")).toEqual({ valid: true, seatId: "judge3" });
+      expect(verifyJudgeCode("7104")).toEqual({ valid: true, seatId: "judge4" });
+    });
+
+    it("accepts ADMIN2026 as panel master code", () => {
+      expect(verifyJudgeCode("ADMIN2026")).toEqual({ valid: true, seatId: "all" });
+    });
+
     it("rejects invalid codes with clear message", () => {
       const res = verifyJudgeCode("WRONG_CODE_999");
       expect(res.valid).toBe(false);

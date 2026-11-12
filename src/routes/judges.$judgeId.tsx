@@ -116,15 +116,9 @@ function JudgeWorkspace() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
       {/* Top Navigation Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          to="/judges"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-charcoal-muted hover:text-forest"
-        >
-          ← Judge seats
-        </Link>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="flex items-center gap-2">
-          <JudgeSessionBadge currentSeatId={activeJudgeId} showSwitchAction={true} />
+          <JudgeSessionBadge currentSeatId={activeJudgeId} showSwitchAction={false} />
           <Button
             variant="outline"
             size="sm"
