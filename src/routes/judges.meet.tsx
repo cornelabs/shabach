@@ -14,13 +14,13 @@ export const Route = createFileRoute("/judges/meet")({
       {
         name: "description",
         content:
-          "Meet the 4 Grand Finale adjudicators of SHABACH 2026: David O. Umoru, Molu Gbenga, Mrs. Priscillia Fayomi, and Sochi Daniel-Onuoha.",
+          "Meet the 4 Grand Finale adjudicators of SHABACH 2026: Mrs. Priscillia Fayomi (Head Judge), Molu Gbenga, David O. Umoru, and Sochi Daniel-Onuoha.",
       },
       { property: "og:title", content: "Meet the Grand Finale Judges — SHABACH 2026" },
       {
         property: "og:description",
         content:
-          "Meet the 4 Grand Finale adjudicators of SHABACH 2026: David O. Umoru, Molu Gbenga, Mrs. Priscillia Fayomi, and Sochi Daniel-Onuoha.",
+          "Meet the 4 Grand Finale adjudicators of SHABACH 2026: Mrs. Priscillia Fayomi (Head Judge), Molu Gbenga, David O. Umoru, and Sochi Daniel-Onuoha.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -57,7 +57,7 @@ function JudgeCard({ judge }: { judge: JudgeProfile }) {
             {judge.seatTitle}
           </Badge>
           <span className="rounded-full bg-forest-deep/80 px-2.5 py-1 text-[11px] font-semibold text-ivory backdrop-blur-sm">
-            Adjudicator
+            {judge.id === "judge1" ? "Head Adjudicator" : "Adjudicator"}
           </span>
         </div>
       </div>

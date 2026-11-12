@@ -96,7 +96,7 @@ function JudgesHome() {
     setVerifying(true);
 
     try {
-      const result = verifyJudgeCode(accessCodeInput);
+      const result = verifyJudgeCode(accessCodeInput, authModalJudge.id);
       if (!result.valid) {
         setAuthError(result.message || "Invalid access code or seat PIN.");
         toast.error("Access denied", { description: result.message });

@@ -10,9 +10,9 @@ export interface JudgeAccessState {
 }
 
 export const JUDGE_SEAT_PINS: Record<JudgeId, string> = {
-  judge1: "7101",
+  judge1: "7103",
   judge2: "7102",
-  judge3: "7103",
+  judge3: "7101",
   judge4: "7104",
 };
 
@@ -20,9 +20,29 @@ export const JUDGE_SEAT_PINS: Record<JudgeId, string> = {
  * Named passcodes for specific judge seats.
  */
 export const JUDGE_SEAT_CODES: Record<JudgeId, string[]> = {
-  judge1: ["7101", "JUDGE1", "JUDGE1-SECURE", "SECURE", "JUDGE1-PIN"],
+  judge1: [
+    "7103",
+    "7101",
+    "JUDGE1",
+    "JUDGE3",
+    "JUDGE1-SECURE",
+    "JUDGE3-INTEGRITY",
+    "INTEGRITY",
+    "HEAD-JUDGE",
+    "CHIEF-JUDGE",
+    "PRISCILLIA",
+  ],
   judge2: ["7102", "JUDGE2", "JUDGE2-EXCELLENCE", "EXCELLENCE", "JUDGE2-PIN"],
-  judge3: ["7103", "JUDGE3", "JUDGE3-INTEGRITY", "INTEGRITY", "JUDGE3-PIN"],
+  judge3: [
+    "7101",
+    "7103",
+    "JUDGE3",
+    "JUDGE1",
+    "JUDGE1-SECURE",
+    "SECURE",
+    "JUDGE3-PIN",
+    "DAVID",
+  ],
   judge4: ["7104", "JUDGE4", "JUDGE4-WISDOM", "WISDOM", "JUDGE4-PIN"],
 };
 
@@ -31,7 +51,10 @@ export const DEFAULT_PANEL_CODE = "JUDGE2026";
 /**
  * Validates a candidate judge access code or seat PIN.
  */
-export function verifyJudgeCode(input: string): {
+export function verifyJudgeCode(
+  input: string,
+  targetSeatId?: JudgeId,
+): {
   valid: boolean;
   seatId?: JudgeId | "all";
   message?: string;
@@ -55,10 +78,25 @@ export function verifyJudgeCode(input: string): {
     return { valid: true, seatId: "all" };
   }
 
-  // 2. Check Per-Seat PINs and seat codes
+  // If a specific target seat was requested, verify if the code is valid for that seat
+  if (targetSeatId) {
+    const targetPin = JUDGE_SEAT_PINS[targetSeatId];
+    const targetCodes = JUDGE_SEAT_CODES[targetSeatId] ?? [];
+    if (clean === targetPin || clean === targetSeatId.toUpperCase() || targetCodes.includes(clean)) {
+      return { valid: true, seatId: targetSeatId };
+    }
+  }
+
+  // 2. Check Primary Per-Seat PINs first
   for (const [seatId, pin] of Object.entries(JUDGE_SEAT_PINS) as [JudgeId, string][]) {
-    const seatCodes = JUDGE_SEAT_CODES[seatId] ?? [];
-    if (clean === pin || clean === seatId.toUpperCase() || seatCodes.includes(clean)) {
+    if (clean === pin || clean === seatId.toUpperCase()) {
+      return { valid: true, seatId };
+    }
+  }
+
+  // 3. Check Per-Seat secondary alias codes
+  for (const [seatId, seatCodes] of Object.entries(JUDGE_SEAT_CODES) as [JudgeId, string[]][]) {
+    if (seatCodes.includes(clean)) {
       return { valid: true, seatId };
     }
   }

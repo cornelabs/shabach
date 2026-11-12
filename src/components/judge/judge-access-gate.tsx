@@ -31,7 +31,7 @@ export function JudgeAccessGate({ requiredSeatId, onUnlocked }: Props) {
     setLoading(true);
 
     try {
-      const result = verifyJudgeCode(code);
+      const result = verifyJudgeCode(code, requiredSeatId);
       if (!result.valid) {
         setError(result.message || "Invalid access code.");
         toast.error("Access denied", { description: result.message });

@@ -28,12 +28,12 @@ export interface JudgeProfile {
 export const JUDGES: JudgeProfile[] = [
   {
     id: "judge1",
-    name: "David O. Umoru",
-    label: "Digital Media Strategist & State ICT/Media Director",
-    seatTitle: "Judge Seat 1",
-    roleTitle: "Digital Media Strategist | Entrepreneur | Creative Visionary",
-    bio: "Founder of Hebron Media and Convener of Creators Experience. Serves as State ICT/Media Director for Youth Arm of Living Faith Church Worldwide (Winners' Chapel), Ondo State, empowering creatives across Nigeria.",
-    avatarUrl: "/judges/david-umoru.jpeg",
+    name: "Mrs. Priscillia Fayomi",
+    label: "Global Creativity Director, Youth Alive Ministry · Head Judge",
+    seatTitle: "Head Judge (Seat 1)",
+    roleTitle: "Head Judge | Global Creativity Director | TV Producer | Lead Vocalist",
+    bio: "Head Judge for the SHABACH 2026 Grand Finale. Global Creativity Director for the Youth Alive Ministry of Living Faith Church Worldwide. TV producer, filmmaker, scriptwriter, and celebrated lead vocalist in the Faith Tabernacle Choir, Canaanland.",
+    avatarUrl: "/judges/priscillia-fayomi.jpeg",
   },
   {
     id: "judge2",
@@ -46,12 +46,12 @@ export const JUDGES: JudgeProfile[] = [
   },
   {
     id: "judge3",
-    name: "Mrs. Priscillia Fayomi",
-    label: "Global Creativity Director, Youth Alive Ministry",
+    name: "David O. Umoru",
+    label: "Digital Media Strategist & State ICT/Media Director",
     seatTitle: "Judge Seat 3",
-    roleTitle: "Global Creativity Director | TV Producer | Filmmaker | Lead Vocalist",
-    bio: "Global Creativity Director for the Youth Alive Ministry of Living Faith Church Worldwide. TV producer, filmmaker, scriptwriter, and celebrated lead vocalist in the Faith Tabernacle Choir, Canaanland.",
-    avatarUrl: "/judges/priscillia-fayomi.jpeg",
+    roleTitle: "Digital Media Strategist | Entrepreneur | Creative Visionary",
+    bio: "Founder of Hebron Media and Convener of Creators Experience. Serves as State ICT/Media Director for Youth Arm of Living Faith Church Worldwide (Winners' Chapel), Ondo State, empowering creatives across Nigeria.",
+    avatarUrl: "/judges/david-umoru.jpeg",
   },
   {
     id: "judge4",
