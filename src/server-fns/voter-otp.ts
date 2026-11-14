@@ -13,8 +13,8 @@ export interface DispatchEmailOtpResponse {
 
 interface ProviderResult {
   ok: boolean;
-  id?: string;
-  error?: string;
+  id?: string | undefined;
+  error?: string | undefined;
 }
 
 /**
@@ -29,7 +29,7 @@ export async function sendViaZeptoMail(params: {
   subject: string;
   text: string;
   html: string;
-  apiUrl?: string;
+  apiUrl?: string | undefined;
 }): Promise<ProviderResult> {
   try {
     const rawKey = params.apiKey.trim();
@@ -438,9 +438,9 @@ export interface TestEmailProviderPayload {
 export interface TestProviderItemResult {
   provider: "brevo" | "resend" | "zeptomail";
   ok: boolean;
-  id?: string;
-  error?: string;
-  senderEmail?: string;
+  id?: string | undefined;
+  error?: string | undefined;
+  senderEmail?: string | undefined;
   latencyMs: number;
   timestamp: string;
 }

@@ -96,6 +96,8 @@ export type ScorecardStatus = "not_started" | "draft" | "submitted";
 export interface Scorecard {
   contestantId: string;
   judgeId: JudgeId;
+  /** Competition round (1 = preliminary/top 16, 2 = championship/top 5). Defaults to 1. */
+  round?: number | undefined;
   /** Aligned to the rubric criteria for the contestant's performance type. */
   scores: (number | null)[];
   notes: string;
@@ -174,6 +176,8 @@ export interface DemoState {
   version: 2;
   contestants: Contestant[];
   scorecards: Scorecard[];
+  /** Contestant IDs selected for Round 2 Top 5 stage. If omitted, computed from Round 1 standings. */
+  round2ContestantIds?: string[] | undefined;
   /** Simulated audience votes per contestant id (labelled as demo data). */
   demoVotes: Record<string, number>;
   /** Votes cast in this demo browser; at most one across the competition. */

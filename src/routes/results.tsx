@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Clock, Medal, Trophy } from "lucide-react";
+import { ArrowLeft, Clock, Gavel, Medal, Trophy, Vote } from "lucide-react";
 
 import { ContestantAvatar } from "@/components/contestant-avatar";
 import { SiteFooter } from "@/components/site-footer";
@@ -9,6 +9,7 @@ import { useDemoState } from "@/hooks/use-demo";
 import { getDataAdapter } from "@/lib/db/adapter";
 import { FINALE_DATE_LABEL, typeLabel } from "@/lib/demo/labels";
 import { rubricFor } from "@/lib/demo/rubrics";
+import { fmt2 } from "@/lib/demo/scoring";
 import type { ResultRow } from "@/lib/demo/types";
 
 export const Route = createFileRoute("/results")({
@@ -63,10 +64,24 @@ const PLACEMENT_CONFIG = [
     badge: "bg-parchment text-forest font-semibold",
     trophyColor: "text-charcoal-muted",
   },
+  {
+    rank: 4,
+    title: "4th Place · Third Runner-Up",
+    accent: "border-cream-line bg-card shadow-card",
+    badge: "bg-parchment text-forest font-semibold",
+    trophyColor: "text-charcoal-muted",
+  },
+  {
+    rank: 5,
+    title: "5th Place · Fourth Runner-Up",
+    accent: "border-cream-line bg-card shadow-card",
+    badge: "bg-parchment text-forest font-semibold",
+    trophyColor: "text-charcoal-muted",
+  },
 ] as const;
 
-function TopThreeCard({ row, position }: { row: ResultRow; position: number }) {
-  const config = PLACEMENT_CONFIG[position] ?? PLACEMENT_CONFIG[2];
+function TopFiveCard({ row, position }: { row: ResultRow; position: number }) {
+  const config = PLACEMENT_CONFIG[position] ?? PLACEMENT_CONFIG[0]!;
 
   return (
     <div
@@ -111,6 +126,45 @@ function TopThreeCard({ row, position }: { row: ResultRow; position: number }) {
             </div>
           </div>
         </div>
+
+        {/* Official Score Summary */}
+        <div className="mt-5 rounded-xl border border-cream-line/80 bg-parchment/60 p-3.5">
+          <div className="grid grid-cols-2 gap-3 text-center">
+            <div className="rounded-lg bg-card p-2.5 border border-cream-line/60 shadow-xs">
+              <div className="flex items-center justify-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-charcoal-muted">
+                <Gavel className="h-3 w-3 text-gold" />
+                <span>Judge Average</span>
+              </div>
+              <p className="mt-1 font-display text-lg font-bold text-forest">
+                {fmt2(row.judgeAverage)}
+              </p>
+              <span className="text-[10px] text-charcoal-muted">out of 95</span>
+            </div>
+
+            <div className="rounded-lg bg-card p-2.5 border border-cream-line/60 shadow-xs">
+              <div className="flex items-center justify-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-charcoal-muted">
+                <Vote className="h-3 w-3 text-gold" />
+                <span>Voting Score</span>
+              </div>
+              <p className="mt-1 font-display text-lg font-bold text-forest">
+                +{fmt2(row.audiencePoints)}
+              </p>
+              <span className="text-[10px] text-charcoal-muted">
+                {row.validVotes > 0 ? `${row.validVotes.toLocaleString()} votes` : "max +5 pts"}
+              </span>
+            </div>
+          </div>
+
+          {row.finalScore !== null && (
+            <div className="mt-2.5 flex items-center justify-between border-t border-cream-line/60 pt-2 px-1 text-xs">
+              <span className="font-semibold text-charcoal">Final Score</span>
+              <span className="font-display text-base font-bold text-forest">
+                {fmt2(row.finalScore)}{" "}
+                <span className="text-[11px] font-normal text-charcoal-muted">/ 100</span>
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mt-6 border-t border-cream-line pt-4">
@@ -126,28 +180,30 @@ function TopThreeCard({ row, position }: { row: ResultRow; position: number }) {
   );
 }
 
-export function PublicTopThree({ rows }: { rows: ResultRow[] }) {
+export const TopThreeCard = TopFiveCard;
+
+export function PublicTopFive({ rows }: { rows: ResultRow[] }) {
   // STRICT PRIVACY GUARANTEE:
-  // Under no circumstances expose 4th-16th ranks, raw judge marks, or internal vote tallies to public visitors.
-  // Strictly filter only the top three placed finalists (rank 1, 2, 3) sorted by rank.
-  const topThree = rows
-    .filter((r) => r.rank !== null && r.rank >= 1 && r.rank <= 3)
+  // Under no circumstances expose 6th-16th ranks, individual judge scorecards, or internal notes to public visitors.
+  // Strictly filter only the top five placed finalists (rank 1 to 5) sorted by rank.
+  const topFive = rows
+    .filter((r) => r.rank !== null && r.rank >= 1 && r.rank <= 5)
     .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
-    .slice(0, 3);
+    .slice(0, 5);
 
   return (
     <div className="mt-8">
       <div className="text-center sm:text-left">
         <h2 className="font-display text-3xl text-forest">Grand Finale Winners</h2>
         <p className="mt-2 text-sm text-charcoal-muted">
-          Official top three placements for SHABACH 2026 — Talent for Christ. All 16 contestants
+          Official top five placements for SHABACH 2026 — Talent for Christ. All 16 contestants
           competed in one overall ranking across disciplines.
         </p>
       </div>
 
-      <div className="mt-8 grid gap-6 md:grid-cols-3">
-        {topThree.map((row, index) => (
-          <TopThreeCard key={row.contestant.id} row={row} position={index} />
+      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {topFive.map((row, index) => (
+          <TopFiveCard key={row.contestant.id} row={row} position={index} />
         ))}
       </div>
 
@@ -169,6 +225,8 @@ export function PublicTopThree({ rows }: { rows: ResultRow[] }) {
   );
 }
 
+export const PublicTopThree = PublicTopFive;
+
 function ResultsPage() {
   const loaderData = Route.useLoaderData();
   const state = useDemoState();
@@ -185,7 +243,7 @@ function ResultsPage() {
         <h1 className="mt-4 font-display text-4xl text-forest">Results & Winners</h1>
 
         {isPublished && results ? (
-          <PublicTopThree rows={results.rows} />
+          <PublicTopFive rows={results.rows} />
         ) : (
           <div className="mt-8 rounded-2xl border border-cream-line bg-card p-10 text-center shadow-card">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gold-wash text-gold">
@@ -195,7 +253,7 @@ function ResultsPage() {
               Official results are being collated...
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-charcoal-muted">
-              Official results are being collated by the score desk. The Grand Finale top three
+              Official results are being collated by the score desk. The Grand Finale top five
               placements will be officially published here following complete scoring collation,
               verification of all 64 scorecards, and score-desk confirmation.
             </p>

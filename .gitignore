@@ -27,6 +27,13 @@ supabase/.temp/
 # Video intermediates
 public/videos/raw/
 public/videos/audio/
+public/videos/raw_audience/
+public/videos/raw_audience_mobile/
+public/videos/audience_audio/
+public/videos/*.webm
+public/screenshots/audience_walkthrough*/
+public/screenshots/live_*.png
+public/screenshots/judges_dossier/
 
 .vscode/*
 !.vscode/extensions.json

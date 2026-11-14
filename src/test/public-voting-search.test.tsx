@@ -331,37 +331,87 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
         finalScore: 78.5,
         rank: 4,
       },
+      {
+        contestant: {
+          id: "c05",
+          code: "FG7K9P",
+          name: "Daniel Peters",
+          district: "Ikorodu District",
+          type: "spoken_word",
+          title: "Grace and Mercy",
+          bio: "Bio 5",
+          order: 5,
+          hue: 200,
+        },
+        judgeSubtotals: { judge1: 72, judge2: 73, judge3: 74, judge4: 73 },
+        judgeCount: 4,
+        judgeAverage: 73.0,
+        validVotes: 80,
+        audiencePoints: 3.0,
+        timePenalty: 0,
+        complete: true,
+        tieFlags: [],
+        finalScore: 76.0,
+        rank: 5,
+      },
+      {
+        contestant: {
+          id: "c06",
+          code: "MN3B5V",
+          name: "Victor Stone",
+          district: "Epe District",
+          type: "music",
+          title: "The Narrow Way",
+          bio: "Bio 6",
+          order: 6,
+          hue: 150,
+        },
+        judgeSubtotals: { judge1: 68, judge2: 70, judge3: 69, judge4: 69 },
+        judgeCount: 4,
+        judgeAverage: 69.0,
+        validVotes: 60,
+        audiencePoints: 2.5,
+        timePenalty: 0,
+        complete: true,
+        tieFlags: [],
+        finalScore: 71.5,
+        rank: 6,
+      },
     ];
 
-    it("displays strictly top three acts with category and district, never 4th place", () => {
+    it("displays top five acts with category and district, never 6th place", () => {
       render(<PublicTopThree rows={sampleRows} />);
 
-      // Top 3 names must be present
+      // Top 5 names must be present
       expect(screen.getByText("Grace Adeyemi")).toBeInTheDocument();
       expect(screen.getByText("David Adeleke")).toBeInTheDocument();
       expect(screen.getByText("Faith Johnson")).toBeInTheDocument();
+      expect(screen.getByText("Samuel Oladipo")).toBeInTheDocument();
+      expect(screen.getByText("Daniel Peters")).toBeInTheDocument();
 
-      // Top 3 placements
+      // Top 5 placements
       expect(screen.getByText(/1st Place/i)).toBeInTheDocument();
       expect(screen.getByText(/2nd Place/i)).toBeInTheDocument();
       expect(screen.getByText(/3rd Place/i)).toBeInTheDocument();
+      expect(screen.getByText(/4th Place/i)).toBeInTheDocument();
+      expect(screen.getByText(/5th Place/i)).toBeInTheDocument();
 
-      // 4th place finalist must strictly NOT appear
-      expect(screen.queryByText("Samuel Oladipo")).toBeNull();
-      expect(screen.queryByText(/4th Place/i)).toBeNull();
+      // 6th place finalist must strictly NOT appear
+      expect(screen.queryByText("Victor Stone")).toBeNull();
+      expect(screen.queryByText(/6th Place/i)).toBeNull();
     });
 
-    it("strictly hides internal vote totals, audience points, and raw judge subtotals", () => {
+    it("displays voting score and average judge score while hiding raw individual judge marks", () => {
       const { container } = render(<PublicTopThree rows={sampleRows} />);
       const text = container.textContent || "";
 
-      // Internal vote counts (e.g. 240, 180, 150)
-      expect(text).not.toMatch(/240\s*votes/i);
-      expect(text).not.toMatch(/180\s*votes/i);
+      // Scores are present
+      expect(screen.getAllByText("Judge Average").length).toBe(5);
+      expect(screen.getAllByText("Voting Score").length).toBe(5);
 
-      // Raw points breakdown or judge subtotals
+      // Raw points breakdown or individual judge subtotals like judge1, raw subtotal must not appear
       expect(text).not.toMatch(/judge1/i);
-      expect(text).not.toMatch(/judge average/i);
+      expect(text).not.toMatch(/judge2/i);
       expect(text).not.toMatch(/raw subtotal/i);
     });
   });

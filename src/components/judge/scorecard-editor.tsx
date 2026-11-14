@@ -12,6 +12,7 @@ import {
   Save,
   Send,
   ShieldAlert,
+  Trophy,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -49,16 +50,18 @@ type SubmitStatus = "idle" | "submitting" | "submitted" | "error";
 export function ScorecardEditor({
   judgeId,
   contestantId,
+  round = 1,
   onSubmitted,
   onCancel,
 }: {
   judgeId: JudgeId;
   contestantId: string;
+  round?: number;
   onSubmitted?: () => void;
   onCancel?: () => void;
 }) {
   const state = useDemoState();
-  const card = getCard(state, judgeId, contestantId);
+  const card = getCard(state, judgeId, contestantId, round);
   const contestant = state.contestants.find((c) => c.id === contestantId);
   const rubric = useMemo(() => rubricFor(contestant?.type ?? "music"), [contestant?.type]);
 
@@ -175,12 +178,14 @@ export function ScorecardEditor({
     setSaveError(null);
 
     try {
-      const result = saveDraft(judgeId, contestantId, scores, notes);
+      const result = saveDraft(judgeId, contestantId, scores, notes, round);
       if (result.ok) {
         setSaveStatus("saved");
         const nowIso = new Date().toISOString();
         setLastSavedAt(nowIso);
-        toast.success("Draft saved.", { description: "Come back any time before submission." });
+        toast.success(round === 2 ? "Round 2 draft saved." : "Draft saved.", {
+          description: "Come back any time before submission.",
+        });
       } else {
         setSaveStatus("error");
         const msg =
@@ -216,14 +221,17 @@ export function ScorecardEditor({
     try {
       // Pass the EXACT reviewed scores and notes directly so any unsaved modifications
       // made after or without saving draft are accurately submitted
-      const result = submitScorecard(judgeId, contestantId, scores, notes);
+      const result = submitScorecard(judgeId, contestantId, scores, notes, round);
 
       if (result.ok) {
         setSubmitStatus("submitted");
         setConfirming(false);
         setSaveStatus("idle");
-        toast.success("Scorecard submitted.", {
-          description: "Submitted cards are locked until an organiser reopens them.",
+        toast.success(round === 2 ? "Round 2 Scorecard submitted." : "Scorecard submitted.", {
+          description:
+            round === 2
+              ? "Official Round 2 score verified and locked until reopened by organiser."
+              : "Submitted cards are locked until an organiser reopens them.",
         });
         onSubmitted?.();
       } else {
@@ -266,7 +274,7 @@ export function ScorecardEditor({
 
   function handleConflict(checked: boolean | string) {
     const isDeclared = Boolean(checked);
-    declareConflict(judgeId, contestantId, isDeclared);
+    declareConflict(judgeId, contestantId, isDeclared, round);
     if (isDeclared) {
       toast.warning("Conflict of interest declared.", {
         description: "The organiser must review it before this scorecard can count.",
@@ -277,7 +285,7 @@ export function ScorecardEditor({
   }
 
   function handleReset() {
-    resetJudgeScorecard(judgeId, contestantId);
+    resetJudgeScorecard(judgeId, contestantId, round);
     setScores(rubric.criteria.map(() => null));
     setNotes("");
     setErrors([]);
@@ -295,9 +303,16 @@ export function ScorecardEditor({
       <div className="border-b border-cream-line p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gold">
-              № {contestant.order} · {typeLabel(contestant.type)} rubric
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-gold">
+                № {contestant.order} · {typeLabel(contestant.type)} rubric
+              </p>
+              {round === 2 && (
+                <Badge className="bg-gold-deep text-ivory border-none text-[10px] gap-1 font-semibold">
+                  <Trophy className="h-3 w-3 text-gold-soft" /> Score Page Two · Round 2
+                </Badge>
+              )}
+            </div>
             <h2 className="mt-1 font-display text-2xl text-forest">{contestant.name}</h2>
             <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-forest">
               <Clock className="h-3.5 w-3.5 text-gold shrink-0" />

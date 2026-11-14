@@ -371,16 +371,31 @@ export class LiveSupabaseAdapter implements IDataAdapter {
     contestantId: string,
   ): Promise<{ success: boolean; message: string; voteId?: string }> {
     try {
-      const { data, error } = await this.client.rpc("cast_audience_vote", {
-        p_event_id: DEFAULT_EVENT_ID,
-        p_contestant_id: contestantId,
-        p_voter_token: voterId,
-        p_method: "otp_email",
-        p_voter_hash: voterId,
-      });
+      let data: any;
+      let error: any;
+
+      if (voterId.includes("@")) {
+        const res = await (this.client.rpc as any)("cast_email_vote", {
+          p_event_id: DEFAULT_EVENT_ID,
+          p_contestant_id: contestantId,
+          p_email: voterId,
+        });
+        data = res.data;
+        error = res.error;
+      } else {
+        const res = await (this.client.rpc as any)("cast_audience_vote", {
+          p_event_id: DEFAULT_EVENT_ID,
+          p_contestant_id: contestantId,
+          p_voter_token: voterId,
+          p_method: "audience_web",
+          p_voter_hash: voterId,
+        });
+        data = res.data;
+        error = res.error;
+      }
 
       if (error) {
-        console.warn("Supabase cast_audience_vote error:", error.message);
+        console.warn("Supabase cast vote error:", error.message);
         const msg = error.message.toLowerCase();
         if (msg.includes("already_voted") || msg.includes("unique")) {
           return {
@@ -393,12 +408,6 @@ export class LiveSupabaseAdapter implements IDataAdapter {
         }
         if (msg.includes("closed")) {
           return { success: false, message: "Voting window is currently closed." };
-        }
-        if (msg.includes("unverified")) {
-          return {
-            success: false,
-            message: "Voter verification required: please verify your email OTP before casting your vote.",
-          };
         }
       }
 

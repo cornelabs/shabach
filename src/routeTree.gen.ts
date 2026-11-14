@@ -28,6 +28,7 @@ import { Route as ContestantsCodeRouteImport } from './routes/contestants.$code'
 import { Route as JudgesIndexRouteImport } from './routes/judges.index'
 import { Route as JudgesJudgeIdRouteImport } from './routes/judges.$judgeId'
 import { Route as JudgesMeetRouteImport } from './routes/judges.meet'
+import { Route as JudgesRound2RouteImport } from './routes/judges.round2'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -124,6 +125,11 @@ const JudgesMeetRoute = JudgesMeetRouteImport.update({
   path: '/meet',
   getParentRoute: () => JudgesRoute,
 } as any)
+const JudgesRound2Route = JudgesRound2RouteImport.update({
+  id: '/round2',
+  path: '/round2',
+  getParentRoute: () => JudgesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/contestants/$code': typeof ContestantsCodeRoute
   '/judges/$judgeId': typeof JudgesJudgeIdRoute
   '/judges/meet': typeof JudgesMeetRoute
+  '/judges/round2': typeof JudgesRound2Route
   '/contestants/': typeof ContestantsIndexRoute
   '/judges/': typeof JudgesIndexRoute
 }
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/contestants/$code': typeof ContestantsCodeRoute
   '/judges/$judgeId': typeof JudgesJudgeIdRoute
   '/judges/meet': typeof JudgesMeetRoute
+  '/judges/round2': typeof JudgesRound2Route
   '/contestants': typeof ContestantsIndexRoute
   '/judges': typeof JudgesIndexRoute
 }
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/contestants/$code': typeof ContestantsCodeRoute
   '/judges/$judgeId': typeof JudgesJudgeIdRoute
   '/judges/meet': typeof JudgesMeetRoute
+  '/judges/round2': typeof JudgesRound2Route
   '/contestants/': typeof ContestantsIndexRoute
   '/judges/': typeof JudgesIndexRoute
 }
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/contestants/$code'
     | '/judges/$judgeId'
     | '/judges/meet'
+    | '/judges/round2'
     | '/contestants/'
     | '/judges/'
   fileRoutesByTo: FileRoutesByTo
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/contestants/$code'
     | '/judges/$judgeId'
     | '/judges/meet'
+    | '/judges/round2'
     | '/contestants'
     | '/judges'
   id:
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/contestants/$code'
     | '/judges/$judgeId'
     | '/judges/meet'
+    | '/judges/round2'
     | '/contestants/'
     | '/judges/'
   fileRoutesById: FileRoutesById
@@ -407,18 +419,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JudgesMeetRouteImport
       parentRoute: typeof JudgesRoute
     }
+    '/judges/round2': {
+      id: '/judges/round2'
+      path: '/round2'
+      fullPath: '/judges/round2'
+      preLoaderRoute: typeof JudgesRound2RouteImport
+      parentRoute: typeof JudgesRoute
+    }
   }
 }
 
 interface JudgesRouteChildren {
   JudgesJudgeIdRoute: typeof JudgesJudgeIdRoute
   JudgesMeetRoute: typeof JudgesMeetRoute
+  JudgesRound2Route: typeof JudgesRound2Route
   JudgesIndexRoute: typeof JudgesIndexRoute
 }
 
 const JudgesRouteChildren: JudgesRouteChildren = {
   JudgesJudgeIdRoute: JudgesJudgeIdRoute,
   JudgesMeetRoute: JudgesMeetRoute,
+  JudgesRound2Route: JudgesRound2Route,
   JudgesIndexRoute: JudgesIndexRoute,
 }
 

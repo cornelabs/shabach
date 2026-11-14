@@ -3,6 +3,7 @@ import * as React from "react";
 import {
   AlertCircle,
   AlertTriangle,
+  ArrowRight,
   BadgeAlert,
   CheckCircle2,
   Clock,
@@ -22,6 +23,7 @@ import {
   ShieldCheck,
   Timer,
   Trash2,
+  Trophy,
   Users,
   Vote,
 } from "lucide-react";
@@ -78,6 +80,7 @@ import { AdminAccessGate } from "@/components/admin/admin-access-gate";
 import { computeResults, fmt2, timePenalty, verificationGates } from "@/lib/demo/scoring";
 import {
   checkLockReadiness,
+  getTop5Contestants,
   loadSampleScores,
   lockResults,
   publishResults,
@@ -160,7 +163,11 @@ function OrganiserDashboard() {
   // Submitted scorecards count out of 64
   const submittedCardsCount = React.useMemo(() => {
     return state.scorecards.filter(
-      (s) => s.status === "submitted" && !s.reopened && !s.conflictDeclared,
+      (s) =>
+        (s.round ?? 1) === 1 &&
+        s.status === "submitted" &&
+        !s.reopened &&
+        !s.conflictDeclared,
     ).length;
   }, [state.scorecards]);
 
@@ -911,7 +918,10 @@ function ScoringTab({ isLocked }: { isLocked: boolean }) {
         {JUDGES.map((judge) => {
           const submitted = sorted.filter((c) => {
             const card = state.scorecards.find(
-              (sc) => sc.judgeId === judge.id && sc.contestantId === c.id,
+              (sc) =>
+                sc.judgeId === judge.id &&
+                sc.contestantId === c.id &&
+                (sc.round ?? 1) === 1,
             );
             return card?.status === "submitted" && !card.reopened && !card.conflictDeclared;
           }).length;
@@ -976,7 +986,10 @@ function ScoringTab({ isLocked }: { isLocked: boolean }) {
 
                   {JUDGES.map((j) => {
                     const card = state.scorecards.find(
-                      (sc) => sc.judgeId === j.id && sc.contestantId === c.id,
+                      (sc) =>
+                        sc.judgeId === j.id &&
+                        sc.contestantId === c.id &&
+                        (sc.round ?? 1) === 1,
                     );
                     const isSub =
                       card?.status === "submitted" && !card.reopened && !card.conflictDeclared;
@@ -1023,6 +1036,143 @@ function ScoringTab({ isLocked }: { isLocked: boolean }) {
                                     })
                                   }
                                   title="Reopen scorecard"
+                                  className="h-6 w-6 p-0 text-charcoal-muted hover:text-amber-700"
+                                >
+                                  <RotateCcw className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          ) : isReo ? (
+                            <Badge
+                              variant="outline"
+                              className="border-amber-400 bg-amber-50 text-[10px] text-amber-800"
+                            >
+                              Reopened
+                            </Badge>
+                          ) : card?.status === "draft" ? (
+                            <span className="text-xs text-charcoal-muted">Draft</span>
+                          ) : (
+                            <span className="text-xs text-charcoal-muted/60">—</span>
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Score Page Two (Round 2 — Top 5 Finalists) Matrix */}
+      <div className="rounded-2xl border border-gold/40 bg-card p-6 shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cream-line pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-gold text-forest-deep text-[11px] font-bold">
+                <Trophy className="mr-1 h-3 w-3" /> Score Page Two
+              </Badge>
+              <h3 className="font-display text-xl text-forest">Round 2 Top 5 Finalists Matrix</h3>
+            </div>
+            <p className="mt-1 text-xs text-charcoal-muted">
+              Inspect the 20 Round 2 championship scorecards (4 judges × 5 finalists) out of 95 raw points.
+            </p>
+          </div>
+          <Link
+            to="/judges/round2"
+            target="_blank"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gold/40 bg-gold-wash/50 px-3 py-1.5 text-xs font-semibold text-forest hover:bg-gold-wash"
+          >
+            <span>Open Judges' Score Page Two</span>
+            <ArrowRight className="h-3 w-3 text-gold" />
+          </Link>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[700px] text-sm">
+            <thead>
+              <tr className="border-b border-cream-line bg-parchment text-left text-xs uppercase tracking-wide text-charcoal-muted">
+                <th className="px-4 py-3">Top 5 Finalist</th>
+                {JUDGES.map((j) => (
+                  <th key={`r2-head-${j.id}`} className="px-4 py-3 text-center">
+                    {j.name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {getTop5Contestants(state).map((c, idx) => (
+                <tr
+                  key={`r2-row-${c.id}`}
+                  className="border-b border-cream-line last:border-0 hover:bg-ivory/60"
+                >
+                  <td className="px-4 py-3 font-semibold text-forest">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-gold/20 px-1.5 py-0.5 font-mono text-[11px] font-bold text-forest-deep">
+                        № {idx + 1}
+                      </span>
+                      <div>
+                        {c.name}
+                        <span className="block text-xs font-normal text-charcoal-muted">
+                          {typeLabel(c.type)} · {c.district}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+
+                  {JUDGES.map((j) => {
+                    const card = state.scorecards.find(
+                      (sc) =>
+                        sc.judgeId === j.id &&
+                        sc.contestantId === c.id &&
+                        sc.round === 2,
+                    );
+                    const isSub =
+                      card?.status === "submitted" && !card.reopened && !card.conflictDeclared;
+                    const isConf = card?.conflictDeclared && !card.conflictResolved;
+                    const isReo = card?.reopened;
+                    const subtotal = card
+                      ? card.scores.reduce((a, b) => (a ?? 0) + (b ?? 0), 0)
+                      : null;
+
+                    return (
+                      <td key={`r2-cell-${j.id}-${c.id}`} className="px-4 py-3 text-center">
+                        <div className="flex flex-col items-center gap-1">
+                          {isConf ? (
+                            <div className="flex items-center gap-1">
+                              <Badge variant="destructive" className="text-[10px]">
+                                Conflict
+                              </Badge>
+                              {!isLocked && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleResolveConflict(j.id, c.id, c.name)}
+                                  className="h-6 text-[10px] px-1 text-forest hover:bg-forest/10"
+                                >
+                                  Resolve
+                                </Button>
+                              )}
+                            </div>
+                          ) : isSub ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-display font-semibold text-forest">
+                                {subtotal}
+                              </span>
+                              <span className="text-[11px] text-charcoal-muted">/95</span>
+                              {!isLocked && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setReopenTarget({
+                                      judgeId: j.id,
+                                      contestantId: c.id,
+                                      contestantName: `${c.name} (Round 2)`,
+                                    })
+                                  }
+                                  title="Reopen Round 2 scorecard"
                                   className="h-6 w-6 p-0 text-charcoal-muted hover:text-amber-700"
                                 >
                                   <RotateCcw className="h-3 w-3" />

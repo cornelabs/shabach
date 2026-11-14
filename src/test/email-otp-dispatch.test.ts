@@ -98,7 +98,7 @@ describe("Transactional Email OTP Dispatch (Brevo -> Resend -> ZeptoMail cascade
 
     expect(brevoUrl).toBe("https://api.brevo.com/v3/smtp/email");
     expect(resendUrl).toBe("https://api.resend.com/emails");
-    expect((resendOpts?.headers as Record<string, string>)?.Authorization).toBe(
+    expect((resendOpts?.headers as Record<string, string>)?.[ "Authorization" ]).toBe(
       "Bearer re_resend_fallback_key"
     );
   });
@@ -151,7 +151,7 @@ describe("Transactional Email OTP Dispatch (Brevo -> Resend -> ZeptoMail cascade
     // Last call should be to ZeptoMail
     const [zeptoUrl, zeptoOptions] = fetchMock.mock.calls[fetchMock.mock.calls.length - 1]!;
     expect(zeptoUrl).toBe("https://api.zeptomail.com/v1.1/email");
-    expect((zeptoOptions?.headers as Record<string, string>)?.authorization).toBe(
+    expect((zeptoOptions?.headers as Record<string, string>)?.[ "authorization" ]).toBe(
       "Zoho-enczapikey mock-zepto-token-12345"
     );
 

@@ -1,8 +1,10 @@
 import { CONTESTANT_SEED, OLD_DUMMY_NAMES, createSeedState } from "./seed";
 import {
   canLock,
+  computeMasterRows,
   computeResults,
   judgeSubtotal,
+  rankAndAssign,
   validateScores,
   verificationGates,
 } from "./scoring";
@@ -847,32 +849,48 @@ export function setActiveJudge(judgeId: JudgeId | null) {
 }
 
 export function upsertCard(s: DemoState, next: Scorecard): Scorecard[] {
-  syncMutationToSupabase("scorecard", next);
+  const nextRound = next.round ?? 1;
+  if (nextRound === 1) {
+    syncMutationToSupabase("scorecard", next);
+  }
   const i = s.scorecards.findIndex(
-    (c) => c.judgeId === next.judgeId && c.contestantId === next.contestantId,
+    (c) =>
+      c.judgeId === next.judgeId &&
+      c.contestantId === next.contestantId &&
+      (c.round ?? 1) === nextRound,
   );
-  if (i === -1) return [...s.scorecards, next];
+  if (i === -1) return [...s.scorecards, { ...next, round: nextRound }];
   const copy = [...s.scorecards];
-  copy[i] = next;
+  copy[i] = { ...next, round: nextRound };
   return copy;
 }
 
-export function getCard(s: DemoState, judgeId: JudgeId, contestantId: string): Scorecard {
+export function getCard(
+  s: DemoState,
+  judgeId: JudgeId,
+  contestantId: string,
+  round: number = 1,
+): Scorecard {
+  const targetRound = round ?? 1;
   const existing = s.scorecards.find(
-    (c) => c.judgeId === judgeId && c.contestantId === contestantId,
+    (c) =>
+      c.judgeId === judgeId &&
+      c.contestantId === contestantId &&
+      (c.round ?? 1) === targetRound,
   );
   if (existing) {
     return {
       ...existing,
+      round: targetRound,
       subtotal: existing.subtotal ?? judgeSubtotal(existing.scores),
     };
   }
+  const contestant = s.contestants.find((c) => c.id === contestantId);
   return {
     contestantId,
     judgeId,
-    scores: rubricFor(s.contestants.find((c) => c.id === contestantId)!.type).criteria.map(
-      () => null,
-    ),
+    round: targetRound,
+    scores: rubricFor(contestant?.type ?? "music").criteria.map(() => null),
     notes: "",
     status: "not_started",
     conflictDeclared: false,
@@ -893,15 +911,18 @@ export function saveDraft(
   contestantId: string,
   scores: (number | null)[],
   notes: string = "",
+  round: number = 1,
 ): SaveResult {
   const s = state;
   if (resultsLocked(s)) return { ok: false, reason: "results_locked" };
-  const existing = getCard(s, judgeId, contestantId);
+  const targetRound = round ?? 1;
+  const existing = getCard(s, judgeId, contestantId, targetRound);
   if (existing.status === "submitted" && !existing.reopened) return { ok: false };
   update((cur) => ({
     ...cur,
     scorecards: upsertCard(cur, {
       ...existing,
+      round: targetRound,
       scores,
       notes,
       subtotal: judgeSubtotal(scores),
@@ -925,10 +946,12 @@ export function submitScorecard(
   contestantId: string,
   currentScores?: (number | null)[],
   currentNotes?: string,
+  round: number = 1,
 ): SubmitResult {
   const s = state;
   if (resultsLocked(s)) return { ok: false, reason: "results_locked" };
-  const card = getCard(s, judgeId, contestantId);
+  const targetRound = round ?? 1;
+  const card = getCard(s, judgeId, contestantId, targetRound);
   if (card.status === "submitted" && !card.reopened) {
     return { ok: false, reason: "already_submitted" };
   }
@@ -950,6 +973,7 @@ export function submitScorecard(
     ...cur,
     scorecards: upsertCard(cur, {
       ...card,
+      round: targetRound,
       scores: effectiveScores,
       notes: effectiveNotes,
       subtotal,
@@ -964,14 +988,21 @@ export function submitScorecard(
   return { ok: true };
 }
 
-export function declareConflict(judgeId: JudgeId, contestantId: string, declared: boolean) {
+export function declareConflict(
+  judgeId: JudgeId,
+  contestantId: string,
+  declared: boolean,
+  round: number = 1,
+) {
   const s = state;
   if (resultsLocked(s)) return;
-  const card = getCard(s, judgeId, contestantId);
+  const targetRound = round ?? 1;
+  const card = getCard(s, judgeId, contestantId, targetRound);
   update((cur) => ({
     ...cur,
     scorecards: upsertCard(cur, {
       ...card,
+      round: targetRound,
       conflictDeclared: declared,
       conflictResolved: declared ? false : card.conflictResolved,
       updatedAt: new Date().toISOString(),
@@ -979,15 +1010,17 @@ export function declareConflict(judgeId: JudgeId, contestantId: string, declared
   }));
 }
 
-export function resetJudgeScorecard(judgeId: JudgeId, contestantId: string) {
+export function resetJudgeScorecard(judgeId: JudgeId, contestantId: string, round: number = 1) {
   const s = state;
   if (resultsLocked(s)) return;
-  const card = getCard(s, judgeId, contestantId);
+  const targetRound = round ?? 1;
+  const card = getCard(s, judgeId, contestantId, targetRound);
   if (card.status === "submitted" && !card.reopened) return;
   update((cur) => ({
     ...cur,
     scorecards: upsertCard(cur, {
       ...card,
+      round: targetRound,
       scores: rubricFor(cur.contestants.find((c) => c.id === contestantId)!.type).criteria.map(
         () => null,
       ),
@@ -996,6 +1029,75 @@ export function resetJudgeScorecard(judgeId: JudgeId, contestantId: string) {
       updatedAt: new Date().toISOString(),
     }),
   }));
+}
+
+/**
+ * Resolves the Top 5 contestants advancing to Round 2.
+ * Prioritises explicit configuration, then Round 1 master rankings, with fallback to performance order.
+ */
+export function getTop5Contestants(s: DemoState): Contestant[] {
+  if (s.round2ContestantIds && s.round2ContestantIds.length >= 5) {
+    const picked = s.round2ContestantIds
+      .map((id) => s.contestants.find((c) => c.id === id))
+      .filter((c): c is Contestant => Boolean(c));
+    if (picked.length >= 5) return picked.slice(0, 5);
+  }
+
+  // Evaluate Round 1 scores
+  const round1Cards = s.scorecards.filter((sc) => (sc.round ?? 1) === 1);
+  const rows = computeMasterRows({
+    contestants: s.contestants,
+    scorecards: round1Cards,
+    voteCounts: voteCountsOf(s),
+    durations: s.durations,
+    tieResolutions: s.tieResolutions,
+  });
+  const ranked = rankAndAssign(rows, round1Cards, s.tieResolutions);
+
+  const scored = ranked.filter(
+    (r) => r.finalScore !== null || (r.judgeAverage !== null && r.judgeAverage > 0),
+  );
+  if (scored.length >= 5) {
+    return scored.slice(0, 5).map((r) => r.contestant);
+  }
+
+  // Fallback: sort by current score/average then performance order
+  const sorted = [...ranked].sort((a, b) => {
+    const aScore = a.finalScore ?? a.judgeAverage ?? -1;
+    const bScore = b.finalScore ?? b.judgeAverage ?? -1;
+    if (bScore !== aScore) return bScore - aScore;
+    return a.contestant.order - b.contestant.order;
+  });
+
+  return sorted.slice(0, 5).map((r) => r.contestant);
+}
+
+export function setRound2Contestants(contestantIds: string[]) {
+  update((s) => ({
+    ...s,
+    round2ContestantIds: contestantIds.slice(0, 5),
+    activity: log(
+      s,
+      "durations_verified",
+      `Round 2 Top 5 Finalists updated: ${contestantIds.length} acts selected.`,
+    ),
+  }));
+}
+
+export function getRound2SubmittedCount(s: DemoState, judgeId: JudgeId): number {
+  const top5 = getTop5Contestants(s);
+  return top5.filter((c) => getCard(s, judgeId, c.id, 2).status === "submitted").length;
+}
+
+export function getAllRound2SubmittedCount(s: DemoState): number {
+  const top5 = getTop5Contestants(s);
+  let count = 0;
+  for (const j of JUDGES) {
+    for (const c of top5) {
+      if (getCard(s, j.id, c.id, 2).status === "submitted") count++;
+    }
+  }
+  return count;
 }
 
 // ---------------------------------------------------------------------------
@@ -1042,15 +1144,23 @@ export function updateContestant(id: string, edit: ContestantEdit): UpdateContes
   return { ok: true };
 }
 
-export function reopenScorecard(judgeId: JudgeId, contestantId: string, reason: string) {
+export function reopenScorecard(
+  judgeId: JudgeId,
+  contestantId: string,
+  reason: string,
+  round: number = 1,
+) {
   if (!reason.trim()) return { ok: false };
+  const targetRound = round ?? 1;
   update((s) => {
-    const card = getCard(s, judgeId, contestantId);
+    const card = getCard(s, judgeId, contestantId, targetRound);
     if (card.status !== "submitted") return s;
+    const rLabel = targetRound === 2 ? " (Round 2)" : "";
     return {
       ...s,
       scorecards: upsertCard(s, {
         ...card,
+        round: targetRound,
         reopened: true,
         reopenReason: reason.trim(),
         status: "draft",
@@ -1059,7 +1169,7 @@ export function reopenScorecard(judgeId: JudgeId, contestantId: string, reason: 
       activity: log(
         s,
         "scorecard_reopened",
-        `Reopened ${judgeId}'s scorecard for ${s.contestants.find((c) => c.id === contestantId)?.name}. Reason: ${reason.trim()}`,
+        `Reopened ${judgeId}'s scorecard for ${s.contestants.find((c) => c.id === contestantId)?.name}${rLabel}. Reason: ${reason.trim()}`,
       ),
     };
   });
@@ -1070,14 +1180,20 @@ export function reopenScorecard(judgeId: JudgeId, contestantId: string, reason: 
  * Resolves a conflict declaration by resetting the card to draft and requiring
  * explicit resubmission by an authorised judge.
  */
-export function resolveConflict(judgeId: JudgeId, contestantId: string) {
+export function resolveConflict(
+  judgeId: JudgeId,
+  contestantId: string,
+  round: number = 1,
+) {
+  const targetRound = round ?? 1;
   update((s) => {
-    const card = getCard(s, judgeId, contestantId);
+    const card = getCard(s, judgeId, contestantId, targetRound);
     if (!card.conflictDeclared && !card.conflictResolved) return s;
     return {
       ...s,
       scorecards: upsertCard(s, {
         ...card,
+        round: targetRound,
         conflictDeclared: false,
         conflictResolved: true,
         status: "draft",

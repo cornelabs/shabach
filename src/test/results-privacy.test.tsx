@@ -132,9 +132,55 @@ describe("Public Results Privacy & Presentation", () => {
       tieFlags: [],
       rank: 4,
     },
+    {
+      contestant: {
+        id: "c05",
+        code: "SHB-05",
+        name: "Ruth Amos",
+        district: "Badagry",
+        type: "spoken_word",
+        title: "Song of Deliverance",
+        bio: "Test bio",
+        order: 5,
+        hue: 150,
+      },
+      judgeSubtotals: { judge1: 72, judge2: 74, judge3: 73 },
+      judgeCount: 3,
+      judgeAverage: 73.0,
+      validVotes: 70,
+      audiencePoints: 2.92,
+      timePenalty: 0,
+      finalScore: 75.92,
+      complete: true,
+      tieFlags: [],
+      rank: 5,
+    },
+    {
+      contestant: {
+        id: "c06",
+        code: "SHB-06",
+        name: "Victor Dan",
+        district: "Ikorodu",
+        type: "music",
+        title: "The Narrow Path",
+        bio: "Test bio",
+        order: 6,
+        hue: 180,
+      },
+      judgeSubtotals: { judge1: 68, judge2: 70, judge3: 69 },
+      judgeCount: 3,
+      judgeAverage: 69.0,
+      validVotes: 50,
+      audiencePoints: 2.08,
+      timePenalty: 0,
+      finalScore: 71.08,
+      complete: true,
+      tieFlags: [],
+      rank: 6,
+    },
   ];
 
-  it("renders only top three winners and excludes 4th place and below", () => {
+  it("renders only top five winners and excludes 6th place and below", () => {
     render(<PublicTopThree rows={mockTopThreeRows} />);
 
     // 1st place
@@ -149,9 +195,29 @@ describe("Public Results Privacy & Presentation", () => {
     expect(screen.getByText("David Okon")).toBeInTheDocument();
     expect(screen.getByText("3rd Place · Second Runner-Up")).toBeInTheDocument();
 
-    // 4th place must NOT be rendered
-    expect(screen.queryByText("Emmanuel Bello")).not.toBeInTheDocument();
-    expect(screen.queryByText("4th Place")).not.toBeInTheDocument();
+    // 4th place
+    expect(screen.getByText("Emmanuel Bello")).toBeInTheDocument();
+    expect(screen.getByText("4th Place · Third Runner-Up")).toBeInTheDocument();
+
+    // 5th place
+    expect(screen.getByText("Ruth Amos")).toBeInTheDocument();
+    expect(screen.getByText("5th Place · Fourth Runner-Up")).toBeInTheDocument();
+
+    // 6th place must NOT be rendered
+    expect(screen.queryByText("Victor Dan")).not.toBeInTheDocument();
+    expect(screen.queryByText("6th Place")).not.toBeInTheDocument();
+  });
+
+  it("displays their voting score and average judge score for finalists", () => {
+    render(<PublicTopThree rows={mockTopThreeRows} />);
+
+    // Average judge score and voting score labels
+    expect(screen.getAllByText("Judge Average").length).toBe(5);
+    expect(screen.getAllByText("Voting Score").length).toBe(5);
+
+    // Formatted score values appear
+    expect(screen.getByText("90.00")).toBeInTheDocument(); // Praise Adebayo judge avg
+    expect(screen.getByText("+5.00")).toBeInTheDocument(); // Praise Adebayo voting score
   });
 
   it("does not render internal judge subtotals, notes, or raw votes to the public", () => {
@@ -183,7 +249,7 @@ describe("Public Results Privacy & Presentation", () => {
     render(<ResultsComponent />);
     expect(screen.getByText("Official results are being collated...")).toBeInTheDocument();
     expect(
-      screen.getByText(/The Grand Finale top three placements will be officially published here/i),
+      screen.getByText(/The Grand Finale top five placements will be officially published here/i),
     ).toBeInTheDocument();
     spyLoader.mockRestore();
   });

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 import {
   ArrowRight,
@@ -9,6 +9,8 @@ import {
   KeyRound,
   Lock,
   ShieldCheck,
+  Sparkles,
+  Trophy,
   Unlock,
   UserCheck,
 } from "lucide-react";
@@ -32,7 +34,7 @@ import {
   isJudgeUnlocked,
   verifyJudgeCode,
 } from "@/lib/auth/judge-access";
-import { getCard, setActiveJudge } from "@/lib/demo/store";
+import { getCard, getTop5Contestants, setActiveJudge } from "@/lib/demo/store";
 import { JUDGES, type JudgeId, type JudgeProfile } from "@/lib/demo/types";
 import { cn } from "@/lib/utils";
 
@@ -192,14 +194,51 @@ function JudgesHome() {
         </div>
       )}
 
+      {/* Score Page Two: Round 2 Top 5 Championship Banner */}
+      <div className="mt-8 rounded-3xl border border-gold/40 bg-gradient-to-r from-forest-deep via-forest to-forest-deep p-6 sm:p-7 text-ivory shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="max-w-xl">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-gold text-forest-deep border-none text-xs font-bold gap-1 shadow-xs">
+                <Trophy className="h-3.5 w-3.5 text-forest-deep" /> Championship Round Active
+              </Badge>
+              <Badge variant="outline" className="border-gold/50 text-gold-soft text-xs font-mono">
+                Score Page Two
+              </Badge>
+            </div>
+            <h2 className="mt-2 font-display text-2xl sm:text-3xl text-ivory">
+              Score Page Two: Top 5 Championship
+            </h2>
+            <p className="mt-1 text-sm text-ivory/80 leading-relaxed">
+              The Top 5 finalists have advanced to the final round. Judges evaluate their second
+              round performances to decide 1st, 2nd, and 3rd place for SHABACH 2026.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/judges/round2"
+              className="inline-flex items-center gap-2 rounded-xl bg-gold px-5 py-3 text-sm font-bold text-forest-deep transition-all hover:bg-gold-light hover:shadow-lg active:scale-95"
+            >
+              <Trophy className="h-4 w-4" />
+              <span>Open Score Page Two</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* 4 Official Judges Cards Grid */}
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4" key={accessNonce}>
         {JUDGES.map((judge) => {
           const isUnlocked = isJudgeUnlocked(judge.id);
           const isCurrentActive = activeJudgeId === judge.id;
           const isStaffAssigned = staffSession?.assignedSeat === judge.id;
+          const top5 = getTop5Contestants(state);
           const submittedCount = state.contestants.filter(
-            (c) => getCard(state, judge.id, c.id).status === "submitted",
+            (c) => getCard(state, judge.id, c.id, 1).status === "submitted",
+          ).length;
+          const round2Submitted = top5.filter(
+            (c) => getCard(state, judge.id, c.id, 2).status === "submitted",
           ).length;
           const totalCount = state.contestants.length;
           const isCompleted = totalCount > 0 && submittedCount === totalCount;
@@ -277,31 +316,54 @@ function JudgesHome() {
                     {judge.label}
                   </p>
 
-                  {/* Progress Counter */}
-                  <div className="mt-4 rounded-xl bg-ivory/70 p-2.5 border border-cream-line/70">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-charcoal-muted">Scorecards</span>
-                      <span
-                        className={cn(
-                          "font-semibold inline-flex items-center gap-1",
-                          isCompleted ? "text-forest" : "text-charcoal",
-                        )}
-                      >
-                        {isCompleted && <CheckCircle2 className="h-3.5 w-3.5 text-forest" />}
-                        {submittedCount}/{totalCount} submitted
-                      </span>
+                  {/* Dual Progress Counter: Round 1 & Round 2 */}
+                  <div className="mt-4 rounded-xl bg-ivory/70 p-2.5 border border-cream-line/70 space-y-2">
+                    <div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-charcoal-muted">Round 1 (16 acts)</span>
+                        <span
+                          className={cn(
+                            "font-semibold inline-flex items-center gap-1",
+                            isCompleted ? "text-forest" : "text-charcoal",
+                          )}
+                        >
+                          {isCompleted && <CheckCircle2 className="h-3.5 w-3.5 text-forest" />}
+                          {submittedCount}/{totalCount}
+                        </span>
+                      </div>
+                      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-cream-line">
+                        <div
+                          className={cn(
+                            "h-full transition-all duration-300",
+                            isCompleted ? "bg-forest" : "bg-gold",
+                          )}
+                          style={{
+                            width: `${totalCount > 0 ? (submittedCount / totalCount) * 100 : 0}%`,
+                          }}
+                        />
+                      </div>
                     </div>
-                    {/* Visual Progress Bar */}
-                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-cream-line">
-                      <div
-                        className={cn(
-                          "h-full transition-all duration-300",
-                          isCompleted ? "bg-forest" : "bg-gold",
-                        )}
-                        style={{
-                          width: `${totalCount > 0 ? (submittedCount / totalCount) * 100 : 0}%`,
-                        }}
-                      />
+
+                    <div className="pt-1.5 border-t border-cream-line/60">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-charcoal-muted flex items-center gap-1">
+                          <Trophy className="h-3 w-3 text-gold" /> Score Page 2 (Top 5)
+                        </span>
+                        <span
+                          className={cn(
+                            "font-semibold",
+                            round2Submitted === 5 ? "text-forest" : "text-gold-deep",
+                          )}
+                        >
+                          {round2Submitted}/5 submitted
+                        </span>
+                      </div>
+                      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-cream-line">
+                        <div
+                          className="h-full bg-gold-deep transition-all duration-300"
+                          style={{ width: `${(round2Submitted / 5) * 100}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
 
