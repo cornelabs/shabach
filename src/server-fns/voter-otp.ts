@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-interface DispatchEmailOtpPayload {
+export interface DispatchEmailOtpPayload {
   email: string;
   code: string;
 }
@@ -8,44 +8,125 @@ interface DispatchEmailOtpPayload {
 export interface DispatchEmailOtpResponse {
   success: boolean;
   message: string;
-  dispatchedVia?: "resend" | "mock";
+  dispatchedVia?: "brevo" | "resend" | "mock";
+}
+
+interface ProviderResult {
+  ok: boolean;
+  id?: string;
+  error?: string;
 }
 
 /**
- * Server-side OTP email dispatch using Resend API.
- * Dispatches an email containing exclusively the 6-digit code with zero links,
- * eliminating token mismatch errors caused by external link redirects.
+ * Dispatches an email via Brevo REST API v3.
+ * Brevo Free Plan offers 300 free emails per day with zero credit card required.
  */
-export const dispatchVoterEmailOtpServerFn = createServerFn({ method: "POST" })
-  .validator((data: unknown): DispatchEmailOtpPayload => {
-    if (!data || typeof data !== "object") {
-      throw new Error("Invalid payload");
-    }
-    const { email, code } = data as Record<string, unknown>;
-    if (typeof email !== "string" || !email.includes("@")) {
-      throw new Error("Invalid recipient email");
-    }
-    if (typeof code !== "string" || code.trim().length !== 6) {
-      throw new Error("Invalid 6-digit OTP code");
-    }
-    return {
-      email: email.trim().toLowerCase(),
-      code: code.trim(),
-    };
-  })
-  .handler(async ({ data }): Promise<DispatchEmailOtpResponse> => {
-    const resendApiKey = process.env["RESEND_API_KEY"];
+export async function sendViaBrevo(params: {
+  apiKey: string;
+  senderName: string;
+  senderEmail: string;
+  toEmail: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<ProviderResult> {
+  try {
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "api-key": params.apiKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: {
+          name: params.senderName,
+          email: params.senderEmail,
+        },
+        to: [{ email: params.toEmail }],
+        subject: params.subject,
+        htmlContent: params.html,
+        textContent: params.text,
+      }),
+    });
 
-    if (!resendApiKey) {
-      console.warn("[OTP Server] RESEND_API_KEY not configured in environment. Using mock dispatch.");
-      return {
-        success: true,
-        message: `Verification code ready (mock dispatch): ${data.code}`,
-        dispatchedVia: "mock",
-      };
+    if (res.ok || res.status === 201) {
+      const data = (await res.json().catch(() => ({}))) as { messageId?: string };
+      return { ok: true, id: data.messageId };
     }
 
-    const htmlBody = `
+    const errJson = (await res.json().catch(() => ({}))) as { message?: string; code?: string };
+    const errText = errJson.message || `HTTP ${res.status}`;
+    return { ok: false, error: errText };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
+ * Dispatches an email via Resend API.
+ * Resend Free Plan offers 100 free emails per day.
+ */
+export async function sendViaResend(params: {
+  apiKey: string;
+  fromAddresses: string[];
+  toEmail: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<ProviderResult> {
+  let lastError = "";
+  for (const fromAddress of params.fromAddresses) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${params.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromAddress,
+          to: [params.toEmail],
+          subject: params.subject,
+          text: params.text,
+          html: params.html,
+        }),
+      });
+
+      if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { id?: string };
+        return { ok: true, id: data.id };
+      }
+
+      const errJson = (await res.json().catch(() => ({}))) as { message?: string };
+      lastError = errJson.message || `HTTP ${res.status}`;
+      console.warn(`[OTP Server] Failed Resend dispatch via ${fromAddress}: ${lastError}`);
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      console.warn(`[OTP Server] Network error dispatching via ${fromAddress}: ${lastError}`);
+    }
+  }
+  return { ok: false, error: lastError };
+}
+
+/**
+ * Core business logic for dispatching voter OTP verification emails.
+ * Supports Brevo (300/day free limit) with automatic fallback to Resend (100/day free limit).
+ */
+export async function dispatchVoterEmailOtpLogic(
+  data: DispatchEmailOtpPayload,
+  envOverride?: {
+    brevoApiKey?: string;
+    brevoSenderEmail?: string;
+    brevoSenderName?: string;
+    resendApiKey?: string;
+    resendSenderEmail?: string;
+  }
+): Promise<DispatchEmailOtpResponse> {
+  const brevoApiKey = envOverride?.brevoApiKey ?? process.env["BREVO_API_KEY"];
+  const resendApiKey = envOverride?.resendApiKey ?? process.env["RESEND_API_KEY"];
+
+  const htmlBody = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -86,9 +167,9 @@ export const dispatchVoterEmailOtpServerFn = createServerFn({ method: "POST" })
   </div>
 </body>
 </html>
-    `.trim();
+  `.trim();
 
-    const textBody = `
+  const textBody = `
 SHABACH 2026 Grand Finale — Voter Verification
 
 Your 6-digit voter verification code is: ${data.code}
@@ -97,55 +178,129 @@ Enter this code on the voting screen to verify your email and confirm your vote.
 This code is valid for 10 minutes.
 
 Strict single-vote policy: each verified email may cast exactly one vote across the competition.
-    `.trim();
+  `.trim();
 
-    // Primary sender: mail.cornelabs.com; Secondary fallback: onboarding@resend.dev
-    const sendAttempts = [
-      "SHABACH 2026 <voting@mail.cornelabs.com>",
-      "SHABACH 2026 <onboarding@resend.dev>",
-    ];
+  const emailSubject = `Your SHABACH 2026 Verification Code [${data.code}]`;
 
-    let lastError: string = "";
+  // =========================================================================
+  // 1. PRIMARY DISPATCH: Brevo (300 emails/day free limit)
+  // =========================================================================
+  if (brevoApiKey) {
+    const brevoSenderEmail =
+      envOverride?.brevoSenderEmail ??
+      process.env["BREVO_SENDER_EMAIL"] ??
+      process.env["VOTER_OTP_SENDER_EMAIL"] ??
+      "voting@mail.cornelabs.com";
+    const brevoSenderName =
+      envOverride?.brevoSenderName ?? process.env["BREVO_SENDER_NAME"] ?? "SHABACH 2026";
 
-    for (const fromAddress of sendAttempts) {
-      try {
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: fromAddress,
-            to: [data.email],
-            subject: `Your SHABACH 2026 Verification Code [${data.code}]`,
-            text: textBody,
-            html: htmlBody,
-          }),
-        });
+    const brevoResult = await sendViaBrevo({
+      apiKey: brevoApiKey,
+      senderName: brevoSenderName,
+      senderEmail: brevoSenderEmail,
+      toEmail: data.email,
+      subject: emailSubject,
+      text: textBody,
+      html: htmlBody,
+    });
 
-        if (response.ok) {
-          const resData = (await response.json()) as { id?: string };
-          console.info(`[OTP Server] Dispatched code via Resend (${fromAddress}) to ${data.email}. ID: ${resData.id}`);
-          return {
-            success: true,
-            message: `Verification code successfully sent to ${data.email}.`,
-            dispatchedVia: "resend",
-          };
-        }
-
-        const errJson = (await response.json().catch(() => ({}))) as { message?: string };
-        lastError = errJson.message || `HTTP ${response.status}`;
-        console.warn(`[OTP Server] Failed dispatch via ${fromAddress}: ${lastError}`);
-      } catch (err: unknown) {
-        lastError = err instanceof Error ? err.message : String(err);
-        console.warn(`[OTP Server] Network error dispatching via ${fromAddress}: ${lastError}`);
-      }
+    if (brevoResult.ok) {
+      console.info(
+        `[OTP Server] Dispatched code via Brevo (${brevoSenderEmail}) to ${data.email}. ID: ${brevoResult.id}`
+      );
+      return {
+        success: true,
+        message: `Verification code successfully sent to ${data.email}.`,
+        dispatchedVia: "brevo",
+      };
     }
 
-    // If Resend failed with external domains, return informative response
+    console.warn(
+      `[OTP Server] Brevo dispatch error (${brevoResult.error}). Checking fallback provider...`
+    );
+  }
+
+  // =========================================================================
+  // 2. SECONDARY / FALLBACK DISPATCH: Resend (100 emails/day free limit)
+  // =========================================================================
+  if (resendApiKey) {
+    const customSender =
+      envOverride?.resendSenderEmail ??
+      process.env["RESEND_SENDER_EMAIL"] ??
+      process.env["VOTER_OTP_SENDER_EMAIL"];
+    const sendAttempts = [
+      customSender,
+      "SHABACH 2026 <voting@mail.cornelabs.com>",
+      "SHABACH 2026 <onboarding@resend.dev>",
+    ].filter(Boolean) as string[];
+
+    const resendResult = await sendViaResend({
+      apiKey: resendApiKey,
+      fromAddresses: sendAttempts,
+      toEmail: data.email,
+      subject: emailSubject,
+      text: textBody,
+      html: htmlBody,
+    });
+
+    if (resendResult.ok) {
+      console.info(
+        `[OTP Server] Dispatched code via Resend to ${data.email}. ID: ${resendResult.id}`
+      );
+      return {
+        success: true,
+        message: `Verification code successfully sent to ${data.email}.`,
+        dispatchedVia: "resend",
+      };
+    }
+
+    console.warn(`[OTP Server] Resend dispatch error (${resendResult.error}).`);
+  }
+
+  // =========================================================================
+  // 3. DEVELOPMENT / TEST MOCK DISPATCH (when no API keys are present)
+  // =========================================================================
+  if (!brevoApiKey && !resendApiKey) {
+    console.warn(
+      "[OTP Server] Neither BREVO_API_KEY nor RESEND_API_KEY configured in environment. Using mock dispatch."
+    );
     return {
-      success: false,
-      message: `Could not send verification email: ${lastError}`,
+      success: true,
+      message: `Verification code ready (mock dispatch): ${data.code}`,
+      dispatchedVia: "mock",
     };
+  }
+
+  // Both configured providers failed
+  return {
+    success: false,
+    message:
+      "Could not dispatch verification email via configured providers. Please check email address and try again.",
+  };
+}
+
+/**
+ * Server-side OTP email dispatch using Brevo (300/day free) and Resend (100/day free).
+ * Dispatches an email containing exclusively the 6-digit code with zero links,
+ * eliminating token mismatch errors caused by external link redirects.
+ */
+export const dispatchVoterEmailOtpServerFn = createServerFn({ method: "POST" })
+  .validator((data: unknown): DispatchEmailOtpPayload => {
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid payload");
+    }
+    const { email, code } = data as Record<string, unknown>;
+    if (typeof email !== "string" || !email.includes("@")) {
+      throw new Error("Invalid recipient email");
+    }
+    if (typeof code !== "string" || code.trim().length !== 6) {
+      throw new Error("Invalid 6-digit OTP code");
+    }
+    return {
+      email: email.trim().toLowerCase(),
+      code: code.trim(),
+    };
+  })
+  .handler(async ({ data }): Promise<DispatchEmailOtpResponse> => {
+    return dispatchVoterEmailOtpLogic(data);
   });
