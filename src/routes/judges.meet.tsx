@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Gavel, Lock, Sparkles, UserCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileDown, Gavel, Lock, Sparkles, UserCheck } from "lucide-react";
 import * as React from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,7 @@ export const Route = createFileRoute("/judges/meet")({
 
 function JudgeCard({ judge }: { judge: JudgeProfile }) {
   const [imgError, setImgError] = React.useState(false);
+  const [showFull, setShowFull] = React.useState(false);
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-cream-line bg-card shadow-card transition-all hover:-translate-y-1 hover:border-gold hover:shadow-lg">
@@ -75,10 +76,32 @@ function JudgeCard({ judge }: { judge: JudgeProfile }) {
           {judge.label}
         </p>
 
-        <div className="mt-3 border-t border-cream-line pt-3">
-          <p className="text-sm leading-relaxed text-charcoal">
-            {judge.bio}
+        <div className="mt-3 border-t border-cream-line pt-3 flex-1 flex flex-col justify-between">
+          <p className="text-sm leading-relaxed text-charcoal whitespace-pre-line">
+            {showFull ? (judge.fullBio || judge.bio) : judge.bio}
           </p>
+
+          <div className="mt-4 flex items-center justify-between border-t border-cream-line/60 pt-3">
+            {judge.fullBio ? (
+              <button
+                type="button"
+                onClick={() => setShowFull(!showFull)}
+                className="text-xs font-bold text-gold-deep hover:text-forest transition-colors inline-flex items-center gap-1"
+              >
+                {showFull ? "Collapse full bio ▲" : "View full bio & credentials ▼"}
+              </button>
+            ) : <span />}
+
+            <a
+              href="/documents/shabach-2026-judges-bios.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              download="shabach-2026-judges-bios.pdf"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-charcoal-muted hover:text-forest transition-colors"
+            >
+              <FileDown className="h-3 w-3 text-gold" /> PDF Dossier
+            </a>
+          </div>
         </div>
       </div>
     </article>
@@ -102,18 +125,35 @@ export function MeetTheJudgesPage() {
       </div>
 
       {/* Header section */}
-      <div className="border-b border-cream-line pb-8">
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-gold-wash px-3 py-1 text-xs font-semibold text-forest">
-          <Sparkles className="h-3.5 w-3.5 text-gold" /> Grand Finale Adjudication Panel
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-cream-line pb-8">
+        <div>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-gold-wash px-3 py-1 text-xs font-semibold text-forest">
+            <Sparkles className="h-3.5 w-3.5 text-gold" /> Grand Finale Adjudication Panel
+          </div>
+          <h1 className="mt-2 font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-forest">
+            Meet the 4 Grand Finale Judges
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm sm:text-base leading-relaxed text-charcoal-muted">
+            Four distinguished creative visionaries, technical leaders, and ministerial directors
+            appointed to evaluate the 16 Grand Finale finalists across Music, Spoken Word, Dance,
+            Drama, and Visual Arts.
+          </p>
         </div>
-        <h1 className="mt-2 font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-forest">
-          Meet the 4 Grand Finale Judges
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm sm:text-base leading-relaxed text-charcoal-muted">
-          Four distinguished creative visionaries, technical leaders, and ministerial directors
-          appointed to evaluate the 16 Grand Finale finalists across Music, Spoken Word, Dance,
-          Drama, and Visual Arts.
-        </p>
+
+        <a
+          href="/documents/shabach-2026-judges-bios.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          download="shabach-2026-judges-bios.pdf"
+          className="shrink-0"
+        >
+          <Button
+            variant="outline"
+            className="border-gold/50 text-forest hover:bg-gold-wash gap-2 text-xs sm:text-sm shadow-sm"
+          >
+            <FileDown className="h-4 w-4 text-gold" /> Download Official Dossier (PDF)
+          </Button>
+        </a>
       </div>
 
       {/* 4 Judges Showcase Grid */}

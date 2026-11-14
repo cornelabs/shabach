@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Clock,
+  FileDown,
   Gavel,
   Info,
   Lock,
@@ -270,12 +271,27 @@ export function ProgramDetailsContent() {
             </p>
           </div>
 
-          <Link to="/judges">
-            <Button className="bg-forest text-ivory hover:bg-forest-deep gap-2 text-xs sm:text-sm shrink-0">
-              <Lock className="h-3.5 w-3.5 text-gold" /> Access Judges' Panel
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href="/documents/shabach-2026-judges-bios.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              download="shabach-2026-judges-bios.pdf"
+            >
+              <Button
+                variant="outline"
+                className="border-gold/50 text-forest hover:bg-gold-wash gap-2 text-xs sm:text-sm shrink-0"
+              >
+                <FileDown className="h-3.5 w-3.5 text-gold" /> Download Dossier (PDF)
+              </Button>
+            </a>
+            <Link to="/judges">
+              <Button className="bg-forest text-ivory hover:bg-forest-deep gap-2 text-xs sm:text-sm shrink-0">
+                <Lock className="h-3.5 w-3.5 text-gold" /> Access Judges' Panel
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* 4 Judges Showcase Grid */}
@@ -452,25 +468,41 @@ export function ProgramDetailsContent() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-charcoal-muted">
-                    Full Biography & Background
-                  </h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-charcoal-muted">
+                      Full Biography & Background
+                    </h4>
+                    <a
+                      href="/documents/shabach-2026-judges-bios.pdf"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download="shabach-2026-judges-bios.pdf"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-gold-deep hover:underline"
+                    >
+                      <FileDown className="h-3 w-3" /> Full PDF Dossier
+                    </a>
+                  </div>
                   <p className="text-xs sm:text-sm leading-relaxed text-charcoal whitespace-pre-line">
-                    {selectedJudge.bio}
+                    {selectedJudge.fullBio || selectedJudge.bio}
                   </p>
                 </div>
               </div>
 
               <DialogFooter className="mt-6 flex flex-row items-center justify-between sm:justify-between gap-2 border-t border-cream-line pt-4">
-                <Link to="/judges" onClick={() => setSelectedJudge(null)}>
+                <a
+                  href="/documents/shabach-2026-judges-bios.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download="shabach-2026-judges-bios.pdf"
+                >
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-xs border-cream-line text-forest hover:bg-parchment"
+                    className="text-xs border-gold/50 text-forest hover:bg-gold-wash gap-1.5"
                   >
-                    <Gavel className="mr-1.5 h-3.5 w-3.5 text-gold" /> Access Judges' Panel
+                    <FileDown className="h-3.5 w-3.5 text-gold" /> Download Dossier (PDF)
                   </Button>
-                </Link>
+                </a>
                 <DialogClose asChild>
                   <Button size="sm" className="bg-forest text-ivory hover:bg-forest-deep text-xs">
                     Close
