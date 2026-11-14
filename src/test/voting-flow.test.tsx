@@ -96,6 +96,53 @@ describe("Public Voting Flow & Confirmation", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it("displays the 6-digit verification code directly on the modal while tracking voter email", async () => {
+    setVotingStatus("open");
+    const onVoteCast = vi.fn();
+
+    render(
+      <VoteConfirmationDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        contestant={mockContestant}
+        onVoteCast={onVoteCast}
+      />,
+    );
+
+    const emailInput = screen.getByPlaceholderText("Enter email to verify vote...");
+    fireEvent.change(emailInput, { target: { value: "tracking@shabach.org" } });
+
+    const sendCodeButton = screen.getByText("Send Code");
+    fireEvent.click(sendCodeButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("Your Verification Code")).toBeInTheDocument();
+      expect(screen.getByText(/Voter tracking:/)).toHaveTextContent("tracking@shabach.org");
+    });
+
+    const dispatchedCode = getLastDispatchedOtp("tracking@shabach.org");
+    expect(dispatchedCode).toBeDefined();
+    // Modal displays the code
+    expect(screen.getByText(dispatchedCode!)).toBeInTheDocument();
+
+    // The code is auto-filled into the input
+    const otpInput = screen.getByPlaceholderText("123456") as HTMLInputElement;
+    expect(otpInput.value).toBe(dispatchedCode);
+
+    // Can change email if needed
+    const changeButton = screen.getByText("Change");
+    expect(changeButton).toBeInTheDocument();
+
+    // Confirm vote directly verifies and records the vote
+    const confirmButton = screen.getByText("Confirm Vote");
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(onVoteCast).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("Your vote has been recorded")).toBeInTheDocument();
+    });
+  });
+
   it("calls onCancel and does not cast vote when cancelled", () => {
     const onVoteCast = vi.fn();
     const onOpenChange = vi.fn();

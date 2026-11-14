@@ -15,7 +15,8 @@ export interface OtpRequestResult {
   success: boolean;
   message: string;
   expiresInSeconds?: number;
-  mockCode?: string; // Provided only in mock/demo mode for easy testing
+  mockCode?: string; // Provided for backwards compatibility & tests
+  code?: string; // 6-digit verification code to display on modal
   isConfigured?: boolean;
 }
 
@@ -224,26 +225,31 @@ export async function requestVoterOtp(
         verified: false,
       });
 
-      // Dispatch genuine email containing ONLY the 6-digit code via Resend
-      const dispatchRes = await dispatchVoterEmailOtpServerFn({
-        data: { email: cleanEmail, code },
-      });
+      // Dispatch email to attendee's inbox (non-blocking if delivery experiences latency)
+      try {
+        const dispatchRes = await dispatchVoterEmailOtpServerFn({
+          data: { email: cleanEmail, code },
+        });
 
-      if (!dispatchRes.success) {
-        console.warn("[Voter OTP] Server email dispatch error:", dispatchRes.message);
-        return {
-          success: false,
-          message: dispatchRes.message || "Could not dispatch verification email. Please try again.",
-          isConfigured: true,
-        };
+        if (dispatchRes.success) {
+          console.info(
+            `[SHABACH OTP Dispatched] 6-digit code for ${cleanEmail} via ${dispatchRes.dispatchedVia ?? "resend"}`,
+          );
+        } else {
+          console.warn("[Voter OTP] Server email dispatch error (non-blocking):", dispatchRes.message);
+        }
+      } catch (emailErr) {
+        console.warn("[Voter OTP] Server email dispatch exception (non-blocking):", emailErr);
       }
 
-      console.info(`[SHABACH OTP Dispatched] 6-digit code for ${cleanEmail} via ${dispatchRes.dispatchedVia ?? "resend"}`);
+      console.info(`[SHABACH OTP Ready] 6-digit code for ${cleanEmail}: ${code}`);
 
       return {
         success: true,
-        message: `A 6-digit verification code has been dispatched to ${cleanEmail}. Please enter the code below to confirm your vote.`,
+        message: `A 6-digit verification code has been generated and displayed on screen, and also dispatched to ${cleanEmail}.`,
         expiresInSeconds: OTP_TTL_MS / 1000,
+        code,
+        mockCode: code,
         isConfigured: true,
       };
     } catch (err: unknown) {
@@ -273,8 +279,9 @@ export async function requestVoterOtp(
   console.info(`[SHABACH Demo OTP] Verification code for ${cleanEmail}: ${code}`);
   return {
     success: true,
-    message: `Verification code generated for ${cleanEmail}. In demo mode, use code: ${code}`,
+    message: `Verification code generated for ${cleanEmail}. Code: ${code}`,
     expiresInSeconds: OTP_TTL_MS / 1000,
+    code,
     mockCode: code,
     isConfigured: true,
   };

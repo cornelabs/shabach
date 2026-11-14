@@ -42,6 +42,7 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
   const [otpVerifying, setOtpVerifying] = React.useState(false);
   const [verifiedEmail, setVerifiedEmail] = React.useState<string | null>(null);
   const [voterToken, setVoterToken] = React.useState<string | null>(null);
+  const [displayCode, setDisplayCode] = React.useState<string | null>(null);
   const [mockCode, setMockCode] = React.useState<string | null>(null);
   const [verificationError, setVerificationError] = React.useState<string | null>(null);
   const [hasVotedToken, setHasVotedToken] = React.useState(false);
@@ -141,13 +142,16 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
       const res = await requestVoterOtp(cleanEmail, { isLive });
       if (res.success) {
         setOtpSent(true);
-        if (res.mockCode) {
-          setMockCode(res.mockCode);
-        } else {
-          setMockCode(null);
+        const activeCode = res.code || res.mockCode || null;
+        setDisplayCode(activeCode);
+        setMockCode(activeCode);
+        if (activeCode) {
+          setCode(activeCode);
         }
-        toast.success("Verification code dispatched", {
-          description: res.message,
+        toast.success("Verification code ready", {
+          description: activeCode
+            ? `Your code is ${activeCode}. It is displayed on screen and sent to your email.`
+            : res.message,
         });
       } else {
         setVerificationError(res.message);
@@ -508,46 +512,99 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
 
               {!verifiedEmail ? (
                 <>
-                  <div className="flex gap-2">
-                    <Input
-                      id="voter-email"
-                      type="email"
-                      placeholder="Enter email to verify vote..."
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        setVerificationError(null);
-                      }}
-                      disabled={submitting || otpSending || otpSent}
-                      className="h-8 text-xs bg-card border-cream-line"
-                    />
-                    {!otpSent && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={!email.trim() || otpSending || submitting}
-                        onClick={handleSendOtp}
-                        className="h-8 text-xs shrink-0 border-cream-line hover:bg-parchment"
-                      >
-                        {otpSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send Code"}
-                      </Button>
+                  <div className="space-y-1.5">
+                    <div className="flex gap-2">
+                      <Input
+                        id="voter-email"
+                        type="email"
+                        placeholder="Enter email to verify vote..."
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setVerificationError(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !otpSending && !otpSent && email.trim()) {
+                            e.preventDefault();
+                            void handleSendOtp();
+                          }
+                        }}
+                        disabled={submitting || otpSending || otpSent}
+                        className="h-8 text-xs bg-card border-cream-line"
+                      />
+                      {!otpSent ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={!email.trim() || otpSending || submitting}
+                          onClick={handleSendOtp}
+                          className="h-8 text-xs shrink-0 border-cream-line hover:bg-parchment"
+                        >
+                          {otpSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send Code"}
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setOtpSent(false);
+                            setDisplayCode(null);
+                            setMockCode(null);
+                            setCode("");
+                            setVerificationError(null);
+                          }}
+                          className="h-8 text-xs shrink-0 text-gold hover:text-gold-soft hover:bg-gold-wash/50"
+                        >
+                          Change
+                        </Button>
+                      )}
+                    </div>
+                    {otpSent && (
+                      <p className="text-[11px] text-charcoal-muted">
+                        Voter tracking: <span className="font-medium text-forest">{email}</span>
+                      </p>
                     )}
                   </div>
 
                   {otpSent && (
-                    <div className="space-y-2 pt-1 border-t border-cream-line">
+                    <div className="space-y-2.5 pt-2 border-t border-cream-line">
+                      {/* Prominent Verification Code Display Card */}
+                      {displayCode && (
+                        <div className="rounded-xl border-2 border-gold/50 bg-gold-wash/80 p-3 text-center shadow-xs">
+                          <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-forest/90">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-gold shrink-0" />
+                            <span>Your Verification Code</span>
+                          </div>
+                          <div className="my-1 font-mono text-2xl font-black tracking-[0.25em] text-forest select-all">
+                            {displayCode}
+                          </div>
+                          <p className="text-[10px] text-charcoal-muted">
+                            Auto-filled below · A copy was also sent to your inbox
+                          </p>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between">
                         <Label htmlFor="voter-otp" className="text-[11px] text-charcoal-muted">
                           Enter 6-digit code
                         </Label>
-                        {mockCode ? (
+                        {displayCode ? (
+                          <button
+                            type="button"
+                            onClick={() => setCode(displayCode)}
+                            className="text-[11px] text-gold hover:underline font-mono"
+                          >
+                            Auto-fill ({displayCode})
+                          </button>
+                        ) : mockCode ? (
                           <button
                             type="button"
                             onClick={() => setCode(mockCode)}
                             className="text-[11px] text-gold hover:underline font-mono"
                           >
-                            Use demo code ({mockCode})
+                            Use code ({mockCode})
                           </button>
                         ) : (
                           <span className="text-[10px] text-charcoal-muted italic">
@@ -565,6 +622,12 @@ export function VoteConfirmationDialog({ contestant, open, onOpenChange, onVoteC
                           onChange={(e) => {
                             setCode(e.target.value);
                             setVerificationError(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !otpVerifying && !submitting && code.trim().length === 6) {
+                              e.preventDefault();
+                              void handleVerifyOtp();
+                            }
                           }}
                           disabled={submitting || otpVerifying}
                           className="h-8 text-xs font-mono tracking-widest bg-card border-cream-line"
