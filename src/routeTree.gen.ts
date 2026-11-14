@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DetailsRouteImport } from './routes/details'
+import { Route as EmailTestRouteImport } from './routes/email-test'
 import { Route as JudgeRouteImport } from './routes/judge'
 import { Route as JudgesRouteImport } from './routes/judges'
 import { Route as OrganiserRouteImport } from './routes/organiser'
@@ -45,6 +46,11 @@ const DemoRoute = DemoRouteImport.update({
 const DetailsRoute = DetailsRouteImport.update({
   id: '/details',
   path: '/details',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmailTestRoute = EmailTestRouteImport.update({
+  id: '/email-test',
+  path: '/email-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JudgeRoute = JudgeRouteImport.update({
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/demo': typeof DemoRoute
   '/details': typeof DetailsRoute
+  '/email-test': typeof EmailTestRoute
   '/judge': typeof JudgeRoute
   '/judges': typeof JudgesRouteWithChildren
   '/organiser': typeof OrganiserRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/demo': typeof DemoRoute
   '/details': typeof DetailsRoute
+  '/email-test': typeof EmailTestRoute
   '/judge': typeof JudgeRoute
   '/organiser': typeof OrganiserRoute
   '/organisers': typeof OrganisersRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/demo': typeof DemoRoute
   '/details': typeof DetailsRoute
+  '/email-test': typeof EmailTestRoute
   '/judge': typeof JudgeRoute
   '/judges': typeof JudgesRouteWithChildren
   '/organiser': typeof OrganiserRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/demo'
     | '/details'
+    | '/email-test'
     | '/judge'
     | '/judges'
     | '/organiser'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/demo'
     | '/details'
+    | '/email-test'
     | '/judge'
     | '/organiser'
     | '/organisers'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/demo'
     | '/details'
+    | '/email-test'
     | '/judge'
     | '/judges'
     | '/organiser'
@@ -234,6 +246,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   DemoRoute: typeof DemoRoute
   DetailsRoute: typeof DetailsRoute
+  EmailTestRoute: typeof EmailTestRoute
   JudgeRoute: typeof JudgeRoute
   JudgesRoute: typeof JudgesRouteWithChildren
   OrganiserRoute: typeof OrganiserRoute
@@ -274,6 +287,13 @@ declare module '@tanstack/react-router' {
       path: '/details'
       fullPath: '/details'
       preLoaderRoute: typeof DetailsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/email-test': {
+      id: '/email-test'
+      path: '/email-test'
+      fullPath: '/email-test'
+      preLoaderRoute: typeof EmailTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/judge': {
@@ -390,6 +410,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   DemoRoute: DemoRoute,
   DetailsRoute: DetailsRoute,
+  EmailTestRoute: EmailTestRoute,
   JudgeRoute: JudgeRoute,
   JudgesRoute: JudgesRouteWithChildren,
   OrganiserRoute: OrganiserRoute,

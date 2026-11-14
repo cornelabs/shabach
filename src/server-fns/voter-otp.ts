@@ -429,3 +429,226 @@ export const dispatchVoterEmailOtpServerFn = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<DispatchEmailOtpResponse> => {
     return dispatchVoterEmailOtpLogic(data);
   });
+
+export interface TestEmailProviderPayload {
+  provider: "brevo" | "resend" | "zeptomail" | "all";
+  email: string;
+}
+
+export interface TestProviderItemResult {
+  provider: "brevo" | "resend" | "zeptomail";
+  ok: boolean;
+  id?: string;
+  error?: string;
+  senderEmail?: string;
+  latencyMs: number;
+  timestamp: string;
+}
+
+export interface TestEmailProviderResponse {
+  success: boolean;
+  message: string;
+  results: TestProviderItemResult[];
+}
+
+export async function testSingleEmailProvider(
+  provider: "brevo" | "resend" | "zeptomail",
+  recipientEmail: string
+): Promise<TestProviderItemResult> {
+  const start = Date.now();
+  const testCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const timestamp = new Date().toISOString();
+
+  const providerLabel =
+    provider === "brevo"
+      ? "Brevo (v3 REST API)"
+      : provider === "resend"
+      ? "Resend (v1 REST API)"
+      : "Zoho ZeptoMail (v1.1 REST API)";
+
+  const subject = `[TEST: ${provider.toUpperCase()}] SHABACH 2026 Verification Code [${testCode}]`;
+  const text = `SHABACH 2026 Transactional Email Test\n\nProvider: ${providerLabel}\nVerification Code: ${testCode}\nTimestamp: ${timestamp}`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #d4af37; border-radius: 10px; padding: 24px; background: #faf9f6; color: #1f2421;">
+      <div style="background-color: #0e3d30; padding: 14px 18px; border-radius: 6px; text-align: center; margin-bottom: 20px;">
+        <h2 style="color: #d4af37; margin: 0; font-size: 20px; font-weight: bold;">SHABACH 2026</h2>
+        <p style="color: #f3e5ab; margin: 4px 0 0; font-size: 12px; text-transform: uppercase;">Transactional Email Provider Test</p>
+      </div>
+      <p style="font-size: 14px; color: #2b3832; line-height: 1.4;">
+        This is an official verification test from SHABACH 2026 confirming that email dispatch via <strong>${providerLabel}</strong> is operational.
+      </p>
+      <div style="background: #ffffff; border: 1.5px solid #d4af37; border-radius: 8px; padding: 18px; text-align: center; margin: 20px 0;">
+        <span style="font-family: 'Courier New', Courier, monospace; font-size: 34px; font-weight: bold; letter-spacing: 8px; color: #0e3d30;">${testCode}</span>
+      </div>
+      <p style="font-size: 12px; color: #6b7280; margin-bottom: 0;">Sent to ${recipientEmail} at ${timestamp}</p>
+    </div>
+  `;
+
+  if (provider === "brevo") {
+    const apiKey = process.env["BREVO_API_KEY"];
+    const senderEmail =
+      process.env["BREVO_SENDER_EMAIL"] ||
+      process.env["VOTER_OTP_SENDER_EMAIL"] ||
+      "voting@mail.cornelabs.com";
+    const senderName = process.env["BREVO_SENDER_NAME"] || "SHABACH 2026";
+    if (!apiKey) {
+      return {
+        provider,
+        ok: false,
+        error: "BREVO_API_KEY is not configured in environment.",
+        senderEmail,
+        latencyMs: Date.now() - start,
+        timestamp,
+      };
+    }
+    const res = await sendViaBrevo({
+      apiKey,
+      senderEmail,
+      senderName,
+      toEmail: recipientEmail,
+      subject,
+      text,
+      html,
+    });
+    return {
+      provider,
+      ok: res.ok,
+      id: res.id,
+      error: res.error,
+      senderEmail,
+      latencyMs: Date.now() - start,
+      timestamp,
+    };
+  }
+
+  if (provider === "resend") {
+    const apiKey = process.env["RESEND_API_KEY"];
+    const customSender =
+      process.env["RESEND_SENDER_EMAIL"] || process.env["VOTER_OTP_SENDER_EMAIL"];
+    const sendAttempts = [
+      customSender,
+      "SHABACH 2026 <voting@mail.cornelabs.com>",
+      "SHABACH 2026 <onboarding@resend.dev>",
+    ].filter(Boolean) as string[];
+    if (!apiKey) {
+      return {
+        provider,
+        ok: false,
+        error: "RESEND_API_KEY is not configured in environment.",
+        latencyMs: Date.now() - start,
+        timestamp,
+      };
+    }
+    const res = await sendViaResend({
+      apiKey,
+      fromAddresses: sendAttempts,
+      toEmail: recipientEmail,
+      subject,
+      text,
+      html,
+    });
+    return {
+      provider,
+      ok: res.ok,
+      id: res.id,
+      error: res.error,
+      senderEmail: sendAttempts[0],
+      latencyMs: Date.now() - start,
+      timestamp,
+    };
+  }
+
+  if (provider === "zeptomail") {
+    const apiKey =
+      process.env["ZEPTOMAIL_API_KEY"] ||
+      process.env["ZEPTOMAIL_SEND_MAIL_TOKEN"] ||
+      process.env["ZEPTO_API_KEY"];
+    const senderEmail =
+      process.env["ZEPTOMAIL_SENDER_EMAIL"] ||
+      process.env["ZEPTO_SENDER_EMAIL"] ||
+      process.env["VOTER_OTP_SENDER_EMAIL"] ||
+      "voting@mail.cornelabs.com";
+    const senderName =
+      process.env["ZEPTOMAIL_SENDER_NAME"] ||
+      process.env["ZEPTO_SENDER_NAME"] ||
+      "SHABACH 2026";
+    const apiUrl = process.env["ZEPTOMAIL_API_URL"];
+
+    if (!apiKey) {
+      return {
+        provider,
+        ok: false,
+        error: "ZEPTOMAIL_API_KEY is not configured in environment.",
+        senderEmail,
+        latencyMs: Date.now() - start,
+        timestamp,
+      };
+    }
+    const res = await sendViaZeptoMail({
+      apiKey,
+      senderEmail,
+      senderName,
+      toEmail: recipientEmail,
+      subject,
+      text,
+      html,
+      apiUrl,
+    });
+    return {
+      provider,
+      ok: res.ok,
+      id: res.id,
+      error: res.error,
+      senderEmail,
+      latencyMs: Date.now() - start,
+      timestamp,
+    };
+  }
+
+  return {
+    provider,
+    ok: false,
+    error: `Unknown provider: ${provider}`,
+    latencyMs: Date.now() - start,
+    timestamp,
+  };
+}
+
+export const testEmailProviderServerFn = createServerFn({ method: "POST" })
+  .validator((data: unknown): TestEmailProviderPayload => {
+    if (!data || typeof data !== "object") throw new Error("Invalid payload");
+    const { provider, email } = data as Record<string, unknown>;
+    if (typeof email !== "string" || !email.includes("@")) {
+      throw new Error("Invalid recipient email");
+    }
+    const cleanProvider = (typeof provider === "string" ? provider.toLowerCase() : "all") as
+      | "brevo"
+      | "resend"
+      | "zeptomail"
+      | "all";
+    return {
+      provider: cleanProvider,
+      email: email.trim().toLowerCase(),
+    };
+  })
+  .handler(async ({ data }): Promise<TestEmailProviderResponse> => {
+    const results: TestProviderItemResult[] = [];
+    if (data.provider === "all") {
+      for (const p of ["brevo", "resend", "zeptomail"] as const) {
+        results.push(await testSingleEmailProvider(p, data.email));
+      }
+    } else {
+      results.push(await testSingleEmailProvider(data.provider, data.email));
+    }
+    const allOk = results.every((r) => r.ok);
+    return {
+      success: allOk,
+      message: allOk
+        ? `All tested providers (${results.map((r) => r.provider).join(", ")}) sent successfully!`
+        : `Some providers encountered issues: ${results
+            .filter((r) => !r.ok)
+            .map((r) => `${r.provider}: ${r.error}`)
+            .join("; ")}`,
+      results,
+    };
+  });
