@@ -87,6 +87,9 @@ export function compareContestantsByDistrict(
   a: { district: string; order?: number; name?: string },
   b: { district: string; order?: number; name?: string },
 ): number {
+  if (a.order !== undefined && b.order !== undefined && a.order !== b.order) {
+    return a.order - b.order;
+  }
   const dDiff = districtSortIndex(a.district) - districtSortIndex(b.district);
   if (dDiff !== 0) return dDiff;
   return (a.order ?? 0) - (b.order ?? 0);

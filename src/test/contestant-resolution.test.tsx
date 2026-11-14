@@ -71,7 +71,7 @@ describe("Contestant Direct Profile Resolution & Link Loading", () => {
       expect(contestant?.district).toBe("Epe District");
       expect(contestant?.type).toBe("music");
       expect(contestant?.title).toBe("Vocal & Worship Ministry");
-      expect(contestant?.order).toBe(5);
+      expect(contestant?.order).toBe(12);
     });
 
     it("resolves B6F4PT directly to HOPENDHOUSE DANCE with accurate attributes", async () => {
@@ -196,7 +196,7 @@ describe("Contestant Direct Profile Resolution & Link Loading", () => {
 
       // Contestant name & identity
       expect(screen.getByRole("heading", { name: "Min. Lizzy" })).toBeInTheDocument();
-      expect(screen.getByText(/Running order № 5 · SB7K2M/i)).toBeInTheDocument();
+      expect(screen.getByText(/Running order № 12 · SB7K2M/i)).toBeInTheDocument();
       expect(screen.getAllByText("Epe District").length).toBeGreaterThan(0);
 
       // Rubric section
@@ -222,7 +222,7 @@ describe("Contestant Direct Profile Resolution & Link Loading", () => {
       render(<Component />);
 
       expect(screen.getByRole("heading", { name: "HOPENDHOUSE DANCE" })).toBeInTheDocument();
-      expect(screen.getByText(/Running order № 15 · B6F4PT/i)).toBeInTheDocument();
+      expect(screen.getByText(/Running order № 6 · B6F4PT/i)).toBeInTheDocument();
       expect(screen.getAllByText("Morogbo District").length).toBeGreaterThan(0);
       expect(screen.getByText("How HOPENDHOUSE DANCE will be scored")).toBeInTheDocument();
 

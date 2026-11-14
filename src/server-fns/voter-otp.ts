@@ -261,7 +261,84 @@ Strict single-vote policy: each verified email may cast exactly one vote across 
   const emailSubject = `Your SHABACH 2026 Verification Code [${data.code}]`;
 
   // =========================================================================
-  // 1. PRIMARY DISPATCH: Zoho ZeptoMail (high-volume transactional, up to 10k)
+  // 1. PRIMARY DISPATCH: Brevo (v3 REST API)
+  // =========================================================================
+  if (brevoApiKey) {
+    const brevoSenderEmail =
+      envOverride?.brevoSenderEmail ??
+      process.env["BREVO_SENDER_EMAIL"] ??
+      process.env["VOTER_OTP_SENDER_EMAIL"] ??
+      "voting@mail.cornelabs.com";
+    const brevoSenderName =
+      envOverride?.brevoSenderName ?? process.env["BREVO_SENDER_NAME"] ?? "SHABACH 2026";
+
+    const brevoResult = await sendViaBrevo({
+      apiKey: brevoApiKey,
+      senderName: brevoSenderName,
+      senderEmail: brevoSenderEmail,
+      toEmail: data.email,
+      subject: emailSubject,
+      text: textBody,
+      html: htmlBody,
+    });
+
+    if (brevoResult.ok) {
+      console.info(
+        `[OTP Server] Dispatched code via Brevo (${brevoSenderEmail}) to ${data.email}. ID: ${brevoResult.id}`
+      );
+      return {
+        success: true,
+        message: `Verification code successfully sent to ${data.email}.`,
+        dispatchedVia: "brevo",
+      };
+    }
+
+    console.warn(
+      `[OTP Server] Brevo dispatch error (${brevoResult.error}). Checking fallback provider (Resend)...`
+    );
+  }
+
+  // =========================================================================
+  // 2. SECONDARY FALLBACK: Resend (100 emails/day free limit)
+  // =========================================================================
+  if (resendApiKey) {
+    const customSender =
+      envOverride?.resendSenderEmail ??
+      process.env["RESEND_SENDER_EMAIL"] ??
+      process.env["VOTER_OTP_SENDER_EMAIL"];
+    const sendAttempts = [
+      customSender,
+      "SHABACH 2026 <voting@mail.cornelabs.com>",
+      "SHABACH 2026 <onboarding@resend.dev>",
+    ].filter(Boolean) as string[];
+
+    const resendResult = await sendViaResend({
+      apiKey: resendApiKey,
+      fromAddresses: sendAttempts,
+      toEmail: data.email,
+      subject: emailSubject,
+      text: textBody,
+      html: htmlBody,
+    });
+
+    if (resendResult.ok) {
+      console.info(
+        `[OTP Server] Dispatched code via Resend to ${data.email}. ID: ${resendResult.id}`
+      );
+      return {
+        success: true,
+        message: `Verification code successfully sent to ${data.email}.`,
+        dispatchedVia: "resend",
+      };
+    }
+
+    console.warn(
+      `[OTP Server] Resend dispatch error (${resendResult.error}). Checking fallback provider (ZeptoMail)...`
+    );
+  }
+
+  // =========================================================================
+  // 3. TERTIARY / FINAL FALLBACK: Zoho ZeptoMail (high-volume transactional)
   // =========================================================================
   if (zeptomailApiKey) {
     const zeptoSenderEmail =
@@ -301,91 +378,16 @@ Strict single-vote policy: each verified email may cast exactly one vote across 
     }
 
     console.warn(
-      `[OTP Server] ZeptoMail dispatch error (${zeptoResult.error}). Checking fallback provider...`
+      `[OTP Server] ZeptoMail dispatch error (${zeptoResult.error}). All email providers exhausted.`
     );
-  }
-
-  // =========================================================================
-  // 2. SECONDARY FALLBACK: Brevo (300 emails/day free limit)
-  // =========================================================================
-  if (brevoApiKey) {
-    const brevoSenderEmail =
-      envOverride?.brevoSenderEmail ??
-      process.env["BREVO_SENDER_EMAIL"] ??
-      process.env["VOTER_OTP_SENDER_EMAIL"] ??
-      "voting@mail.cornelabs.com";
-    const brevoSenderName =
-      envOverride?.brevoSenderName ?? process.env["BREVO_SENDER_NAME"] ?? "SHABACH 2026";
-
-    const brevoResult = await sendViaBrevo({
-      apiKey: brevoApiKey,
-      senderName: brevoSenderName,
-      senderEmail: brevoSenderEmail,
-      toEmail: data.email,
-      subject: emailSubject,
-      text: textBody,
-      html: htmlBody,
-    });
-
-    if (brevoResult.ok) {
-      console.info(
-        `[OTP Server] Dispatched code via Brevo (${brevoSenderEmail}) to ${data.email}. ID: ${brevoResult.id}`
-      );
-      return {
-        success: true,
-        message: `Verification code successfully sent to ${data.email}.`,
-        dispatchedVia: "brevo",
-      };
-    }
-
-    console.warn(
-      `[OTP Server] Brevo dispatch error (${brevoResult.error}). Checking fallback provider...`
-    );
-  }
-
-  // =========================================================================
-  // 3. TERTIARY FALLBACK: Resend (100 emails/day free limit)
-  // =========================================================================
-  if (resendApiKey) {
-    const customSender =
-      envOverride?.resendSenderEmail ??
-      process.env["RESEND_SENDER_EMAIL"] ??
-      process.env["VOTER_OTP_SENDER_EMAIL"];
-    const sendAttempts = [
-      customSender,
-      "SHABACH 2026 <voting@mail.cornelabs.com>",
-      "SHABACH 2026 <onboarding@resend.dev>",
-    ].filter(Boolean) as string[];
-
-    const resendResult = await sendViaResend({
-      apiKey: resendApiKey,
-      fromAddresses: sendAttempts,
-      toEmail: data.email,
-      subject: emailSubject,
-      text: textBody,
-      html: htmlBody,
-    });
-
-    if (resendResult.ok) {
-      console.info(
-        `[OTP Server] Dispatched code via Resend to ${data.email}. ID: ${resendResult.id}`
-      );
-      return {
-        success: true,
-        message: `Verification code successfully sent to ${data.email}.`,
-        dispatchedVia: "resend",
-      };
-    }
-
-    console.warn(`[OTP Server] Resend dispatch error (${resendResult.error}).`);
   }
 
   // =========================================================================
   // 4. DEVELOPMENT / TEST MOCK DISPATCH (when no API keys are present)
   // =========================================================================
-  if (!zeptomailApiKey && !brevoApiKey && !resendApiKey) {
+  if (!brevoApiKey && !resendApiKey && !zeptomailApiKey) {
     console.warn(
-      "[OTP Server] Neither ZEPTOMAIL_API_KEY, BREVO_API_KEY, nor RESEND_API_KEY configured in environment. Using mock dispatch."
+      "[OTP Server] Neither BREVO_API_KEY, RESEND_API_KEY, nor ZEPTOMAIL_API_KEY configured in environment. Using mock dispatch."
     );
     return {
       success: true,

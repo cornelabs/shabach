@@ -210,24 +210,24 @@ export const CONTESTANT_SEED: Omit<Contestant, "order" | "hue">[] = [
   },
 ];
 
-// Contestants ordered by districts: State Church first, then alphabetically (Badagry, Epe, Igbogbo, Ijede, Irawo, Magbon, Morogbo)
+// Grand Finale official stage running order (1 to 16)
 const ORDER_SEED = [
-  "c15",
-  "c16",
-  "c09",
-  "c10",
-  "c01",
-  "c02",
-  "c07",
-  "c08",
-  "c03",
-  "c04",
-  "c05",
-  "c06",
-  "c11",
-  "c12",
-  "c13",
-  "c14",
+  "c16", // 1. State church Music (Min. Blessing)
+  "c15", // 2. State church Spoken words (Favour Chukwudi)
+  "c14", // 3. Morogbo Spoken words (The Gideonite Speaks)
+  "c09", // 4. Badagry Music (Elijah Victor)
+  "c08", // 5. Igbogbo Spoken words (The Wise Ones)
+  "c13", // 6. Morogbo Dance (HOPENDHOUSE DANCE)
+  "c10", // 7. Badagry Dance (LFC Dynasty)
+  "c11", // 8. Magbon Music (Min. Elizabeth)
+  "c07", // 9. Igbogbo Music (The Preacher)
+  "c06", // 10. Irawo Spoken Words (Victoria)
+  "c02", // 11. Epe Drama (The Painters)
+  "c01", // 12. Epe Music (Min. Lizzy)
+  "c05", // 13. Irawo Music (SUCCESS)
+  "c03", // 14. Ijede Music (Min. Kehinde Akintola)
+  "c12", // 15. Magbon Dance (Spirit, Soul & Body Dancers)
+  "c04", // 16. Ijede Music (Min. TaegarGee)
 ];
 
 const HUES: Record<string, number> = {

@@ -97,7 +97,7 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
       expect(contestant?.name).toBe("HOPENDHOUSE DANCE");
       expect(contestant?.district).toBe("Morogbo District");
       expect(contestant?.title).toBe("Dance Ministry");
-      expect(contestant?.order).toBe(15);
+      expect(contestant?.order).toBe(6);
     });
 
     it("resolves all 16 canonical finalist profiles without 404", async () => {

@@ -306,12 +306,12 @@ export class LiveSupabaseAdapter implements IDataAdapter {
         type: ((isLegacyDummy ? seed?.type : null) ?? row.performance_type ?? seed?.type ?? "music") as PerformanceType,
         title: (isLegacyDummy ? seed?.title : null) ?? row.title ?? row.performance_title ?? seed?.title ?? "",
         bio: (isLegacyDummy ? seed?.bio : null) ?? row.bio ?? row.biography ?? seed?.bio ?? "",
-        order: seed?.order ?? row.performance_order,
+        order: row.performance_order ?? seed?.order,
         hue: row.hue ?? (row.performance_order * 23) % 360,
         avatarUrl: row.avatar_url ?? row.image_url ?? seed?.avatarUrl ?? undefined,
       };
     });
-    return list.sort(compareContestantsByDistrict);
+    return list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }
 
   async getContestantByCode(code: string): Promise<Contestant | null> {

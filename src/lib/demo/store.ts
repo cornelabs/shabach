@@ -232,12 +232,12 @@ export async function refreshFromSupabase(): Promise<void> {
           type: ((isLegacyDummy ? seed?.type : null) ?? row.performance_type ?? seed?.type ?? "music") as PerformanceType,
           title: (isLegacyDummy ? seed?.title : null) ?? row.performance_title ?? row.title ?? seed?.title ?? "",
           bio: (isLegacyDummy ? seed?.bio : null) ?? row.biography ?? row.bio ?? seed?.bio ?? "",
-          order: seed?.order ?? row.performance_order,
+          order: row.performance_order ?? seed?.order,
           hue: row.hue ?? (row.performance_order * 23) % 360,
           avatarUrl: row.avatar_url ?? row.image_url ?? seed?.avatarUrl ?? undefined,
         };
       });
-      activeContestants.sort(compareContestantsByDistrict);
+      activeContestants.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     }
 
     const activeIds = new Set(activeContestants.map((c) => c.id));
