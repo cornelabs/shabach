@@ -2,12 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { dispatchVoterEmailOtpLogic } from "@/server-fns/voter-otp";
 
-describe("Transactional Email OTP Dispatch (Brevo & Resend)", () => {
+describe("Transactional Email OTP Dispatch (ZeptoMail, Brevo & Resend)", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
     vi.resetModules();
     process.env = { ...originalEnv };
+    delete process.env["ZEPTOMAIL_API_KEY"];
+    delete process.env["ZEPTOMAIL_SEND_MAIL_TOKEN"];
+    delete process.env["ZEPTOMAIL_SENDER_EMAIL"];
     delete process.env["BREVO_API_KEY"];
     delete process.env["RESEND_API_KEY"];
     delete process.env["BREVO_SENDER_EMAIL"];
@@ -28,6 +31,76 @@ describe("Transactional Email OTP Dispatch (Brevo & Resend)", () => {
     expect(res.success).toBe(true);
     expect(res.dispatchedVia).toBe("mock");
     expect(res.message).toContain("123456");
+  });
+
+  it("dispatches successfully via Zoho ZeptoMail REST API v1.1 when ZEPTOMAIL_API_KEY is configured", async () => {
+    process.env["ZEPTOMAIL_API_KEY"] = "mock-zeptomail-token-12345";
+    process.env["ZEPTOMAIL_SENDER_EMAIL"] = "noreply@shabach.org";
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        message: "success",
+        request_id: "req_zepto_98765",
+        data: [{ code: "EM_104", response: { id: "zepto_msg_001" } }],
+      }),
+    } as Response);
+
+    const res = await dispatchVoterEmailOtpLogic({
+      email: "audience@fellowship.org",
+      code: "456789",
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.dispatchedVia).toBe("zeptomail");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const [url, options] = fetchMock.mock.calls[0]!;
+    expect(url).toBe("https://api.zeptomail.com/v1.1/email");
+    expect((options?.headers as Record<string, string>)?.authorization).toBe(
+      "Zoho-enczapikey mock-zeptomail-token-12345"
+    );
+
+    const body = JSON.parse(options?.body as string);
+    expect(body.to[0].email_address.address).toBe("audience@fellowship.org");
+    expect(body.from.address).toBe("noreply@shabach.org");
+    expect(body.subject).toContain("456789");
+  });
+
+  it("falls back from ZeptoMail to Brevo when ZeptoMail fails", async () => {
+    process.env["ZEPTOMAIL_API_KEY"] = "mock-zepto-failing";
+    process.env["ZEPTOMAIL_SENDER_EMAIL"] = "noreply@shabach.org";
+    process.env["BREVO_API_KEY"] = "xkeysib-brevo-working";
+
+    // Call 1: ZeptoMail error
+    // Call 2: Brevo success
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: { message: "Invalid Send Mail Token" } }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({ messageId: "<brevo-fallback-msg>" }),
+      } as Response);
+
+    const res = await dispatchVoterEmailOtpLogic({
+      email: "voter@domain.com",
+      code: "112233",
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.dispatchedVia).toBe("brevo");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    const [zeptoUrl] = fetchMock.mock.calls[0]!;
+    const [brevoUrl] = fetchMock.mock.calls[1]!;
+    expect(zeptoUrl).toBe("https://api.zeptomail.com/v1.1/email");
+    expect(brevoUrl).toBe("https://api.brevo.com/v3/smtp/email");
   });
 
   it("dispatches successfully via Brevo REST API v3 when BREVO_API_KEY is configured", async () => {

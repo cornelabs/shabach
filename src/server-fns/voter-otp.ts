@@ -8,13 +8,80 @@ export interface DispatchEmailOtpPayload {
 export interface DispatchEmailOtpResponse {
   success: boolean;
   message: string;
-  dispatchedVia?: "brevo" | "resend" | "mock";
+  dispatchedVia?: "zeptomail" | "brevo" | "resend" | "mock";
 }
 
 interface ProviderResult {
   ok: boolean;
   id?: string;
   error?: string;
+}
+
+/**
+ * Dispatches an email via Zoho ZeptoMail REST API v1.1.
+ * ZeptoMail provides high-volume transactional email capacity (up to 10,000 emails).
+ */
+export async function sendViaZeptoMail(params: {
+  apiKey: string;
+  senderName: string;
+  senderEmail: string;
+  toEmail: string;
+  subject: string;
+  text: string;
+  html: string;
+  apiUrl?: string;
+}): Promise<ProviderResult> {
+  try {
+    const rawKey = params.apiKey.trim();
+    const authHeader = rawKey.startsWith("Zoho-enczapikey ")
+      ? rawKey
+      : `Zoho-enczapikey ${rawKey}`;
+
+    const url = params.apiUrl || "https://api.zeptomail.com/v1.1/email";
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        authorization: authHeader,
+      },
+      body: JSON.stringify({
+        from: {
+          address: params.senderEmail,
+          name: params.senderName,
+        },
+        to: [
+          {
+            email_address: {
+              address: params.toEmail,
+            },
+          },
+        ],
+        subject: params.subject,
+        htmlbody: params.html,
+        textbody: params.text,
+      }),
+    });
+
+    if (res.ok || res.status === 201) {
+      const data = (await res.json().catch(() => ({}))) as {
+        request_id?: string;
+        data?: Array<{ response?: { id?: string } }>;
+      };
+      const messageId = data.data?.[0]?.response?.id || data.request_id || "zeptomail_success";
+      return { ok: true, id: messageId };
+    }
+
+    const errJson = (await res.json().catch(() => ({}))) as {
+      error?: { message?: string; details?: unknown[] };
+      message?: string;
+    };
+    const errText = errJson.error?.message || errJson.message || `HTTP ${res.status}`;
+    return { ok: false, error: errText };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 /**
@@ -111,11 +178,17 @@ export async function sendViaResend(params: {
 
 /**
  * Core business logic for dispatching voter OTP verification emails.
- * Supports Brevo (300/day free limit) with automatic fallback to Resend (100/day free limit).
+ * Primary: Zoho ZeptoMail (high-volume transactional email, up to 10,000 emails).
+ * Secondary fallback: Brevo (300/day free limit).
+ * Tertiary fallback: Resend (100/day free limit).
  */
 export async function dispatchVoterEmailOtpLogic(
   data: DispatchEmailOtpPayload,
   envOverride?: {
+    zeptomailApiKey?: string;
+    zeptomailSenderEmail?: string;
+    zeptomailSenderName?: string;
+    zeptomailApiUrl?: string;
     brevoApiKey?: string;
     brevoSenderEmail?: string;
     brevoSenderName?: string;
@@ -123,6 +196,11 @@ export async function dispatchVoterEmailOtpLogic(
     resendSenderEmail?: string;
   }
 ): Promise<DispatchEmailOtpResponse> {
+  const zeptomailApiKey =
+    envOverride?.zeptomailApiKey ??
+    process.env["ZEPTOMAIL_API_KEY"] ??
+    process.env["ZEPTOMAIL_SEND_MAIL_TOKEN"] ??
+    process.env["ZEPTO_API_KEY"];
   const brevoApiKey = envOverride?.brevoApiKey ?? process.env["BREVO_API_KEY"];
   const resendApiKey = envOverride?.resendApiKey ?? process.env["RESEND_API_KEY"];
 
@@ -183,7 +261,52 @@ Strict single-vote policy: each verified email may cast exactly one vote across 
   const emailSubject = `Your SHABACH 2026 Verification Code [${data.code}]`;
 
   // =========================================================================
-  // 1. PRIMARY DISPATCH: Brevo (300 emails/day free limit)
+  // 1. PRIMARY DISPATCH: Zoho ZeptoMail (high-volume transactional, up to 10k)
+  // =========================================================================
+  if (zeptomailApiKey) {
+    const zeptoSenderEmail =
+      envOverride?.zeptomailSenderEmail ??
+      process.env["ZEPTOMAIL_SENDER_EMAIL"] ??
+      process.env["ZEPTO_SENDER_EMAIL"] ??
+      process.env["VOTER_OTP_SENDER_EMAIL"] ??
+      "voting@mail.cornelabs.com";
+    const zeptoSenderName =
+      envOverride?.zeptomailSenderName ??
+      process.env["ZEPTOMAIL_SENDER_NAME"] ??
+      process.env["ZEPTO_SENDER_NAME"] ??
+      "SHABACH 2026";
+    const zeptoApiUrl =
+      envOverride?.zeptomailApiUrl ?? process.env["ZEPTOMAIL_API_URL"];
+
+    const zeptoResult = await sendViaZeptoMail({
+      apiKey: zeptomailApiKey,
+      senderName: zeptoSenderName,
+      senderEmail: zeptoSenderEmail,
+      toEmail: data.email,
+      subject: emailSubject,
+      text: textBody,
+      html: htmlBody,
+      apiUrl: zeptoApiUrl,
+    });
+
+    if (zeptoResult.ok) {
+      console.info(
+        `[OTP Server] Dispatched code via ZeptoMail (${zeptoSenderEmail}) to ${data.email}. ID: ${zeptoResult.id}`
+      );
+      return {
+        success: true,
+        message: `Verification code successfully sent to ${data.email}.`,
+        dispatchedVia: "zeptomail",
+      };
+    }
+
+    console.warn(
+      `[OTP Server] ZeptoMail dispatch error (${zeptoResult.error}). Checking fallback provider...`
+    );
+  }
+
+  // =========================================================================
+  // 2. SECONDARY FALLBACK: Brevo (300 emails/day free limit)
   // =========================================================================
   if (brevoApiKey) {
     const brevoSenderEmail =
@@ -221,7 +344,7 @@ Strict single-vote policy: each verified email may cast exactly one vote across 
   }
 
   // =========================================================================
-  // 2. SECONDARY / FALLBACK DISPATCH: Resend (100 emails/day free limit)
+  // 3. TERTIARY FALLBACK: Resend (100 emails/day free limit)
   // =========================================================================
   if (resendApiKey) {
     const customSender =
@@ -258,11 +381,11 @@ Strict single-vote policy: each verified email may cast exactly one vote across 
   }
 
   // =========================================================================
-  // 3. DEVELOPMENT / TEST MOCK DISPATCH (when no API keys are present)
+  // 4. DEVELOPMENT / TEST MOCK DISPATCH (when no API keys are present)
   // =========================================================================
-  if (!brevoApiKey && !resendApiKey) {
+  if (!zeptomailApiKey && !brevoApiKey && !resendApiKey) {
     console.warn(
-      "[OTP Server] Neither BREVO_API_KEY nor RESEND_API_KEY configured in environment. Using mock dispatch."
+      "[OTP Server] Neither ZEPTOMAIL_API_KEY, BREVO_API_KEY, nor RESEND_API_KEY configured in environment. Using mock dispatch."
     );
     return {
       success: true,
