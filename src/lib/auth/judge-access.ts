@@ -33,7 +33,7 @@ export const JUDGE_SEAT_CODES: Record<JudgeId, string[]> = {
     "CHIEF-JUDGE",
     "PRISCILLIA",
   ],
-  judge2: ["G4K8V3", "7102", "JUDGE2", "JUDGE2-EXCELLENCE", "EXCELLENCE", "JUDGE2-PIN"],
+  judge2: ["G4K8V3", "7102", "JUDGE2", "JUDGE2-EXCELLENCE", "EXCELLENCE", "JUDGE2-PIN", "REX"],
   judge3: [
     "D9W5T2",
     "7101",

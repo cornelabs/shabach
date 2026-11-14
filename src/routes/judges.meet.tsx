@@ -14,13 +14,13 @@ export const Route = createFileRoute("/judges/meet")({
       {
         name: "description",
         content:
-          "Meet the 4 Grand Finale adjudicators of SHABACH 2026: Mrs. Priscillia Fayomi (Head Judge), Molu Gbenga, David O. Umoru, and Sochi Daniel-Onuoha.",
+          "Meet the 4 Grand Finale adjudicators of SHABACH 2026: Mrs. Priscillia Fayomi (Head Judge), Rex Omoigberale, David O. Umoru, and Sochi Daniel-Onuoha.",
       },
       { property: "og:title", content: "Meet the Grand Finale Judges — SHABACH 2026" },
       {
         property: "og:description",
         content:
-          "Meet the 4 Grand Finale adjudicators of SHABACH 2026: Mrs. Priscillia Fayomi (Head Judge), Molu Gbenga, David O. Umoru, and Sochi Daniel-Onuoha.",
+          "Meet the 4 Grand Finale adjudicators of SHABACH 2026: Mrs. Priscillia Fayomi (Head Judge), Rex Omoigberale, David O. Umoru, and Sochi Daniel-Onuoha.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

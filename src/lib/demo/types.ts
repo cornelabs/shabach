@@ -37,12 +37,12 @@ export const JUDGES: JudgeProfile[] = [
   },
   {
     id: "judge2",
-    name: "Molu Gbenga",
-    label: "Pioneer Creative Director, Youth Alive (Gideonites)",
+    name: "Rex Omoigberale",
+    label: "Music Artist, Producer, Music Instructor & Vocal Coach",
     seatTitle: "Judge Seat 2",
-    roleTitle: "Engineer | Entrepreneur | Creative Director | Leadership Strategist",
-    bio: "Pioneer Creative Director of the Youth Alive Creativity Department (Gideonites) and CEO of Alpha Craft Global Resources Ltd. Seasoned leadership strategist and programs coordinator for WYCF.",
-    avatarUrl: "/judges/molu-gbenga.jpeg",
+    roleTitle: "Music Artist | Music Producer | Music Instructor | Vocal Coach",
+    bio: "Passionate and versatile music professional, recording artist, producer, instructor, and vocal coach from Edo State, Nigeria. Holds an HND in Statistics from Federal Polytechnic, Auchi, bringing a unique blend of analytical discipline, creativity, and vocal mentorship to empower musical talents.",
+    avatarUrl: "/judges/rex-omoigberale.jpeg",
   },
   {
     id: "judge3",
