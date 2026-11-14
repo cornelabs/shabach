@@ -136,7 +136,7 @@ function Index() {
                 <ArrowRight className="h-3.5 w-3.5 text-gold-soft group-hover:translate-x-1 transition-transform" />
               </h2>
               <p className="mt-0.5 text-[10px] sm:text-[11px] leading-snug text-ivory/75 line-clamp-2">
-                Top 5 winners & verified final standings.
+                Top 6 winners & verified final standings.
               </p>
             </div>
           </Link>

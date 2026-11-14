@@ -80,7 +80,7 @@ import { AdminAccessGate } from "@/components/admin/admin-access-gate";
 import { computeResults, fmt2, timePenalty, verificationGates } from "@/lib/demo/scoring";
 import {
   checkLockReadiness,
-  getTop5Contestants,
+  getTop6Contestants,
   loadSampleScores,
   lockResults,
   publishResults,
@@ -1065,7 +1065,7 @@ function ScoringTab({ isLocked }: { isLocked: boolean }) {
         </div>
       </div>
 
-      {/* Score Page Two (Round 2 — Top 5 Finalists) Matrix */}
+      {/* Score Page Two (Round 2 — Top 6 Finalists) Matrix */}
       <div className="rounded-2xl border border-gold/40 bg-card p-6 shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cream-line pb-4">
           <div>
@@ -1073,10 +1073,10 @@ function ScoringTab({ isLocked }: { isLocked: boolean }) {
               <Badge className="bg-gold text-forest-deep text-[11px] font-bold">
                 <Trophy className="mr-1 h-3 w-3" /> Score Page Two
               </Badge>
-              <h3 className="font-display text-xl text-forest">Round 2 Top 5 Finalists Matrix</h3>
+              <h3 className="font-display text-xl text-forest">Round 2 Top 6 Finalists Matrix</h3>
             </div>
             <p className="mt-1 text-xs text-charcoal-muted">
-              Inspect the 20 Round 2 championship scorecards (4 judges × 5 finalists) out of 95 raw points.
+              Inspect the 24 Round 2 championship scorecards (4 judges × 6 finalists) out of 95 raw points.
             </p>
           </div>
           <Link
@@ -1093,7 +1093,7 @@ function ScoringTab({ isLocked }: { isLocked: boolean }) {
           <table className="w-full min-w-[700px] text-sm">
             <thead>
               <tr className="border-b border-cream-line bg-parchment text-left text-xs uppercase tracking-wide text-charcoal-muted">
-                <th className="px-4 py-3">Top 5 Finalist</th>
+                <th className="px-4 py-3">Top 6 Finalist</th>
                 {JUDGES.map((j) => (
                   <th key={`r2-head-${j.id}`} className="px-4 py-3 text-center">
                     {j.name}
@@ -1102,7 +1102,7 @@ function ScoringTab({ isLocked }: { isLocked: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {getTop5Contestants(state).map((c, idx) => (
+              {getTop6Contestants(state).map((c, idx) => (
                 <tr
                   key={`r2-row-${c.id}`}
                   className="border-b border-cream-line last:border-0 hover:bg-ivory/60"

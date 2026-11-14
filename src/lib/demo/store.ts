@@ -3,6 +3,7 @@ import {
   canLock,
   computeMasterRows,
   computeResults,
+  computeRound2Results,
   judgeSubtotal,
   rankAndAssign,
   validateScores,
@@ -1032,15 +1033,26 @@ export function resetJudgeScorecard(judgeId: JudgeId, contestantId: string, roun
 }
 
 /**
- * Resolves the Top 5 contestants advancing to Round 2.
- * Prioritises explicit configuration, then Round 1 master rankings, with fallback to performance order.
+ * Resolves the Top 6 contestants advancing to Round 2.
+ * Prioritises explicit configuration, then official Round 1 snapshot rankings,
+ * then live Round 1 master rankings, with fallback to performance order.
  */
-export function getTop5Contestants(s: DemoState): Contestant[] {
-  if (s.round2ContestantIds && s.round2ContestantIds.length >= 5) {
+export function getTop6Contestants(s: DemoState): Contestant[] {
+  if (s.round2ContestantIds && s.round2ContestantIds.length >= 1) {
     const picked = s.round2ContestantIds
       .map((id) => s.contestants.find((c) => c.id === id))
       .filter((c): c is Contestant => Boolean(c));
-    if (picked.length >= 5) return picked.slice(0, 5);
+    if (picked.length >= 1) return picked.slice(0, 6);
+  }
+
+  // If official Round 1 results are already locked or published, respect those standings
+  if (s.results?.rows && s.results.rows.length >= 6) {
+    const rankedRows = [...s.results.rows]
+      .filter((r) => r.rank !== null)
+      .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
+    if (rankedRows.length >= 6) {
+      return rankedRows.slice(0, 6).map((r) => r.contestant);
+    }
   }
 
   // Evaluate Round 1 scores
@@ -1051,14 +1063,15 @@ export function getTop5Contestants(s: DemoState): Contestant[] {
     voteCounts: voteCountsOf(s),
     durations: s.durations,
     tieResolutions: s.tieResolutions,
+    round: 1,
   });
   const ranked = rankAndAssign(rows, round1Cards, s.tieResolutions);
 
   const scored = ranked.filter(
     (r) => r.finalScore !== null || (r.judgeAverage !== null && r.judgeAverage > 0),
   );
-  if (scored.length >= 5) {
-    return scored.slice(0, 5).map((r) => r.contestant);
+  if (scored.length >= 6) {
+    return scored.slice(0, 6).map((r) => r.contestant);
   }
 
   // Fallback: sort by current score/average then performance order
@@ -1069,31 +1082,53 @@ export function getTop5Contestants(s: DemoState): Contestant[] {
     return a.contestant.order - b.contestant.order;
   });
 
-  return sorted.slice(0, 5).map((r) => r.contestant);
+  return sorted.slice(0, 6).map((r) => r.contestant);
+}
+
+export const getTop5Contestants = getTop6Contestants;
+export const getRound2Contestants = getTop6Contestants;
+
+/** Returns the collated Round 2 results for the Top 6 finalists. */
+export function getRound2Results(s: DemoState): ResultRow[] {
+  const top6 = getTop6Contestants(s);
+  const round2Cards = s.scorecards.filter((sc) => sc.round === 2);
+
+  if (s.results?.round2Rows && s.results.round2Rows.length > 0) {
+    const hasScores = s.results.round2Rows.some((r) => r.complete || r.finalScore !== null);
+    if (hasScores) return s.results.round2Rows;
+  }
+
+  return computeRound2Results({
+    contestants: top6,
+    scorecards: round2Cards,
+    voteCounts: voteCountsOf(s),
+    durations: s.durations,
+    tieResolutions: s.tieResolutions,
+  });
 }
 
 export function setRound2Contestants(contestantIds: string[]) {
   update((s) => ({
     ...s,
-    round2ContestantIds: contestantIds.slice(0, 5),
+    round2ContestantIds: contestantIds.slice(0, 6),
     activity: log(
       s,
       "durations_verified",
-      `Round 2 Top 5 Finalists updated: ${contestantIds.length} acts selected.`,
+      `Round 2 Top 6 Finalists updated: ${contestantIds.length} acts selected.`,
     ),
   }));
 }
 
 export function getRound2SubmittedCount(s: DemoState, judgeId: JudgeId): number {
-  const top5 = getTop5Contestants(s);
-  return top5.filter((c) => getCard(s, judgeId, c.id, 2).status === "submitted").length;
+  const top6 = getTop6Contestants(s);
+  return top6.filter((c) => getCard(s, judgeId, c.id, 2).status === "submitted").length;
 }
 
 export function getAllRound2SubmittedCount(s: DemoState): number {
-  const top5 = getTop5Contestants(s);
+  const top6 = getTop6Contestants(s);
   let count = 0;
   for (const j of JUDGES) {
-    for (const c of top5) {
+    for (const c of top6) {
       if (getCard(s, j.id, c.id, 2).status === "submitted") count++;
     }
   }
@@ -1399,12 +1434,38 @@ export function loadSampleScores() {
       };
     }
 
-    // Keep only the 64 assigned contestant x judge cards
+    // Keep the 64 assigned contestant x judge cards for Round 1
     const finalCards: Scorecard[] = [];
     for (const contestant of s.contestants) {
       for (const judgeId of assignedJudges) {
         const c = cardMap.get(`${contestant.id}:${judgeId}`);
-        if (c) finalCards.push(c);
+        if (c) finalCards.push({ ...c, round: 1 });
+      }
+    }
+
+    // Now seed Round 2 championship cards for the Top 6 finalists from Round 1
+    const top6 = getTop6Contestants({ ...s, scorecards: finalCards, durations });
+    for (const contestant of top6) {
+      const rubric = rubricFor(contestant.type);
+      for (const judgeId of assignedJudges) {
+        const scores = rubric.criteria.map((c, i) => {
+          const base = c.max === 15 ? 10 : 14;
+          const span = c.max === 15 ? 4 : 5;
+          return seededInt(`r2:${contestant.id}:${judgeId}:${i}`, base, base + span);
+        });
+
+        finalCards.push({
+          contestantId: contestant.id,
+          judgeId,
+          round: 2,
+          scores,
+          notes: "Round 2 Championship Performance",
+          status: "submitted",
+          conflictDeclared: false,
+          conflictResolved: false,
+          reopened: false,
+          updatedAt: new Date().toISOString(),
+        });
       }
     }
 
@@ -1416,7 +1477,7 @@ export function loadSampleScores() {
       activity: log(
         s,
         "sample_scores_loaded",
-        "Simulated sample scores loaded: all 64 scorecards submitted, durations entered and verified. Demo data only.",
+        "Simulated sample scores loaded: all 64 Round 1 scorecards and 24 Round 2 championship scorecards submitted.",
       ),
     };
   });

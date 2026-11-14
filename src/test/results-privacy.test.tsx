@@ -178,9 +178,32 @@ describe("Public Results Privacy & Presentation", () => {
       tieFlags: [],
       rank: 6,
     },
+    {
+      contestant: {
+        id: "c07",
+        code: "SHB-07",
+        name: "Samuel Bassey",
+        district: "Surulere",
+        type: "dance",
+        title: "Joy Overflow",
+        bio: "Test bio",
+        order: 7,
+        hue: 210,
+      },
+      judgeSubtotals: { judge1: 65, judge2: 66, judge3: 67 },
+      judgeCount: 3,
+      judgeAverage: 66.0,
+      validVotes: 40,
+      audiencePoints: 1.67,
+      timePenalty: 0,
+      finalScore: 67.67,
+      complete: true,
+      tieFlags: [],
+      rank: 7,
+    },
   ];
 
-  it("renders only top five winners and excludes 6th place and below", () => {
+  it("renders only top six winners and excludes 7th place and below", () => {
     render(<PublicTopThree rows={mockTopThreeRows} />);
 
     // 1st place
@@ -203,17 +226,21 @@ describe("Public Results Privacy & Presentation", () => {
     expect(screen.getByText("Ruth Amos")).toBeInTheDocument();
     expect(screen.getByText("5th Place · Fourth Runner-Up")).toBeInTheDocument();
 
-    // 6th place must NOT be rendered
-    expect(screen.queryByText("Victor Dan")).not.toBeInTheDocument();
-    expect(screen.queryByText("6th Place")).not.toBeInTheDocument();
+    // 6th place
+    expect(screen.getByText("Victor Dan")).toBeInTheDocument();
+    expect(screen.getByText("6th Place · Fifth Runner-Up")).toBeInTheDocument();
+
+    // 7th place must NOT be rendered
+    expect(screen.queryByText("Samuel Bassey")).not.toBeInTheDocument();
+    expect(screen.queryByText("7th Place")).not.toBeInTheDocument();
   });
 
   it("displays their voting score and average judge score for finalists", () => {
     render(<PublicTopThree rows={mockTopThreeRows} />);
 
     // Average judge score and voting score labels
-    expect(screen.getAllByText("Judge Average").length).toBe(5);
-    expect(screen.getAllByText("Voting Score").length).toBe(5);
+    expect(screen.getAllByText("Judge Average").length).toBe(6);
+    expect(screen.getAllByText("Voting Score").length).toBe(6);
 
     // Formatted score values appear
     expect(screen.getByText("90.00")).toBeInTheDocument(); // Praise Adebayo judge avg
@@ -249,7 +276,7 @@ describe("Public Results Privacy & Presentation", () => {
     render(<ResultsComponent />);
     expect(screen.getByText("Official results are being collated...")).toBeInTheDocument();
     expect(
-      screen.getByText(/The Grand Finale top five placements will be officially published here/i),
+      screen.getByText(/The Grand Finale top six placements will be officially published here/i),
     ).toBeInTheDocument();
     spyLoader.mockRestore();
   });

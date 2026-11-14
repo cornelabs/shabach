@@ -43,18 +43,18 @@ import {
 import { SCORECARD_STATUS_LABEL, typeLabel } from "@/lib/demo/labels";
 import { rubricFor } from "@/lib/demo/rubrics";
 import { judgeSubtotal } from "@/lib/demo/scoring";
-import { getCard, getTop5Contestants, setActiveJudge } from "@/lib/demo/store";
+import { getCard, getTop6Contestants, setActiveJudge } from "@/lib/demo/store";
 import { JUDGES, type JudgeId, type JudgeProfile } from "@/lib/demo/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/judges/round2")({
   head: () => ({
     meta: [
-      { title: "Score Page Two — Round 2 Top 5 Championship — SHABACH 2026" },
+      { title: "Score Page Two — Round 2 Top 6 Championship — SHABACH 2026" },
       {
         name: "description",
         content:
-          "Official Score Page Two for SHABACH 2026 Grand Finale. Independent scoring for the Top 5 finalists competing in the championship round.",
+          "Official Score Page Two for SHABACH 2026 Grand Finale. Independent scoring for the Top 6 finalists competing in the championship round.",
       },
     ],
   }),
@@ -96,12 +96,12 @@ export function Round2ScoringPage() {
     }
   }, [selectedJudgeId, isCurrentUnlocked]);
 
-  const top5 = getTop5Contestants(state);
+  const top6 = getTop6Contestants(state);
   const selectedContestant = selectedContestantId
-    ? (top5.find((c) => c.id === selectedContestantId) ?? null)
+    ? (top6.find((c) => c.id === selectedContestantId) ?? null)
     : null;
 
-  const round2SubmittedCount = top5.filter(
+  const round2SubmittedCount = top6.filter(
     (c) => getCard(state, selectedJudgeId, c.id, 2).status === "submitted",
   ).length;
 
@@ -139,7 +139,7 @@ export function Round2ScoringPage() {
       setAuthModalJudge(null);
       setAccessCodeInput("");
       toast.success(`Seat unlocked: ${authModalJudge.name}`, {
-        description: `Ready to score Round 2 Top 5 Finalists on Score Page Two.`,
+        description: `Ready to score Round 2 Top 6 Finalists on Score Page Two.`,
       });
     } catch {
       setAuthError("Verification failed. Please try again.");
@@ -229,10 +229,10 @@ export function Round2ScoringPage() {
               </Badge>
             </div>
             <h1 className="mt-2 font-display text-2xl sm:text-4xl text-ivory tracking-tight">
-              Score Page Two: Top 5 Championship
+              Score Page Two: Top 6 Championship
             </h1>
             <p className="mt-2 text-sm sm:text-base text-ivory/80 leading-relaxed">
-              Independent scoring desk for the 5 finalists who advanced to Round 2. Each act is
+              Independent scoring desk for the 6 finalists who advanced to Round 2. Each act is
               evaluated across their discipline rubric out of 95 raw points to determine the SHABACH
               2026 winners.
             </p>
@@ -241,7 +241,7 @@ export function Round2ScoringPage() {
           <div className="flex flex-col items-end gap-2 text-right">
             <span className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-forest-deep/80 px-4 py-2 text-xs font-semibold text-gold shadow-sm">
               <Trophy className="h-4 w-4 text-gold" />
-              Round 2 Progress: {round2SubmittedCount}/5 Submitted
+              Round 2 Progress: {round2SubmittedCount}/{top6.length} Submitted
             </span>
             <Link
               to="/judges/$judgeId"
@@ -272,7 +272,7 @@ export function Round2ScoringPage() {
           {JUDGES.map((judge) => {
             const isUnlocked = isJudgeUnlocked(judge.id);
             const isSelected = selectedJudgeId === judge.id;
-            const submitted = top5.filter(
+            const submitted = top6.filter(
               (c) => getCard(state, judge.id, c.id, 2).status === "submitted",
             ).length;
 
@@ -350,7 +350,7 @@ export function Round2ScoringPage() {
           </h2>
           <p className="mt-2 text-sm text-charcoal-muted">
             Enter the seat PIN or event access code to unlock {currentJudge.seatTitle} and score the
-            Top 5 Round 2 acts.
+            Top 6 Round 2 acts.
           </p>
           <Button
             onClick={() => handleSeatClick(currentJudge)}
@@ -382,13 +382,13 @@ export function Round2ScoringPage() {
                 <CheckCircle2 className="h-3.5 w-3.5 text-forest" /> {round2SubmittedCount} Submitted
               </span>
               <span>•</span>
-              <span className="text-charcoal-muted">{5 - round2SubmittedCount} Pending</span>
+              <span className="text-charcoal-muted">{top6.length - round2SubmittedCount} Pending</span>
             </div>
           </div>
 
-          {/* Top 5 Contestants Grid */}
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {top5.map((contestant, idx) => {
+          {/* Top 6 Contestants Grid */}
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {top6.map((contestant, idx) => {
               const card = getCard(state, selectedJudgeId, contestant.id, 2);
               const subtotal = judgeSubtotal(card.scores);
               const isSubmitted = card.status === "submitted" && !card.reopened;
@@ -411,10 +411,10 @@ export function Round2ScoringPage() {
                   )}
                 >
                   <div>
-                    {/* Header row: Top 5 Rank & Status Badge */}
+                    {/* Header row: Top 6 Rank & Status Badge */}
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <span className="inline-flex items-center gap-1 rounded-md bg-gold/20 px-2 py-0.5 font-mono text-xs font-bold text-forest-deep border border-gold/40">
-                        <Trophy className="h-3 w-3 text-gold-deep" /> Top 5 № {idx + 1}
+                        <Trophy className="h-3 w-3 text-gold-deep" /> Top 6 № {idx + 1}
                       </span>
                       <div>{statusBadge(contestant.id, subtotal)}</div>
                     </div>

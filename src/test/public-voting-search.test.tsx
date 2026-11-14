@@ -377,28 +377,53 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
         finalScore: 71.5,
         rank: 6,
       },
+      {
+        contestant: {
+          id: "c07",
+          code: "PQ7R8S",
+          name: "Hannah Cole",
+          district: "Ikeja District",
+          type: "dance",
+          title: "Grace Ascending",
+          bio: "Bio 7",
+          order: 7,
+          hue: 240,
+        },
+        judgeSubtotals: { judge1: 65, judge2: 66, judge3: 65, judge4: 66 },
+        judgeCount: 4,
+        judgeAverage: 65.5,
+        validVotes: 40,
+        audiencePoints: 1.8,
+        timePenalty: 0,
+        complete: true,
+        tieFlags: [],
+        finalScore: 67.3,
+        rank: 7,
+      },
     ];
 
-    it("displays top five acts with category and district, never 6th place", () => {
+    it("displays top six acts with category and district, never 7th place", () => {
       render(<PublicTopThree rows={sampleRows} />);
 
-      // Top 5 names must be present
+      // Top 6 names must be present
       expect(screen.getByText("Grace Adeyemi")).toBeInTheDocument();
       expect(screen.getByText("David Adeleke")).toBeInTheDocument();
       expect(screen.getByText("Faith Johnson")).toBeInTheDocument();
       expect(screen.getByText("Samuel Oladipo")).toBeInTheDocument();
       expect(screen.getByText("Daniel Peters")).toBeInTheDocument();
+      expect(screen.getByText("Victor Stone")).toBeInTheDocument();
 
-      // Top 5 placements
+      // Top 6 placements
       expect(screen.getByText(/1st Place/i)).toBeInTheDocument();
       expect(screen.getByText(/2nd Place/i)).toBeInTheDocument();
       expect(screen.getByText(/3rd Place/i)).toBeInTheDocument();
       expect(screen.getByText(/4th Place/i)).toBeInTheDocument();
       expect(screen.getByText(/5th Place/i)).toBeInTheDocument();
+      expect(screen.getByText(/6th Place/i)).toBeInTheDocument();
 
-      // 6th place finalist must strictly NOT appear
-      expect(screen.queryByText("Victor Stone")).toBeNull();
-      expect(screen.queryByText(/6th Place/i)).toBeNull();
+      // 7th place finalist must strictly NOT appear
+      expect(screen.queryByText("Hannah Cole")).toBeNull();
+      expect(screen.queryByText(/7th Place/i)).toBeNull();
     });
 
     it("displays voting score and average judge score while hiding raw individual judge marks", () => {
@@ -406,8 +431,8 @@ describe("Agent C: Public Voting, Profile Loading, Search, and Results Privacy",
       const text = container.textContent || "";
 
       // Scores are present
-      expect(screen.getAllByText("Judge Average").length).toBe(5);
-      expect(screen.getAllByText("Voting Score").length).toBe(5);
+      expect(screen.getAllByText("Judge Average").length).toBe(6);
+      expect(screen.getAllByText("Voting Score").length).toBe(6);
 
       // Raw points breakdown or individual judge subtotals like judge1, raw subtotal must not appear
       expect(text).not.toMatch(/judge1/i);

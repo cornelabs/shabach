@@ -122,6 +122,7 @@ export interface MasterInput {
   voteCounts: Record<string, number>;
   durations: Record<string, DurationEntry>;
   tieResolutions?: TieResolution[];
+  round?: number;
 }
 
 /** Collate the master results table. Missing scorecards stay incomplete — never zeros. */
@@ -137,6 +138,7 @@ export function computeMasterRows(input: MasterInput): ResultRow[] {
       (s) =>
         s.contestantId === contestant.id &&
         assignedJudgeIds.has(s.judgeId) &&
+        (input.round !== undefined ? (s.round ?? 1) === input.round : true) &&
         isValidSubmitted(s, rubric),
     );
 
@@ -340,6 +342,26 @@ export function rankAndAssign(
 /** Full collation: master rows ranked with the tie-break ladder applied. */
 export function computeResults(input: MasterInput): ResultRow[] {
   return rankAndAssign(computeMasterRows(input), input.scorecards, input.tieResolutions);
+}
+
+/** Collate Round 2 results: only Top 6 finalists, evaluated with Round 2 scorecards. */
+export function computeRound2Results(input: {
+  contestants: Contestant[];
+  scorecards: Scorecard[];
+  voteCounts?: Record<string, number>;
+  durations?: Record<string, DurationEntry>;
+  tieResolutions?: TieResolution[];
+}): ResultRow[] {
+  const round2Cards = input.scorecards.filter((s) => s.round === 2);
+  const rows = computeMasterRows({
+    contestants: input.contestants,
+    scorecards: round2Cards,
+    voteCounts: input.voteCounts ?? {},
+    durations: input.durations ?? {},
+    tieResolutions: input.tieResolutions,
+    round: 2,
+  });
+  return rankAndAssign(rows, round2Cards, input.tieResolutions);
 }
 
 /** Format a score for display at two decimals. */

@@ -78,9 +78,16 @@ const PLACEMENT_CONFIG = [
     badge: "bg-parchment text-forest font-semibold",
     trophyColor: "text-charcoal-muted",
   },
+  {
+    rank: 6,
+    title: "6th Place · Fifth Runner-Up",
+    accent: "border-cream-line bg-card shadow-card",
+    badge: "bg-parchment text-forest font-semibold",
+    trophyColor: "text-charcoal-muted",
+  },
 ] as const;
 
-function TopFiveCard({ row, position }: { row: ResultRow; position: number }) {
+function TopSixCard({ row, position }: { row: ResultRow; position: number }) {
   const config = PLACEMENT_CONFIG[position] ?? PLACEMENT_CONFIG[0]!;
 
   return (
@@ -180,30 +187,31 @@ function TopFiveCard({ row, position }: { row: ResultRow; position: number }) {
   );
 }
 
-export const TopThreeCard = TopFiveCard;
+export const TopThreeCard = TopSixCard;
+export const TopFiveCard = TopSixCard;
 
-export function PublicTopFive({ rows }: { rows: ResultRow[] }) {
+export function PublicTopSix({ rows }: { rows: ResultRow[] }) {
   // STRICT PRIVACY GUARANTEE:
-  // Under no circumstances expose 6th-16th ranks, individual judge scorecards, or internal notes to public visitors.
-  // Strictly filter only the top five placed finalists (rank 1 to 5) sorted by rank.
-  const topFive = rows
-    .filter((r) => r.rank !== null && r.rank >= 1 && r.rank <= 5)
+  // Under no circumstances expose 7th-16th ranks, individual judge scorecards, or internal notes to public visitors.
+  // Strictly filter only the top six placed finalists (rank 1 to 6) sorted by rank.
+  const topSix = rows
+    .filter((r) => r.rank !== null && r.rank >= 1 && r.rank <= 6)
     .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
-    .slice(0, 5);
+    .slice(0, 6);
 
   return (
     <div className="mt-8">
       <div className="text-center sm:text-left">
         <h2 className="font-display text-3xl text-forest">Grand Finale Winners</h2>
         <p className="mt-2 text-sm text-charcoal-muted">
-          Official top five placements for SHABACH 2026 — Talent for Christ. All 16 contestants
+          Official top six placements for SHABACH 2026 — Talent for Christ. All 16 contestants
           competed in one overall ranking across disciplines.
         </p>
       </div>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {topFive.map((row, index) => (
-          <TopFiveCard key={row.contestant.id} row={row} position={index} />
+        {topSix.map((row, index) => (
+          <TopSixCard key={row.contestant.id} row={row} position={index} />
         ))}
       </div>
 
@@ -225,7 +233,8 @@ export function PublicTopFive({ rows }: { rows: ResultRow[] }) {
   );
 }
 
-export const PublicTopThree = PublicTopFive;
+export const PublicTopThree = PublicTopSix;
+export const PublicTopFive = PublicTopSix;
 
 function ResultsPage() {
   const loaderData = Route.useLoaderData();
@@ -243,7 +252,7 @@ function ResultsPage() {
         <h1 className="mt-4 font-display text-4xl text-forest">Results & Winners</h1>
 
         {isPublished && results ? (
-          <PublicTopFive rows={results.rows} />
+          <PublicTopSix rows={results.rows} />
         ) : (
           <div className="mt-8 rounded-2xl border border-cream-line bg-card p-10 text-center shadow-card">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gold-wash text-gold">
@@ -253,7 +262,7 @@ function ResultsPage() {
               Official results are being collated...
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-charcoal-muted">
-              Official results are being collated by the score desk. The Grand Finale top five
+              Official results are being collated by the score desk. The Grand Finale top six
               placements will be officially published here following complete scoring collation,
               verification of all 64 scorecards, and score-desk confirmation.
             </p>

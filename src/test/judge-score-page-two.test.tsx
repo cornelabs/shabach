@@ -10,7 +10,7 @@ import {
   getCard,
   getRound2SubmittedCount,
   getState,
-  getTop5Contestants,
+  getTop6Contestants,
   reopenScorecard,
   resetDemo,
   resetJudgeScorecard,
@@ -46,7 +46,7 @@ vi.mock("@tanstack/react-router", async () => {
   };
 });
 
-describe("Score Page Two (Round 2 — Top 5 Finalists) Suite", () => {
+describe("Score Page Two (Round 2 — Top 6 Finalists) Suite", () => {
   beforeEach(() => {
     resetDemo();
     // Unlock judge 1 and judge 2 for tests
@@ -55,11 +55,11 @@ describe("Score Page Two (Round 2 — Top 5 Finalists) Suite", () => {
     setActiveJudge("judge1");
   });
 
-  describe("1. Top 5 Finalists Selection & Standings Resolution", () => {
-    it("returns exactly 5 finalists for Round 2", () => {
+  describe("1. Top 6 Finalists Selection & Standings Resolution", () => {
+    it("returns exactly 6 finalists for Round 2", () => {
       const state = getState();
-      const top5 = getTop5Contestants(state);
-      expect(top5).toHaveLength(5);
+      const top6 = getTop6Contestants(state);
+      expect(top6).toHaveLength(6);
     });
 
     it("allows customising Round 2 finalists explicitly via setRound2Contestants", () => {
@@ -70,11 +70,12 @@ describe("Score Page Two (Round 2 — Top 5 Finalists) Suite", () => {
         state.contestants[6]!.id,
         state.contestants[4]!.id,
         state.contestants[2]!.id,
+        state.contestants[0]!.id,
       ];
 
       setRound2Contestants(customIds);
-      const updatedTop5 = getTop5Contestants(getState());
-      expect(updatedTop5.map((c) => c.id)).toEqual(customIds);
+      const updatedTop6 = getTop6Contestants(getState());
+      expect(updatedTop6.map((c) => c.id)).toEqual(customIds);
     });
   });
 
@@ -128,14 +129,14 @@ describe("Score Page Two (Round 2 — Top 5 Finalists) Suite", () => {
 
     it("tracks round 2 submitted count accurately per judge", () => {
       const judgeId: JudgeId = "judge1";
-      const top5 = getTop5Contestants(getState());
+      const top6 = getTop6Contestants(getState());
 
       expect(getRound2SubmittedCount(getState(), judgeId)).toBe(0);
 
-      // Submit 2 of the 5 contestants for Round 2
+      // Submit 2 of the 6 contestants for Round 2
       const scores = [18, 18, 18, 18, 13];
-      submitScorecard(judgeId, top5[0]!.id, scores, "Finalist 1 R2", 2);
-      submitScorecard(judgeId, top5[1]!.id, scores, "Finalist 2 R2", 2);
+      submitScorecard(judgeId, top6[0]!.id, scores, "Finalist 1 R2", 2);
+      submitScorecard(judgeId, top6[1]!.id, scores, "Finalist 2 R2", 2);
 
       expect(getRound2SubmittedCount(getState(), judgeId)).toBe(2);
     });
@@ -233,26 +234,26 @@ describe("Score Page Two (Round 2 — Top 5 Finalists) Suite", () => {
   });
 
   describe("4. Round2ScoringPage Dedicated Route Component", () => {
-    it("renders the 5 championship finalists on Score Page Two", () => {
+    it("renders the 6 championship finalists on Score Page Two", () => {
       render(<Round2ScoringPage />);
 
-      expect(screen.getByText(/Score Page Two: Top 5 Championship/i)).toBeInTheDocument();
+      expect(screen.getByText(/Score Page Two: Top 6 Championship/i)).toBeInTheDocument();
       expect(screen.getByText(/Official Score Page Two/i)).toBeInTheDocument();
       expect(screen.getByText(/Round 2 · Championship Stage/i)).toBeInTheDocument();
 
-      const top5 = getTop5Contestants(getState());
-      for (const finalist of top5) {
+      const top6 = getTop6Contestants(getState());
+      for (const finalist of top6) {
         expect(screen.getAllByText(finalist.name).length).toBeGreaterThan(0);
       }
 
-      // Check for Top 5 badges
-      expect(screen.getByText(/Top 5 № 1/i)).toBeInTheDocument();
-      expect(screen.getByText(/Top 5 № 5/i)).toBeInTheDocument();
+      // Check for Top 6 badges
+      expect(screen.getByText(/Top 6 № 1/i)).toBeInTheDocument();
+      expect(screen.getByText(/Top 6 № 6/i)).toBeInTheDocument();
     });
 
     it("displays progress counter for Round 2 submissions", () => {
       render(<Round2ScoringPage />);
-      expect(screen.getByText(/Round 2 Progress: 0\/5 Submitted/i)).toBeInTheDocument();
+      expect(screen.getByText(/Round 2 Progress: 0\/6 Submitted/i)).toBeInTheDocument();
     });
   });
 });

@@ -25,7 +25,7 @@ import { isJudgeUnlocked, lockJudgeAccess } from "@/lib/auth/judge-access";
 import { SCORECARD_STATUS_LABEL, typeLabel } from "@/lib/demo/labels";
 import { rubricFor } from "@/lib/demo/rubrics";
 import { judgeSubtotal } from "@/lib/demo/scoring";
-import { getCard, getTop5Contestants, setActiveJudge } from "@/lib/demo/store";
+import { getCard, getTop6Contestants, setActiveJudge } from "@/lib/demo/store";
 import { JUDGES, type JudgeId } from "@/lib/demo/types";
 import { cn } from "@/lib/utils";
 
@@ -100,15 +100,15 @@ function JudgeWorkspace() {
   }
 
   const ordered = [...state.contestants].sort((a, b) => a.order - b.order);
-  const top5 = getTop5Contestants(state);
-  const displayedContestants = activeRound === 2 ? top5 : ordered;
+  const top6 = getTop6Contestants(state);
+  const displayedContestants = activeRound === 2 ? top6 : ordered;
   const selected = selectedId ? (state.contestants.find((c) => c.id === selectedId) ?? null) : null;
 
   const round1SubmittedCount = ordered.filter(
     (c) => getCard(state, activeJudgeId, c.id, 1).status === "submitted",
   ).length;
 
-  const round2SubmittedCount = top5.filter(
+  const round2SubmittedCount = top6.filter(
     (c) => getCard(state, activeJudgeId, c.id, 2).status === "submitted",
   ).length;
 
@@ -179,7 +179,7 @@ function JudgeWorkspace() {
         </div>
       </div>
 
-      {/* Round Selection Tabs: Round 1 (Top 16) vs Score Page Two (Top 5) */}
+      {/* Round Selection Tabs: Round 1 (Top 16) vs Score Page Two (Top 6) */}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-cream-line pb-4">
         <div className="inline-flex rounded-xl bg-ivory p-1 border border-cream-line shadow-xs">
           <button
@@ -219,14 +219,14 @@ function JudgeWorkspace() {
             )}
           >
             <Trophy className="h-3.5 w-3.5" />
-            <span>Score Page Two: Round 2 (Top 5)</span>
+            <span>Score Page Two: Round 2 (Top 6)</span>
             <span
               className={cn(
                 "rounded-full px-2 py-0.5 text-[10px] font-bold",
                 activeRound === 2 ? "bg-forest text-gold" : "bg-cream-line text-charcoal",
               )}
             >
-              {round2SubmittedCount}/5
+              {round2SubmittedCount}/{top6.length}
             </span>
           </button>
         </div>
@@ -267,7 +267,7 @@ function JudgeWorkspace() {
           <p className="text-sm text-charcoal-muted">
             {currentJudge.label} ·{" "}
             {activeRound === 2
-              ? "Top 5 Finalists · Championship Round · scores stay private until submitted"
+              ? "Top 6 Finalists · Championship Round · scores stay private until submitted"
               : `${ordered.length} contestants · scores stay private until submitted`}
           </p>
         </div>
@@ -294,7 +294,7 @@ function JudgeWorkspace() {
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cream-line bg-ivory/80 px-4 py-3 text-xs text-charcoal-muted">
         <p>
           {activeRound === 2
-            ? "Score Page Two: The Top 5 finalists have advanced to the championship round. Select a finalist to score their second round performance across their category rubric out of 95 raw points."
+            ? "Score Page Two: The Top 6 finalists have advanced to the championship round. Select a finalist to score their second round performance across their category rubric out of 95 raw points."
             : "Choose a contestant from the list to open their scorecard. Each act is scored on its own category rubric out of 95 raw points."}
         </p>
         <div className="flex items-center gap-2 font-medium">
@@ -313,7 +313,7 @@ function JudgeWorkspace() {
         className={cn(
           "mt-6 grid gap-4",
           activeRound === 2
-            ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
             : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
         )}
       >
@@ -344,7 +344,7 @@ function JudgeWorkspace() {
                 <div className="flex items-center justify-between gap-2 mb-3">
                   {activeRound === 2 ? (
                     <span className="inline-flex items-center gap-1 rounded-md bg-gold/20 px-2 py-0.5 font-mono text-xs font-bold text-forest-deep border border-gold/40">
-                      <Trophy className="h-3 w-3 text-gold-deep" /> Top 5 № {idx + 1}
+                      <Trophy className="h-3 w-3 text-gold-deep" /> Top 6 № {idx + 1}
                     </span>
                   ) : (
                     <span className="inline-flex items-center rounded-md bg-forest/10 px-2 py-0.5 font-mono text-xs font-bold text-forest">

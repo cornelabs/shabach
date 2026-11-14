@@ -34,7 +34,7 @@ import {
   isJudgeUnlocked,
   verifyJudgeCode,
 } from "@/lib/auth/judge-access";
-import { getCard, getTop5Contestants, setActiveJudge } from "@/lib/demo/store";
+import { getCard, getTop6Contestants, setActiveJudge } from "@/lib/demo/store";
 import { JUDGES, type JudgeId, type JudgeProfile } from "@/lib/demo/types";
 import { cn } from "@/lib/utils";
 
@@ -194,7 +194,7 @@ function JudgesHome() {
         </div>
       )}
 
-      {/* Score Page Two: Round 2 Top 5 Championship Banner */}
+      {/* Score Page Two: Round 2 Top 6 Championship Banner */}
       <div className="mt-8 rounded-3xl border border-gold/40 bg-gradient-to-r from-forest-deep via-forest to-forest-deep p-6 sm:p-7 text-ivory shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="max-w-xl">
@@ -207,11 +207,11 @@ function JudgesHome() {
               </Badge>
             </div>
             <h2 className="mt-2 font-display text-2xl sm:text-3xl text-ivory">
-              Score Page Two: Top 5 Championship
+              Score Page Two: Top 6 Championship
             </h2>
             <p className="mt-1 text-sm text-ivory/80 leading-relaxed">
-              The Top 5 finalists have advanced to the final round. Judges evaluate their second
-              round performances to decide 1st, 2nd, and 3rd place for SHABACH 2026.
+              The Top 6 finalists have advanced to the final round. Judges evaluate their second
+              round performances to decide the winners for SHABACH 2026.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -233,11 +233,11 @@ function JudgesHome() {
           const isUnlocked = isJudgeUnlocked(judge.id);
           const isCurrentActive = activeJudgeId === judge.id;
           const isStaffAssigned = staffSession?.assignedSeat === judge.id;
-          const top5 = getTop5Contestants(state);
+          const top6 = getTop6Contestants(state);
           const submittedCount = state.contestants.filter(
             (c) => getCard(state, judge.id, c.id, 1).status === "submitted",
           ).length;
-          const round2Submitted = top5.filter(
+          const round2Submitted = top6.filter(
             (c) => getCard(state, judge.id, c.id, 2).status === "submitted",
           ).length;
           const totalCount = state.contestants.length;
@@ -347,21 +347,23 @@ function JudgesHome() {
                     <div className="pt-1.5 border-t border-cream-line/60">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-charcoal-muted flex items-center gap-1">
-                          <Trophy className="h-3 w-3 text-gold" /> Score Page 2 (Top 5)
+                          <Trophy className="h-3 w-3 text-gold" /> Score Page 2 (Top 6)
                         </span>
                         <span
                           className={cn(
                             "font-semibold",
-                            round2Submitted === 5 ? "text-forest" : "text-gold-deep",
+                            round2Submitted === top6.length ? "text-forest" : "text-gold-deep",
                           )}
                         >
-                          {round2Submitted}/5 submitted
+                          {round2Submitted}/{top6.length} submitted
                         </span>
                       </div>
                       <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-cream-line">
                         <div
                           className="h-full bg-gold-deep transition-all duration-300"
-                          style={{ width: `${(round2Submitted / 5) * 100}%` }}
+                          style={{
+                            width: `${top6.length > 0 ? (round2Submitted / top6.length) * 100 : 0}%`,
+                          }}
                         />
                       </div>
                     </div>

@@ -271,7 +271,7 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
       expect(screen.getByText("Official results are being collated...")).toBeInTheDocument();
       expect(
         screen.getByText(
-          /The Grand Finale top five placements will be officially published here/i,
+          /The Grand Finale top six placements will be officially published here/i,
         ),
       ).toBeInTheDocument();
 
@@ -279,7 +279,7 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
       expect(screen.queryByText("1st Place · Winner")).not.toBeInTheDocument();
     });
 
-    it("renders strictly the Top Five placed finalists when officially published", async () => {
+    it("renders strictly the Top Six placed finalists when officially published", async () => {
       // Simulate official publishing process
       loadSampleScores();
       setVotingStatus("closed");
@@ -294,19 +294,20 @@ describe("Phase 7: Public Experience & Profile Journey Browser Simulation", () =
       // Render public results table
       render(<PublicTopThree rows={published!.rows} />);
 
-      // Exactly 5 winner placement badges appear
+      // Exactly 6 winner placement badges appear
       expect(screen.getByText("1st Place · Winner")).toBeInTheDocument();
       expect(screen.getByText("2nd Place · First Runner-Up")).toBeInTheDocument();
       expect(screen.getByText("3rd Place · Second Runner-Up")).toBeInTheDocument();
       expect(screen.getByText("4th Place · Third Runner-Up")).toBeInTheDocument();
       expect(screen.getByText("5th Place · Fourth Runner-Up")).toBeInTheDocument();
+      expect(screen.getByText("6th Place · Fifth Runner-Up")).toBeInTheDocument();
 
       // Voting score and average judge score are displayed
-      expect(screen.getAllByText("Judge Average").length).toBe(5);
-      expect(screen.getAllByText("Voting Score").length).toBe(5);
+      expect(screen.getAllByText("Judge Average").length).toBe(6);
+      expect(screen.getAllByText("Voting Score").length).toBe(6);
 
-      // 6th place and below must NOT be rendered
-      expect(screen.queryByText("6th Place")).not.toBeInTheDocument();
+      // 7th place and below must NOT be rendered
+      expect(screen.queryByText("7th Place")).not.toBeInTheDocument();
 
       // Judge individual marks and raw subtotals must NEVER be rendered
       expect(screen.queryByText("Judge 1 Subtotal")).not.toBeInTheDocument();

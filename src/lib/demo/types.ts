@@ -96,7 +96,7 @@ export type ScorecardStatus = "not_started" | "draft" | "submitted";
 export interface Scorecard {
   contestantId: string;
   judgeId: JudgeId;
-  /** Competition round (1 = preliminary/top 16, 2 = championship/top 5). Defaults to 1. */
+  /** Competition round (1 = preliminary/top 16, 2 = championship/top 6). Defaults to 1. */
   round?: number | undefined;
   /** Aligned to the rubric criteria for the contestant's performance type. */
   scores: (number | null)[];
@@ -162,7 +162,10 @@ export interface ResultsSnapshot {
   lockedAt: string;
   published: boolean;
   publishedAt?: string;
+  /** Round 1 full standings of all participants. */
   rows: ResultRow[];
+  /** Round 2 championship standings of the Top 6 finalists. */
+  round2Rows?: ResultRow[] | undefined;
 }
 
 export interface TieResolution {
@@ -176,7 +179,7 @@ export interface DemoState {
   version: 2;
   contestants: Contestant[];
   scorecards: Scorecard[];
-  /** Contestant IDs selected for Round 2 Top 5 stage. If omitted, computed from Round 1 standings. */
+  /** Contestant IDs selected for Round 2 Top 6 stage. If omitted, computed from Round 1 standings. */
   round2ContestantIds?: string[] | undefined;
   /** Simulated audience votes per contestant id (labelled as demo data). */
   demoVotes: Record<string, number>;
