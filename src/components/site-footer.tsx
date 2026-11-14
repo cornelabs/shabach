@@ -50,9 +50,7 @@ export function SiteFooter() {
       <div className="border-t border-ivory/10 px-4 py-4">
         <div className="mx-auto flex max-w-6xl flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ivory/60">
           <p className="text-center sm:text-left">
-            Demo build — contestants, votes, scores and durations are simulated sample data for
-            reviewing the voting and scoring journey. No real votes are recorded and no production
-            backend is connected.
+            Youth Alive Fellowship · Living Faith Church, Lagos State · Africa/Lagos (WAT)
           </p>
           <p className="shrink-0 text-center sm:text-right">
             <a
