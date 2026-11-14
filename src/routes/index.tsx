@@ -217,7 +217,18 @@ function Index() {
 
       {/* 3. Sleek Single-Line Footer */}
       <footer className="border-t border-forest/60 bg-forest/40 px-4 py-2 shrink-0 text-center text-[11px] text-ivory/60">
-        <p>Youth Alive Fellowship · Living Faith Church, Lagos State · Africa/Lagos (WAT)</p>
+        <div className="mx-auto flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          <span>Youth Alive Fellowship · Living Faith Church, Lagos State · Africa/Lagos (WAT)</span>
+          <span className="hidden sm:inline text-ivory/40">·</span>
+          <a
+            href="https://cornelabs.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gold-soft hover:text-gold transition-colors font-medium underline underline-offset-2"
+          >
+            Powered by Corne Labs
+          </a>
+        </div>
       </footer>
     </div>
   );

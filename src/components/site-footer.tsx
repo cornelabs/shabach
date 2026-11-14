@@ -48,11 +48,23 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-ivory/10 px-4 py-4">
-        <p className="mx-auto max-w-6xl text-xs text-ivory/60">
-          Demo build — contestants, votes, scores and durations are simulated sample data for
-          reviewing the voting and scoring journey. No real votes are recorded and no production
-          backend is connected.
-        </p>
+        <div className="mx-auto flex max-w-6xl flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ivory/60">
+          <p className="text-center sm:text-left">
+            Demo build — contestants, votes, scores and durations are simulated sample data for
+            reviewing the voting and scoring journey. No real votes are recorded and no production
+            backend is connected.
+          </p>
+          <p className="shrink-0 text-center sm:text-right">
+            <a
+              href="https://cornelabs.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gold-soft hover:text-gold transition-colors font-medium underline underline-offset-2"
+            >
+              Powered by Corne Labs
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );
